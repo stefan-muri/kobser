@@ -29,7 +29,8 @@ async def delete_track(track_id: str, sess: dict = Depends(get_current_session))
         raise HTTPException(status_code=404, detail="track has no path")
 
     music_root = Path(MUSIC_DIR).resolve()
-    file_path = (music_root / rel_path).resolve()
+    p = Path(rel_path)
+    file_path = (p if p.is_absolute() else music_root / rel_path).resolve()
 
     # Ensure the resolved path stays inside the music directory.
     try:

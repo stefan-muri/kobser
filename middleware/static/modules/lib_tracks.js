@@ -114,7 +114,7 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
 
     // Row click → play (unless in select mode or clicking a button)
     row.addEventListener("click", (e) => {
-      if (e.target.closest(".star-btn") || e.target.closest(".dots-btn")) return;
+      if (e.target.closest(".star-btn") || e.target.closest(".dots-btn") || e.target.closest(".tl-checkbox-wrap")) return;
       if (selectMode) {
         const cb = row.querySelector(".tl-checkbox");
         cb.checked = !cb.checked;
