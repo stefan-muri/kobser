@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from auth import get_current_session
 from config import MUSIC_DIR, NAVIDROME_URL
 from services.navidrome_client import auth_params, trigger_scan_and_wait
+from services.ytdlp_service import _sanitize
 
 router = APIRouter()
 
@@ -65,15 +66,27 @@ async def delete_track(track_id: str, sess: dict = Depends(get_current_session))
         raise HTTPException(status_code=400, detail="invalid path")
 
     if not file_path.exists():
-        # File is missing from the middleware's volume — could be a mount mismatch
-        # or a stale Navidrome entry. Trigger a rescan so Navidrome cleans it up.
-        await trigger_scan_and_wait(sess["username"], sess["password"])
-        raise HTTPException(
-            status_code=404,
-            detail=f"file not visible to middleware at {file_path} (navidrome path: {rel_path!r}). "
-                   f"Check that MUSIC_DIR in .env points to the same directory Navidrome uses. "
-                   f"A rescan was triggered to remove stale entries.",
-        )
+        # Navidrome's stored path doesn't match what's on disk.
+        # Try to find the file by reconstructing the Peel download path (artist/artist - title.*).
+        song = body["song"]
+        s_artist = _sanitize(song.get("artist", ""))
+        s_title = _sanitize(song.get("title", ""))
+        found = None
+        if s_artist and s_title:
+            stem = f"{s_artist} - {s_title}"
+            for ext in (".m4a", ".opus", ".ogg", ".mp3", ".flac", ".webm"):
+                candidate = (music_root / s_artist / f"{stem}{ext}").resolve()
+                try:
+                    candidate.relative_to(music_root)
+                except ValueError:
+                    continue
+                if candidate.exists():
+                    found = candidate
+                    break
+        if not found:
+            await trigger_scan_and_wait(sess["username"], sess["password"])
+            raise HTTPException(status_code=404, detail=f"file not found: {file_path}")
+        file_path = found
 
     file_path.unlink()
 

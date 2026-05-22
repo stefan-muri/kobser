@@ -29,6 +29,7 @@ def search(query: str, limit: int = 10) -> list[dict[str, Any]]:
     opts = {
         "quiet": True,
         "no_warnings": True,
+        "noconfig": True,
         "extract_flat": True,
         "skip_download": True,
         **_cookies_opts(),
@@ -67,6 +68,7 @@ def download(video_id: str, artist: str, title: str) -> str:
     opts = {
         "quiet": True,
         "no_warnings": True,
+        "noconfig": True,   # ignore any yt-dlp.conf that could override outtmpl
         # Prefer m4a (AAC) since it tags cleanly and is universally supported.
         # Fall back to bestaudio (usually opus-in-webm) and remux below.
         "format": "bestaudio[ext=m4a]/bestaudio",
