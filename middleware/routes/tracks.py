@@ -65,17 +65,24 @@ async def delete_track(track_id: str, sess: dict = Depends(get_current_session))
         raise HTTPException(status_code=400, detail="invalid path")
 
     if not file_path.exists():
+        # File is missing from the middleware's volume — could be a mount mismatch
+        # or a stale Navidrome entry. Trigger a rescan so Navidrome cleans it up.
+        await trigger_scan_and_wait(sess["username"], sess["password"])
         raise HTTPException(
             status_code=404,
-            detail=f"file not found on disk — navidrome path: {rel_path!r}, resolved: {file_path}, music_root: {music_root}",
+            detail=f"file not visible to middleware at {file_path} (navidrome path: {rel_path!r}). "
+                   f"Check that MUSIC_DIR in .env points to the same directory Navidrome uses. "
+                   f"A rescan was triggered to remove stale entries.",
         )
 
     file_path.unlink()
 
-    # Remove now-empty artist directory.
-    parent = file_path.parent
-    if parent != music_root and parent.exists() and not any(parent.iterdir()):
-        parent.rmdir()
+    # Remove now-empty artist/album directories.
+    for parent in [file_path.parent, file_path.parent.parent]:
+        if parent != music_root and parent.exists() and not any(parent.iterdir()):
+            parent.rmdir()
+        else:
+            break
 
     await trigger_scan_and_wait(sess["username"], sess["password"])
     return {"ok": True}
