@@ -1,0 +1,39 @@
+services:
+  navidrome:
+    image: deluan/navidrome:latest
+    container_name: peel-navidrome
+    restart: unless-stopped
+    ports:
+      - "4533:4533"
+    volumes:
+      - ${MUSIC_DIR}:/music:ro
+      - ${NAVIDROME_DATA}:/data
+    environment:
+      ND_LOGLEVEL: info
+      ND_SESSIONTIMEOUT: 24h
+      ND_SCANSCHEDULE: "0"
+      ND_ENABLEINSIGHTSCOLLECTOR: "false"
+    networks:
+      - peel
+
+  middleware:
+    build: ./middleware
+    container_name: peel-middleware
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ${MUSIC_DIR}:/music
+      - ./secrets:/app/secrets:ro
+      - ./data/peel:/app/data
+    environment:
+      NAVIDROME_URL: http://navidrome:4533
+      NAVIDROME_USER: ${NAVIDROME_USER}
+      NAVIDROME_PASS: ${NAVIDROME_PASS}
+      YTDLP_COOKIES_FILE: /app/secrets/cookies.txt
+    networks:
+      - peel
+
+networks:
+  peel:
+    driver: bridge

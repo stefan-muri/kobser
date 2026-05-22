@@ -1,0 +1,22 @@
+# Local config
+.env
+
+# Secrets (keep the example file, ignore everything else in secrets/)
+secrets/
+!secrets/cookies.txt.example
+
+# Bind-mounted data
+data/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+.pytest_cache/
+
+# Editor
+.vscode/
+.idea/
+.DS_Store

@@ -1,0 +1,9 @@
+fastapi>=0.115
+uvicorn[standard]>=0.32
+httpx>=0.27
+mutagen>=1.47
+python-multipart>=0.0.12
+
+# yt-dlp updates frequently to keep up with YouTube changes.
+# Unpinned by design; rebuild the image periodically to pick up the latest.
+yt-dlp
