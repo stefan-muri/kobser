@@ -4,10 +4,10 @@ services:
     container_name: peel-navidrome
     restart: unless-stopped
     ports:
-      - "4533:4533"
+      - "${NAVIDROME_PORT:-4533}:4533"
     volumes:
-      - ${MUSIC_DIR}:/music:ro
-      - ${NAVIDROME_DATA}:/data
+      - ${MUSIC_DIR:-./data/music}:/music:ro
+      - ./data/navidrome:/data
     environment:
       ND_LOGLEVEL: info
       ND_SESSIONTIMEOUT: 24h
@@ -21,16 +21,15 @@ services:
     container_name: peel-middleware
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "${PEEL_PORT:-8000}:8000"
     volumes:
-      - ${MUSIC_DIR}:/music
+      - ${MUSIC_DIR:-./data/music}:/music
       - ./secrets:/app/secrets:ro
       - ./data/peel:/app/data
     environment:
       NAVIDROME_URL: http://navidrome:4533
-      NAVIDROME_USER: ${NAVIDROME_USER}
-      NAVIDROME_PASS: ${NAVIDROME_PASS}
-      YTDLP_COOKIES_FILE: /app/secrets/cookies.txt
+      MUSIC_DIR: /music
+      YTDLP_COOKIES_FILE: ${YTDLP_COOKIES_FILE:-}
     networks:
       - peel
 
