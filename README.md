@@ -17,7 +17,7 @@ Built on [Navidrome](https://www.navidrome.org/) (music server) + a FastAPI midd
 
 ```bash
 # 1. Clone
-git clone <your-gitea-url>/peel.git
+git clone https://git.unterhaken.at/phaneschema/peel
 cd peel
 
 # 2. Configure
