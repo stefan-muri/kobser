@@ -10,7 +10,7 @@ export async function render(root) {
     <div class="w-full max-w-5xl mx-auto p-4 md:p-8">
       <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h2 class="text-3xl font-bold pl-1">Library</h2>
-        <div id="sort-bar" class="flex items-center gap-2 flex-wrap"></div>
+        <div id="sort-bar" class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 -mb-1"></div>
       </div>
       <div id="lib-list">
         <div class="flex items-center justify-center py-20 opacity-50">
@@ -54,7 +54,7 @@ const SORT_OPTIONS = [
 function buildSortBar(root, list) {
   const bar = root.querySelector("#sort-bar");
   bar.innerHTML = SORT_OPTIONS.map((o) =>
-    `<button class="sort-btn px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+    `<button class="sort-btn flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
       sortKey === o.key
         ? "bg-peel-accent text-peel-bg"
         : "bg-white/5 text-peel-muted hover:bg-white/10 hover:text-peel-text"

@@ -3,71 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Peel - Self-Hosted Music</title>
+    <title>Peel</title>
     <meta name="description" content="Search YouTube, download, and stream your personal music library.">
 
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons (self-hosted) -->
+    <link rel="stylesheet" href="/vendor/phosphor/index.css">
 
-    <!-- Phosphor Icons -->
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        peel: {
-                            bg: '#121212',
-                            surface: '#1E1E1E',
-                            accent: '#FF9F1C',
-                            accentHover: '#FFBF69',
-                            success: '#2EC4B6',
-                            text: '#FFFFFF',
-                            muted: '#B3B3B3',
-                        }
-                    },
-                    animation: {
-                        'spin-slow': 'spin 1.5s linear infinite',
-                        'slide-up': 'slideUp 0.3s ease-out forwards',
-                    },
-                    keyframes: {
-                        slideUp: {
-                            '0%': { transform: 'translateY(100%)', opacity: '0' },
-                            '100%': { transform: 'translateY(0)', opacity: '1' },
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        /* Custom Scrollbar for a premium feel */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #121212; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
-
-        /* Hide scrollbar for clean lists but keep functionality */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* Prevent text selection on UI elements */
-        .user-select-none { user-select: none; -webkit-user-select: none; }
-    </style>
+    <!-- Tailwind CSS (compiled at build time) -->
+    <link rel="stylesheet" href="/dist/tailwind.css">
 </head>
 <body class="bg-peel-bg text-peel-text font-sans h-screen w-full overflow-hidden flex flex-col selection:bg-peel-accent selection:text-white antialiased">
 
     <!-- Toast Notification Container -->
-    <div id="toast-container" class="fixed top-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
+    <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <div class="flex-1 flex overflow-hidden">
 
@@ -121,86 +69,83 @@
         </aside>
 
         <!-- Main Content Area -->
-        <main class="flex-1 overflow-y-auto h-full pb-32 relative w-full" id="view"></main>
+        <!-- pb-40 on mobile = 160px clears the player bar (90px) + mobile nav (~60px) -->
+        <main class="flex-1 overflow-y-auto h-full pb-40 md:pb-28 relative w-full" id="view"></main>
 
     </div>
 
     <!-- Mobile Navigation Bar -->
-    <nav class="md:hidden fixed bottom-[90px] w-full bg-peel-bg/95 backdrop-blur-md border-t border-white/5 z-40 px-2 py-3 flex justify-between items-center user-select-none" id="mobile-nav">
-        <button data-view="search" class="mob-nav-btn flex flex-col items-center gap-1 text-peel-accent flex-1">
-            <i class="ph-fill ph-magnifying-glass text-xl transition-all"></i>
+    <nav class="md:hidden fixed bottom-[90px] w-full bg-peel-bg/95 backdrop-blur-md border-t border-white/5 z-40 px-2 py-2 flex justify-around items-center user-select-none" id="mobile-nav">
+        <button data-view="search" class="mob-nav-btn flex flex-col items-center gap-0.5 text-peel-accent flex-1 py-1">
+            <i class="ph-fill ph-magnifying-glass text-xl"></i>
             <span class="text-[9px] font-medium">Search</span>
         </button>
-        <button data-view="library" class="mob-nav-btn flex flex-col items-center gap-1 text-peel-muted flex-1">
-            <i class="ph ph-music-notes text-xl transition-all"></i>
+        <button data-view="library" class="mob-nav-btn flex flex-col items-center gap-0.5 text-peel-muted flex-1 py-1">
+            <i class="ph ph-music-notes text-xl"></i>
             <span class="text-[9px] font-medium">Library</span>
         </button>
-        <button data-view="liked" class="mob-nav-btn flex flex-col items-center gap-1 text-peel-muted flex-1">
-            <i class="ph ph-heart text-xl transition-all"></i>
+        <button data-view="liked" class="mob-nav-btn flex flex-col items-center gap-0.5 text-peel-muted flex-1 py-1">
+            <i class="ph ph-heart text-xl"></i>
             <span class="text-[9px] font-medium">Liked</span>
         </button>
-        <button data-view="artists" class="mob-nav-btn flex flex-col items-center gap-1 text-peel-muted flex-1">
-            <i class="ph ph-microphone-stage text-xl transition-all"></i>
+        <button data-view="artists" class="mob-nav-btn flex flex-col items-center gap-0.5 text-peel-muted flex-1 py-1">
+            <i class="ph ph-microphone-stage text-xl"></i>
             <span class="text-[9px] font-medium">Artists</span>
         </button>
-        <button data-view="playlists" class="mob-nav-btn flex flex-col items-center gap-1 text-peel-muted flex-1">
-            <i class="ph ph-playlist text-xl transition-all"></i>
+        <button data-view="playlists" class="mob-nav-btn flex flex-col items-center gap-0.5 text-peel-muted flex-1 py-1">
+            <i class="ph ph-playlist text-xl"></i>
             <span class="text-[9px] font-medium">Playlists</span>
         </button>
     </nav>
 
     <!-- Player Bar (Fixed Bottom) -->
-    <div id="mini-player" class="fixed bottom-0 w-full h-[90px] bg-peel-surface border-t border-white/5 z-50 items-center justify-between px-4 md:px-6 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] user-select-none hidden">
+    <div id="mini-player" class="fixed bottom-0 w-full h-[90px] bg-peel-surface border-t border-white/5 z-50 items-center px-4 md:px-6 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] user-select-none hidden">
 
         <!-- Progress Bar (Absolute top of player) -->
         <div class="absolute top-0 left-0 w-full h-1 bg-peel-bg group cursor-pointer" id="player-progress">
             <div id="progressBar" class="h-full bg-peel-accent w-0 group-hover:bg-peel-accentHover transition-colors relative">
-                <!-- Playhead dot appears on hover -->
                 <div class="absolute right-0 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 shadow-md"></div>
             </div>
         </div>
 
-        <!-- Left: Track Info -->
-        <div class="flex items-center gap-4 w-1/3 min-w-0">
-            <img id="mp-cover" alt="Now Playing" class="w-14 h-14 rounded-md object-cover shadow-md hidden sm:block">
+        <!-- Left: Track Info (grows to fill on mobile) -->
+        <div class="flex items-center gap-3 flex-1 min-w-0 mr-4">
+            <img id="mp-cover" alt="" class="w-12 h-12 md:w-14 md:h-14 rounded-md object-cover shadow-md flex-shrink-0 hidden sm:block">
             <div class="min-w-0">
-                <h4 id="mp-title" class="text-sm md:text-base font-semibold text-white truncate">Not Playing</h4>
-                <p id="mp-artist" class="text-xs md:text-sm text-peel-muted truncate">Select a track</p>
+                <h4 id="mp-title" class="text-sm font-semibold text-white truncate">Not Playing</h4>
+                <p id="mp-artist" class="text-xs text-peel-muted truncate">Select a track</p>
             </div>
         </div>
 
-        <!-- Center: Controls -->
-        <div class="flex flex-col items-center justify-center w-1/3">
-            <div class="flex items-center gap-4 md:gap-6">
-                <button id="mp-prev" class="text-peel-muted hover:text-white transition-colors"><i class="ph-fill ph-skip-back text-2xl md:text-3xl"></i></button>
-
-                <button id="mp-toggle" class="w-12 h-12 md:w-14 md:h-14 rounded-full bg-white text-peel-bg flex items-center justify-center hover:scale-105 transition-transform">
-                    <i id="playIcon" class="ph-fill ph-play text-2xl"></i>
-                </button>
-
-                <button id="mp-next" class="text-peel-muted hover:text-white transition-colors"><i class="ph-fill ph-skip-forward text-2xl md:text-3xl"></i></button>
-            </div>
+        <!-- Center: Controls (fixed width, centered) -->
+        <div class="flex items-center gap-4 flex-shrink-0">
+            <button id="mp-prev" class="text-peel-muted hover:text-white transition-colors">
+                <i class="ph-fill ph-skip-back text-2xl"></i>
+            </button>
+            <button id="mp-toggle" class="w-11 h-11 md:w-12 md:h-12 rounded-full bg-white text-peel-bg flex items-center justify-center hover:scale-105 transition-transform">
+                <i id="playIcon" class="ph-fill ph-play text-xl md:text-2xl"></i>
+            </button>
+            <button id="mp-next" class="text-peel-muted hover:text-white transition-colors">
+                <i class="ph-fill ph-skip-forward text-2xl"></i>
+            </button>
         </div>
 
-        <!-- Right: Like / Shuffle / Time -->
-        <div class="flex items-center justify-end gap-3 w-1/3">
-            <button id="mp-like" data-liked="false"
-                    class="text-peel-muted hover:text-peel-accent transition-colors hidden md:block"
-                    title="Like">
+        <!-- Right: Like / Shuffle / Time (desktop only) -->
+        <div class="hidden md:flex items-center justify-end gap-3 w-40">
+            <button id="mp-like" data-liked="false" class="text-peel-muted hover:text-peel-accent transition-colors" title="Like">
                 <i class="ph ph-heart text-xl"></i>
             </button>
-            <button id="mp-shuffle" class="text-peel-muted hover:text-white transition-colors hidden md:block"
-                    title="Shuffle">
+            <button id="mp-shuffle" class="text-peel-muted hover:text-white transition-colors" title="Shuffle">
                 <i class="ph ph-shuffle text-xl"></i>
             </button>
-            <span id="mp-time" class="text-sm text-peel-muted tabular-nums hidden md:block">0:00 / 0:00</span>
+            <span id="mp-time" class="text-sm text-peel-muted tabular-nums">0:00 / 0:00</span>
         </div>
     </div>
 
     <audio id="audio" preload="metadata"></audio>
 
     <!-- Download Dialog -->
-    <dialog id="download-dialog" class="bg-peel-surface text-peel-text border border-white/10 rounded-2xl p-6 min-w-[340px] max-w-[90vw] shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm">
+    <dialog id="download-dialog" class="bg-peel-surface text-peel-text border border-white/10 rounded-2xl p-6 w-[90vw] max-w-md shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm">
         <form method="dialog">
             <h3 class="text-xl font-semibold mb-5 flex items-center gap-2">
                 <i class="ph ph-download-simple text-peel-accent"></i>

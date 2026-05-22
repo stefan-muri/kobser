@@ -19,7 +19,7 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
       </button>
     </div>
     <div id="tl-action-bar"
-         class="hidden flex items-center gap-2 mb-2 px-1 flex-wrap">
+         class="hidden items-center gap-2 pb-2 px-1 overflow-x-auto no-scrollbar flex-nowrap">
       <span id="tl-sel-count" class="text-sm text-peel-muted mr-1"></span>
       <button id="tl-sel-add"
               class="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-medium transition-colors">
@@ -67,7 +67,7 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
     list.querySelector("#tl-header").classList.add("hidden");
     list.querySelector("#tl-action-bar").classList.remove("hidden");
     list.querySelector("#tl-action-bar").classList.add("flex");
-    container.querySelectorAll(".tl-checkbox-wrap").forEach((w) => w.classList.remove("hidden"));
+    container.querySelectorAll(".tl-checkbox-wrap").forEach((w) => { w.classList.remove("hidden"); w.classList.add("flex"); });
     updateActionBar();
   }
 
@@ -77,7 +77,7 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
     list.querySelector("#tl-header").classList.remove("hidden");
     list.querySelector("#tl-action-bar").classList.add("hidden");
     list.querySelector("#tl-action-bar").classList.remove("flex");
-    container.querySelectorAll(".tl-checkbox-wrap").forEach((w) => w.classList.add("hidden"));
+    container.querySelectorAll(".tl-checkbox-wrap").forEach((w) => { w.classList.add("hidden"); w.classList.remove("flex"); });
     container.querySelectorAll(".tl-checkbox").forEach((cb) => { cb.checked = false; });
   }
 
@@ -88,7 +88,7 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
     row.className =
       "group flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer";
     row.innerHTML = `
-      <div class="tl-checkbox-wrap hidden flex-shrink-0 w-5 flex items-center justify-center">
+      <div class="tl-checkbox-wrap hidden flex-shrink-0 w-5 items-center justify-center">
         <input type="checkbox" class="tl-checkbox w-4 h-4 rounded accent-peel-accent cursor-pointer">
       </div>
       <div class="relative w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-peel-surface">
