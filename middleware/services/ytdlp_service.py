@@ -57,6 +57,27 @@ def _best_thumbnail(entry: dict) -> str | None:
     return entry.get("thumbnail")
 
 
+def get_stream_info(video_id: str) -> tuple[str, dict]:
+    """Return (url, http_headers) for the best audio stream — no download."""
+    opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "noconfig": True,
+        "format": "bestaudio[ext=m4a]/bestaudio",
+        "noplaylist": True,
+        **_cookies_opts(),
+    }
+    url = f"https://www.youtube.com/watch?v={video_id}"
+    with YoutubeDL(opts) as ydl:
+        info = ydl.extract_info(url, download=False)
+    if not info:
+        raise RuntimeError("yt-dlp returned no info")
+    # Prefer the selected format's URL
+    formats = info.get("requested_formats") or [info]
+    fmt = formats[0]
+    return fmt["url"], fmt.get("http_headers", {})
+
+
 def download(video_id: str, artist: str, title: str) -> str:
     """Download bestaudio in its native container. Returns the absolute file path."""
     artist_dir = Path(MUSIC_DIR) / _sanitize(artist)

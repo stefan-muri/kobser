@@ -13,20 +13,22 @@ export function render(container, onSuccess) {
         <div class="bg-peel-surface rounded-2xl p-8 border border-white/5 shadow-2xl">
           <h2 class="text-xl font-semibold mb-6">Sign in</h2>
           <div id="login-error" class="hidden mb-4 p-3 rounded-xl bg-red-500/10 text-red-400 text-sm"></div>
-          <label class="block mb-4">
-            <span class="block text-sm text-peel-muted mb-1.5 font-medium">Username</span>
-            <input type="text" id="login-user" autocomplete="username" placeholder="admin"
-                   class="w-full bg-peel-bg text-peel-text placeholder-peel-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-peel-accent/50 transition-all border border-white/10">
-          </label>
-          <label class="block mb-6">
-            <span class="block text-sm text-peel-muted mb-1.5 font-medium">Password</span>
-            <input type="password" id="login-pass" autocomplete="current-password"
-                   class="w-full bg-peel-bg text-peel-text placeholder-peel-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-peel-accent/50 transition-all border border-white/10">
-          </label>
-          <button id="login-btn"
-                  class="w-full py-3 bg-peel-accent hover:bg-peel-accentHover text-peel-bg font-semibold rounded-xl transition-colors">
-            Sign in
-          </button>
+          <form id="login-form" onsubmit="return false">
+            <label class="block mb-4">
+              <span class="block text-sm text-peel-muted mb-1.5 font-medium">Username</span>
+              <input type="text" id="login-user" autocomplete="username" placeholder="admin"
+                     class="w-full bg-peel-bg text-peel-text placeholder-peel-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-peel-accent/50 transition-all border border-white/10">
+            </label>
+            <label class="block mb-6">
+              <span class="block text-sm text-peel-muted mb-1.5 font-medium">Password</span>
+              <input type="password" id="login-pass" autocomplete="current-password"
+                     class="w-full bg-peel-bg text-peel-text placeholder-peel-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-peel-accent/50 transition-all border border-white/10">
+            </label>
+            <button id="login-btn" type="submit"
+                    class="w-full py-3 bg-peel-accent hover:bg-peel-accentHover text-peel-bg font-semibold rounded-xl transition-colors">
+              Sign in
+            </button>
+          </form>
         </div>
         <p class="text-center text-sm text-peel-muted mt-6">Use your Navidrome credentials</p>
       </div>
@@ -61,10 +63,7 @@ export function render(container, onSuccess) {
     }
   }
 
-  btn.addEventListener("click", doLogin);
-  passInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") doLogin();
-  });
+  container.querySelector("#login-form").addEventListener("submit", doLogin);
   userInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") passInput.focus();
   });

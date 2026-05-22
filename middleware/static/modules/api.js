@@ -86,6 +86,10 @@ export function streamUrl(trackId) {
   return `/api/stream/${encodeURIComponent(trackId)}?session=${encodeURIComponent(sessionId())}`;
 }
 
+export function previewUrl(videoId) {
+  return `/api/preview/${encodeURIComponent(videoId)}?session=${encodeURIComponent(sessionId())}`;
+}
+
 export function coverArtUrl(coverArtId, size = 300) {
   if (!coverArtId) return "";
   const qs = new URLSearchParams({

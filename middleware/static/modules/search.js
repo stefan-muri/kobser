@@ -1,4 +1,5 @@
-import { search as searchApi, download as downloadApi } from "./api.js";
+import { search as searchApi, download as downloadApi, previewUrl } from "./api.js";
+import * as player from "./player.js";
 import { trackJob } from "./jobs.js";
 import { escapeHtml, fmtDuration } from "./util.js";
 
@@ -45,6 +46,16 @@ export function render(root) {
       out.innerHTML =
         lastResults.map(renderResult).join("") ||
         '<div class="flex flex-col items-center justify-center py-20 opacity-50"><i class="ph ph-magnifying-glass text-6xl mb-4"></i><p class="text-lg">No tracks found. Try a different search.</p></div>';
+
+      // Row click → preview
+      out.querySelectorAll(".search-row").forEach((row, i) => {
+        row.addEventListener("click", (e) => {
+          if (e.target.closest(".dl-btn")) return;
+          playPreview(lastResults[i]);
+        });
+      });
+
+      // Download button → dialog
       out.querySelectorAll("[data-vid]").forEach((el) => {
         el.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -65,11 +76,11 @@ export function render(root) {
 
 function renderResult(r) {
   return `
-    <div class="group flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-all w-full cursor-pointer">
+    <div class="search-row group flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-all w-full cursor-pointer">
       <div class="relative w-14 h-14 rounded-md overflow-hidden flex-shrink-0">
         <img src="${escapeHtml(r.thumbnail || "")}" alt="" class="w-full h-full object-cover" referrerpolicy="no-referrer" loading="lazy">
-        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-          <i class="ph-fill ph-play text-white text-xl"></i>
+        <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+          <i class="ph-fill ph-play text-white text-xl pointer-events-none"></i>
         </div>
       </div>
       <div class="flex-1 min-w-0 pr-4">
@@ -77,12 +88,27 @@ function renderResult(r) {
         <p class="text-sm text-peel-muted truncate">${escapeHtml(r.channel || "—")} · ${fmtDuration(r.duration)}</p>
       </div>
       <div class="flex items-center gap-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity pr-2">
-        <button class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors text-peel-muted hover:text-white" data-vid="${escapeHtml(r.videoId)}">
-          <i class="ph ph-download-simple text-xl"></i>
+        <button class="dl-btn w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors text-peel-muted hover:text-white"
+                data-vid="${escapeHtml(r.videoId)}" title="Download to library">
+          <i class="ph ph-download-simple text-xl pointer-events-none"></i>
         </button>
       </div>
     </div>
   `;
+}
+
+function playPreview(result) {
+  // Build a fake "track" so the player can show title/art and play the preview stream.
+  const fakeTrack = {
+    id: null,
+    title: result.title || "Unknown",
+    artist: result.channel || "YouTube",
+    coverArt: null,
+    _previewUrl: previewUrl(result.videoId),
+    _previewThumb: result.thumbnail || "",
+    duration: result.duration || 0,
+  };
+  player.playPreviewTrack(fakeTrack);
 }
 
 function openDialog(videoId) {

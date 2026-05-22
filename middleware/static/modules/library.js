@@ -107,21 +107,21 @@ async function refreshLibrary(list) {
 }
 
 async function fetchAllSongs() {
-  let r = await libApi("search3", {
-    query: "",
-    songCount: 500,
-    artistCount: 0,
-    albumCount: 0,
-  });
-  let songs = r.searchResult3?.song || [];
-  if (!songs.length) {
-    r = await libApi("search3", {
+  const all = [];
+  const pageSize = 500;
+  let offset = 0;
+  while (true) {
+    const r = await libApi("search3", {
       query: " ",
-      songCount: 500,
+      songCount: pageSize,
+      songOffset: offset,
       artistCount: 0,
       albumCount: 0,
     });
-    songs = r.searchResult3?.song || [];
+    const batch = r.searchResult3?.song || [];
+    all.push(...batch);
+    if (batch.length < pageSize) break;
+    offset += pageSize;
   }
-  return songs;
+  return all;
 }

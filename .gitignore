@@ -20,3 +20,7 @@ venv/
 .vscode/
 .idea/
 .DS_Store
+
+# Local notes (not committed)
+NOTES*.md
+notes/

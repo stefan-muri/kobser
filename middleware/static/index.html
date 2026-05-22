@@ -144,6 +144,81 @@
         </div>
     </div>
 
+    <!-- Expanded Now-Playing View -->
+    <div id="expanded-player"
+         class="fixed inset-0 z-[150] flex flex-col translate-y-full transition-transform duration-300 ease-in-out pointer-events-none">
+        <!-- Blurred album-art background -->
+        <div id="ep-bg" class="absolute inset-0 bg-peel-bg bg-cover bg-center scale-110"
+             style="filter:blur(48px) brightness(0.25)"></div>
+        <div class="absolute inset-0 bg-black/50"></div>
+
+        <!-- Content -->
+        <div class="relative flex flex-col h-full w-full max-w-lg mx-auto px-8" style="padding-top:env(safe-area-inset-top,0px)">
+
+            <!-- Top bar -->
+            <div class="flex items-center justify-between py-5 flex-shrink-0">
+                <button id="ep-close" class="w-10 h-10 flex items-center justify-center text-peel-muted hover:text-white transition-colors rounded-full hover:bg-white/10">
+                    <i class="ph ph-caret-down text-2xl"></i>
+                </button>
+                <p class="text-sm font-semibold tracking-wide text-peel-muted uppercase">Now Playing</p>
+                <button id="ep-dots" class="w-10 h-10 flex items-center justify-center text-peel-muted hover:text-white transition-colors rounded-full hover:bg-white/10">
+                    <i class="ph ph-dots-three-vertical text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Album art -->
+            <div class="flex-1 flex items-center justify-center py-4 min-h-0">
+                <img id="ep-cover" alt=""
+                     class="w-full max-w-xs aspect-square rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.6)] object-cover">
+            </div>
+
+            <!-- Track info + like -->
+            <div class="flex items-center gap-4 mt-6 mb-5 flex-shrink-0">
+                <div class="flex-1 min-w-0">
+                    <h2 id="ep-title" class="text-2xl font-bold truncate">—</h2>
+                    <p id="ep-artist" class="text-peel-muted mt-1 truncate">—</p>
+                </div>
+                <button id="ep-like" data-liked="false"
+                        class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors flex-shrink-0 text-peel-muted">
+                    <i class="ph ph-heart text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Progress -->
+            <div class="flex-shrink-0 mb-1">
+                <div id="ep-progress-container"
+                     class="w-full h-1.5 bg-white/15 rounded-full cursor-pointer group mb-2">
+                    <div id="ep-progress-bar"
+                         class="h-full bg-peel-accent rounded-full w-0 relative group-hover:bg-peel-accentHover transition-colors">
+                        <div class="absolute right-0 top-1/2 -translate-y-1/2 -mr-2 w-4 h-4 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between text-xs text-peel-muted">
+                    <span id="ep-current">0:00</span>
+                    <span id="ep-duration">0:00</span>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center justify-between flex-shrink-0 mt-6 mb-10">
+                <button id="ep-shuffle" class="w-11 h-11 flex items-center justify-center text-peel-muted hover:text-white transition-colors rounded-full hover:bg-white/10">
+                    <i class="ph ph-shuffle text-2xl"></i>
+                </button>
+                <button id="ep-prev" class="w-11 h-11 flex items-center justify-center text-peel-muted hover:text-white transition-colors">
+                    <i class="ph-fill ph-skip-back text-3xl"></i>
+                </button>
+                <button id="ep-toggle"
+                        class="w-16 h-16 rounded-full bg-white text-peel-bg flex items-center justify-center hover:scale-105 transition-transform shadow-xl">
+                    <i id="ep-play-icon" class="ph-fill ph-play text-2xl"></i>
+                </button>
+                <button id="ep-next" class="w-11 h-11 flex items-center justify-center text-peel-muted hover:text-white transition-colors">
+                    <i class="ph-fill ph-skip-forward text-3xl"></i>
+                </button>
+                <button id="ep-shuffle-placeholder" class="w-11 h-11"></button>
+            </div>
+        </div>
+    </div>
+
     <audio id="audio" preload="metadata"></audio>
 
     <!-- Download Dialog -->
