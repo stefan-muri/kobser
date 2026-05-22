@@ -82,6 +82,7 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
   }
 
   // Build rows
+  const rows = [];
   songs.forEach((s, i) => {
     const starred = allStarred || !!s.starred;
     const row = document.createElement("div");
@@ -170,7 +171,7 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
             if (!confirm(`Delete "${s.title}"? This cannot be undone.`)) return;
             try {
               await apiDeleteTrack(s.id);
-              onRefresh?.();
+              row.remove();
             } catch (err) {
               alert(`Delete failed: ${err.message}`);
             }
@@ -184,6 +185,7 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
       updateActionBar();
     });
 
+    rows.push(row);
     container.appendChild(row);
   });
 
@@ -219,11 +221,12 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
     const ids = getSelectedIds();
     if (!ids.length) return;
     if (!confirm(`Delete ${ids.length} track${ids.length > 1 ? "s" : ""}? This cannot be undone.`)) return;
-    for (const id of ids) {
-      try { await apiDeleteTrack(id); } catch { /* continue */ }
+    const indices = [...selected];
+    for (const idx of indices) {
+      try { await apiDeleteTrack(songs[idx].id); } catch { /* continue */ }
     }
     exitSelectMode();
-    onRefresh?.();
+    indices.forEach((idx) => rows[idx]?.remove());
   });
 }
 
