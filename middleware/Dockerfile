@@ -1,19 +1,13 @@
-# Stage 1: build static assets (Tailwind CSS + Phosphor Icons fonts)
+# Stage 1: build frontend (Vite + Svelte + Tailwind)
 FROM node:20-alpine AS assets
 WORKDIR /assets
 
-COPY package.json ./
+COPY frontend/package.json ./
 RUN npm install
 
-COPY tailwind.config.js tailwind.input.css ./
-COPY static/ static/
-
-# Compile Tailwind from source scanning all HTML/JS
-RUN npx tailwindcss -i tailwind.input.css -o static/dist/tailwind.css --minify
-
-# Copy Phosphor Icons CSS + fonts into the vendor directory
-RUN mkdir -p static/vendor/phosphor && \
-    cp -r node_modules/@phosphor-icons/web/src/. static/vendor/phosphor/
+COPY frontend/ ./frontend/
+RUN cd frontend && npm run build
+# frontend/dist/ now has index.html + assets/ (hashed JS/CSS bundles + bundled fonts)
 
 # Stage 2: Python runtime
 FROM python:3.12-slim
@@ -30,8 +24,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy Python source
 COPY . .
 
-# Overwrite static/ with the compiled version from the asset stage
-COPY --from=assets /assets/static/ ./static/
+# Overwrite static/ with the compiled frontend
+COPY --from=assets /assets/frontend/dist/ ./static/
 
 EXPOSE 8000
 

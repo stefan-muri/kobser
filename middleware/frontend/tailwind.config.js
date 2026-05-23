@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: ['./static/**/*.{html,js}'],
+export default {
+  content: ['./index.html', './src/**/*.{svelte,js}'],
   darkMode: 'class',
   theme: {
     extend: {

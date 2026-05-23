@@ -68,7 +68,6 @@ export const status = (jobId) =>
 export const rescan = () => call("/api/rescan", { method: "POST" });
 
 export async function library(subpath, params = {}) {
-  // Build query string with support for array-valued keys (e.g. songIdToAdd=[...]).
   const qs = Object.entries(params)
     .flatMap(([k, v]) =>
       Array.isArray(v) ? v.map((vi) => [k, String(vi)]) : [[k, String(v)]],

@@ -23,3 +23,18 @@
   display: inline-block;
   animation: marquee-scroll 9s ease-in-out infinite;
 }
+
+/* Layout */
+:root { --mob-nav-h: 60px; }
+
+@media (max-width: 767px) {
+  #mini-player {
+    bottom: calc(var(--mob-nav-h) + env(safe-area-inset-bottom, 0px));
+  }
+  #view {
+    padding-bottom: calc(var(--mob-nav-h) + env(safe-area-inset-bottom, 0px) + 8px);
+  }
+  body.player-visible #view {
+    padding-bottom: calc(var(--mob-nav-h) + env(safe-area-inset-bottom, 0px) + 90px + 8px);
+  }
+}
