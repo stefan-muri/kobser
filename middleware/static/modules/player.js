@@ -403,6 +403,16 @@ export function playPreviewTrack(track) {
   load();
 }
 
+export function playShuffled(tracks) {
+  if (!tracks.length) return;
+  const shuffled = [...tracks];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  playQueue(shuffled, 0);
+}
+
 function buildShuffleOrder(startIdx) {
   // Fisher-Yates shuffle of indices, keeping startIdx first
   const indices = queue.map((_, i) => i).filter((i) => i !== startIdx);

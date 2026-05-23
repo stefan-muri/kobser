@@ -73,26 +73,45 @@ async function loadArtists(list) {
       </div>`;
     return;
   }
-  list.innerHTML = `<div class="flex flex-col gap-1">${artists
-    .map(
-      (a) => `
-    <div class="group flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer"
-         data-id="${escapeHtml(a.id)}" data-name="${escapeHtml(a.name)}">
-      <img class="w-12 h-12 rounded-full object-cover flex-shrink-0 bg-peel-surface"
-           src="${escapeHtml(coverArtUrl(a.coverArt, 96))}" alt="" loading="lazy">
-      <div class="flex-1 min-w-0">
-        <p class="font-medium truncate">${escapeHtml(a.name)}</p>
-        <p class="text-sm text-peel-muted">${a.albumCount || 0} album${a.albumCount === 1 ? "" : "s"}</p>
-      </div>
-      <i class="ph ph-caret-right text-peel-muted opacity-0 group-hover:opacity-100 transition-opacity"></i>
-    </div>`,
-    )
-    .join("")}</div>`;
-  list.querySelectorAll("[data-id]").forEach((el) => {
-    el.addEventListener("click", () =>
-      push({ type: "artist", id: el.dataset.id, label: el.dataset.name })
-    );
-  });
+
+  list.innerHTML = `
+    <div class="relative mb-4">
+      <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-peel-muted"></i>
+      <input type="text" id="artists-search" placeholder="Search artists…"
+             class="w-full bg-peel-surface text-peel-text placeholder-peel-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-peel-accent/50 border border-white/10 text-sm">
+    </div>
+    <div id="artists-list" class="flex flex-col gap-1"></div>`;
+
+  function renderArtists(filter) {
+    const f = filter.toLowerCase();
+    const filtered = f ? artists.filter((a) => a.name.toLowerCase().includes(f)) : artists;
+    const container = list.querySelector("#artists-list");
+    if (!filtered.length) {
+      container.innerHTML = `<p class="text-center py-10 text-peel-muted text-sm">No artists match "${escapeHtml(filter)}"</p>`;
+      return;
+    }
+    container.innerHTML = filtered.map((a) => `
+      <div class="group flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer"
+           data-id="${escapeHtml(a.id)}" data-name="${escapeHtml(a.name)}">
+        <img class="w-12 h-12 rounded-full object-cover flex-shrink-0 bg-peel-surface"
+             src="${escapeHtml(coverArtUrl(a.coverArt, 96))}" alt="" loading="lazy">
+        <div class="flex-1 min-w-0">
+          <p class="font-medium truncate">${escapeHtml(a.name)}</p>
+          <p class="text-sm text-peel-muted">${a.albumCount || 0} album${a.albumCount === 1 ? "" : "s"}</p>
+        </div>
+        <i class="ph ph-caret-right text-peel-muted opacity-0 group-hover:opacity-100 transition-opacity"></i>
+      </div>`).join("");
+    container.querySelectorAll("[data-id]").forEach((el) => {
+      el.addEventListener("click", () =>
+        push({ type: "artist", id: el.dataset.id, label: el.dataset.name })
+      );
+    });
+  }
+
+  renderArtists("");
+  list.querySelector("#artists-search").addEventListener("input", (e) =>
+    renderArtists(e.target.value.trim())
+  );
 }
 
 async function loadArtist(list, artistId) {

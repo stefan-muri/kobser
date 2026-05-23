@@ -66,9 +66,14 @@ async function loadPlaylists(list) {
   const r = await libApi("getPlaylists");
   const items = r.playlists?.playlist || [];
   list.innerHTML = `
-    <div class="flex justify-end mb-4">
+    <div class="flex items-center gap-2 mb-4 flex-wrap">
+      <div class="relative flex-1 min-w-48">
+        <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-peel-muted"></i>
+        <input type="text" id="pl-search" placeholder="Search playlists…"
+               class="w-full bg-peel-surface text-peel-text placeholder-peel-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-peel-accent/50 border border-white/10 text-sm">
+      </div>
       <button id="create-playlist-btn"
-              class="flex items-center gap-2 px-4 py-2 bg-peel-accent hover:bg-peel-accentHover text-peel-bg text-sm font-semibold rounded-xl transition-colors">
+              class="flex items-center gap-2 px-4 py-2 bg-peel-accent hover:bg-peel-accentHover text-peel-bg text-sm font-semibold rounded-xl transition-colors flex-shrink-0">
         <i class="ph-bold ph-plus"></i> New playlist
       </button>
     </div>
@@ -102,6 +107,14 @@ async function loadPlaylists(list) {
   list.querySelector("#create-playlist-btn").addEventListener("click", () =>
     showCreateDialog(list)
   );
+
+  list.querySelector("#pl-search")?.addEventListener("input", (e) => {
+    const f = e.target.value.trim().toLowerCase();
+    list.querySelectorAll("#playlist-list > [data-id]").forEach((el) => {
+      const name = (el.dataset.name || "").toLowerCase();
+      el.style.display = f && !name.includes(f) ? "none" : "";
+    });
+  });
 
   list.querySelectorAll("[data-id]:not(.dots-btn)").forEach((el) => {
     el.addEventListener("click", () =>
