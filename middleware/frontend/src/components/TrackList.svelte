@@ -56,7 +56,10 @@
     selected = s;
   }
 
-  function enterSelectMode() { selectMode = true; selected = new Set(); }
+  function enterSelectMode(i = null) {
+    selectMode = true;
+    selected = i !== null ? new Set([i]) : new Set();
+  }
   function exitSelectMode() { selectMode = false; selected = new Set(); }
 
   function getSelectedIds() { return [...selected].map(i => songs[i].id); }
@@ -89,6 +92,7 @@
       { label: 'Add to queue', icon: 'ph ph-plus-circle', action: () => addToQueue(song) },
       { label: 'Add to playlist', icon: 'ph ph-music-notes-plus', action: () => showPlaylistPicker([song.id]) },
       { label: starred ? 'Unlike' : 'Like', icon: starred ? 'ph-fill ph-heart' : 'ph ph-heart', action: () => toggleStar(song) },
+      { label: 'Select', icon: 'ph ph-check-square', action: () => enterSelectMode(i) },
       ...(playlistId ? [{
         label: 'Remove from playlist', icon: 'ph ph-minus-circle',
         action: async () => { await libApi('updatePlaylist', { playlistId, songIndexToRemove: i }); onRefresh?.(); },
@@ -123,16 +127,6 @@
     });
   });
 </script>
-
-<!-- Header / Action bar -->
-<div class="flex items-center justify-end mb-2 px-1 gap-2 min-h-[36px]" class:hidden={selectMode}>
-  <button
-    on:click={enterSelectMode}
-    class="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-xs font-medium text-peel-muted transition-colors"
-  >
-    <i class="ph ph-check-square text-sm"></i> Select
-  </button>
-</div>
 
 {#if selectMode}
   <div class="flex items-center gap-2 pb-2 px-1 overflow-x-auto no-scrollbar flex-nowrap">
