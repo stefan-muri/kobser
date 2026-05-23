@@ -7,7 +7,7 @@ export async function render(root) {
   root.innerHTML = `
     <div class="w-full max-w-5xl mx-auto p-4 md:p-8">
       <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
-        <h2 class="text-3xl font-bold pl-1">Favorites</h2>
+        <h2 class="font-london text-3xl pl-1">Favorites</h2>
         <div class="flex items-center gap-2" id="fav-actions"></div>
       </div>
       <div class="mb-4" id="fav-search-wrap" style="display:none">

@@ -23,6 +23,7 @@ function removeQuery(q) {
 export function render(root) {
   root.innerHTML = `
     <div class="w-full max-w-5xl mx-auto p-4 md:p-8 animate-slide-up">
+      <h2 class="font-london text-3xl mb-6 pl-2">Search</h2>
       <div class="sticky top-0 bg-peel-bg/90 backdrop-blur-md pt-2 pb-6 z-10">
         <div class="relative w-full shadow-lg shadow-black/20 rounded-2xl flex gap-2">
           <div class="relative flex-1">

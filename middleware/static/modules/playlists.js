@@ -12,6 +12,7 @@ export function onShow() {
 export async function render(root) {
   root.innerHTML = `
     <div class="w-full max-w-5xl mx-auto p-4 md:p-8">
+      <h2 class="font-london text-3xl mb-6">Playlists</h2>
       <div id="lib-breadcrumb" class="flex items-center gap-2 text-sm text-peel-muted mb-6 flex-wrap min-h-[1.75rem]"></div>
       <div id="lib-list">
         <div class="flex items-center justify-center py-20 opacity-50">

@@ -10,7 +10,7 @@ export async function render(root) {
   root.innerHTML = `
     <div class="w-full max-w-5xl mx-auto p-4 md:p-8">
       <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-        <h2 class="text-3xl font-bold pl-1">Library</h2>
+        <h2 class="font-london text-3xl pl-1">Library</h2>
         <div class="flex items-center gap-2" id="lib-actions"></div>
       </div>
       <div class="flex items-center gap-2 mb-4 flex-wrap">

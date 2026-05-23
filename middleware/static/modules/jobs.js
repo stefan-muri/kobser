@@ -63,7 +63,7 @@ export function render(root) {
   viewRoot = root;
   root.innerHTML = `
     <div class="w-full max-w-3xl mx-auto p-4 md:p-8">
-      <h2 class="text-3xl font-bold mb-8 pl-2">Downloads</h2>
+      <h2 class="font-london text-3xl mb-8 pl-2">Downloads</h2>
       <div id="job-list"></div>
     </div>
   `;

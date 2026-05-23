@@ -6,6 +6,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        london: ['UnifrakturMaguntia', 'serif'],
       },
       colors: {
         peel: {
