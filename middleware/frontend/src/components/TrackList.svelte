@@ -87,7 +87,7 @@
     showContextMenu(e.currentTarget, [
       { label: 'Play', icon: 'ph ph-play', action: () => playQueue(songs, i) },
       { label: 'Add to queue', icon: 'ph ph-plus-circle', action: () => addToQueue(song) },
-      { label: 'Add to playlist', icon: 'ph ph-playlist-plus', action: () => showPlaylistPicker([song.id]) },
+      { label: 'Add to playlist', icon: 'ph ph-music-notes-plus', action: () => showPlaylistPicker([song.id]) },
       { label: starred ? 'Unlike' : 'Like', icon: starred ? 'ph-fill ph-heart' : 'ph ph-heart', action: () => toggleStar(song) },
       ...(playlistId ? [{
         label: 'Remove from playlist', icon: 'ph ph-minus-circle',
@@ -142,7 +142,7 @@
       disabled={selected.size === 0}
       class="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-medium transition-colors disabled:opacity-40"
     >
-      <i class="ph ph-playlist-plus text-sm"></i> Add to playlist
+      <i class="ph ph-music-notes-plus text-sm"></i> Add to playlist
     </button>
     {#if playlistId}
       <button

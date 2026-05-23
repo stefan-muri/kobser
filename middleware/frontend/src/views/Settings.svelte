@@ -30,6 +30,10 @@
     finally { statsLoading = false; }
   }
 
+  async function refreshAll() {
+    await Promise.all([checkStatus(), loadStats()]);
+  }
+
   checkStatus();
   loadStats();
 
@@ -96,15 +100,22 @@
       </div>
     </div>
 
-    <!-- Server Status -->
+    <!-- Server + System -->
     <div class="bg-peel-surface rounded-2xl p-6">
-      <h3 class="text-lg font-semibold mb-4 text-peel-accent">Server Status</h3>
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-semibold text-peel-accent">Server</h3>
+        <button on:click={refreshAll} class="flex items-center gap-1.5 text-sm text-peel-muted hover:text-peel-text transition-colors">
+          <i class="ph ph-arrows-clockwise"></i> Refresh
+        </button>
+      </div>
+
+      <!-- Navidrome connection -->
       {#if serverStatus === 'loading'}
-        <div class="flex items-center gap-2 text-sm text-peel-muted">
+        <div class="flex items-center gap-2 text-sm text-peel-muted mb-5">
           <i class="ph ph-circle-notch animate-spin-slow"></i> Checking…
         </div>
       {:else if serverStatus === 'ok'}
-        <div class="flex items-center gap-3 py-1">
+        <div class="flex items-center gap-3 py-1 mb-5">
           <div class="w-2.5 h-2.5 rounded-full bg-peel-success shadow-[0_0_8px_rgba(46,196,182,0.6)] flex-shrink-0"></div>
           <div>
             <p class="font-medium text-peel-text text-sm">Navidrome</p>
@@ -112,7 +123,7 @@
           </div>
         </div>
       {:else}
-        <div class="flex items-center gap-3 py-1">
+        <div class="flex items-center gap-3 py-1 mb-5">
           <div class="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0"></div>
           <div>
             <p class="font-medium text-peel-text text-sm">Navidrome</p>
@@ -120,55 +131,46 @@
           </div>
         </div>
       {/if}
-      <button on:click={checkStatus} class="mt-4 flex items-center gap-2 text-sm text-peel-muted hover:text-peel-text transition-colors">
-        <i class="ph ph-arrows-clockwise"></i> Refresh
-      </button>
-    </div>
 
-    <!-- System Stats -->
-    <div class="bg-peel-surface rounded-2xl p-6">
-      <div class="flex items-center justify-between mb-5">
-        <h3 class="text-lg font-semibold text-peel-accent">System</h3>
-        <button on:click={loadStats} class="flex items-center gap-1.5 text-sm text-peel-muted hover:text-peel-text transition-colors">
-          <i class="ph ph-arrows-clockwise"></i> Refresh
-        </button>
-      </div>
-      {#if statsLoading}
-        <div class="flex items-center gap-2 text-sm text-peel-muted"><i class="ph ph-circle-notch animate-spin-slow"></i> Loading…</div>
-      {:else if statsError}
-        <p class="text-sm text-red-400">Could not load stats: {statsError}</p>
-      {:else if stats}
-        <div class="flex flex-col gap-5">
-          {#each [diskBar, ramBar] as bar}
-            {#if bar}
-              <div>
-                <div class="flex items-center justify-between mb-1.5">
-                  <span class="flex items-center gap-1.5 text-sm font-medium">
-                    <i class="ph {bar.icon} text-peel-muted"></i> {bar.label}
-                  </span>
-                  <span class="text-sm font-semibold">{fmtBytes(bar.used)} / {fmtBytes(bar.total)}</span>
+      <!-- System stats -->
+      <div class="border-t border-white/5 pt-5">
+        {#if statsLoading}
+          <div class="flex items-center gap-2 text-sm text-peel-muted"><i class="ph ph-circle-notch animate-spin-slow"></i> Loading…</div>
+        {:else if statsError}
+          <p class="text-sm text-red-400">Could not load stats: {statsError}</p>
+        {:else if stats}
+          <div class="flex flex-col gap-5">
+            {#each [diskBar, ramBar] as bar}
+              {#if bar}
+                <div>
+                  <div class="flex items-center justify-between mb-1.5">
+                    <span class="flex items-center gap-1.5 text-sm font-medium">
+                      <i class="ph {bar.icon} text-peel-muted"></i> {bar.label}
+                    </span>
+                    <span class="text-sm font-semibold">{fmtBytes(bar.used)} / {fmtBytes(bar.total)}</span>
+                  </div>
+                  <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div class="h-full rounded-full transition-all {bar.color}" style:width="{bar.pct.toFixed(1)}%"></div>
+                  </div>
+                  <p class="text-xs text-peel-muted mt-1">{fmtBytes(bar.total - bar.used)} free</p>
                 </div>
-                <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                  <div class="h-full rounded-full transition-all {bar.color}" style:width="{bar.pct.toFixed(1)}%"></div>
-                </div>
-                <p class="text-xs text-peel-muted mt-1">{fmtBytes(bar.total - bar.used)} free</p>
+              {/if}
+            {/each}
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="flex items-center gap-1.5 text-sm font-medium">
+                  <i class="ph ph-activity text-peel-muted"></i> CPU
+                </span>
+                <span class="text-sm font-semibold">{stats.cpu_percent.toFixed(1)}%</span>
               </div>
-            {/if}
-          {/each}
-          <div>
-            <div class="flex items-center justify-between mb-1.5">
-              <span class="flex items-center gap-1.5 text-sm font-medium">
-                <i class="ph ph-activity text-peel-muted"></i> CPU
-              </span>
-              <span class="text-sm font-semibold">{stats.cpu_percent.toFixed(1)}%</span>
-            </div>
-            <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-              <div class="h-full rounded-full transition-all {stats.cpu_percent > 80 ? 'bg-red-400' : 'bg-peel-accent'}"
-                   style:width="{Math.min(stats.cpu_percent, 100).toFixed(1)}%"></div>
+              <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all {stats.cpu_percent > 80 ? 'bg-red-400' : 'bg-peel-accent'}"
+                     style:width="{Math.min(stats.cpu_percent, 100).toFixed(1)}%"></div>
+              </div>
             </div>
           </div>
-        </div>
-      {/if}
+        {/if}
+      </div>
     </div>
 
     <!-- Library Rescan -->

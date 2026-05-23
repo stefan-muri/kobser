@@ -253,7 +253,7 @@
   <div class="flex flex-col max-h-[80vh]">
   <div class="p-5 border-b border-white/10 flex-shrink-0">
     <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
-      <i class="ph-fill ph-playlist-plus text-peel-accent"></i>
+      <i class="ph-fill ph-music-notes-plus text-peel-accent"></i>
       Add songs to "{songPickerPlaylistName}"
     </h3>
     <input type="text" bind:value={spFilter} placeholder="Search by title or artist…"

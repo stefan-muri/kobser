@@ -27,7 +27,7 @@
   function openDots() {
     if (!track || preview) return;
     showContextMenu(dotsBtn, [
-      { label: 'Add to playlist', icon: 'ph ph-playlist-plus', action: () => showPlaylistPicker([track.id]) },
+      { label: 'Add to playlist', icon: 'ph ph-music-notes-plus', action: () => showPlaylistPicker([track.id]) },
       { label: liked ? 'Unlike' : 'Like', icon: liked ? 'ph-fill ph-heart' : 'ph ph-heart', action: () => toggleLike() },
       { label: 'View queue', icon: 'ph ph-list', action: () => queuePanelOpen.set(true) },
       null,

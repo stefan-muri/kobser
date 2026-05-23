@@ -49,7 +49,7 @@
   class="bg-peel-surface text-peel-text border border-white/10 rounded-2xl p-6 min-w-[320px] max-w-[90vw] shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm"
 >
   <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
-    <i class="ph-fill ph-playlist-plus text-peel-accent"></i>
+    <i class="ph-fill ph-music-notes-plus text-peel-accent"></i>
     Add to playlist
   </h3>
   {#if loading}
