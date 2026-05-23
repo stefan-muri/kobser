@@ -142,7 +142,7 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
         },
         {
           label: "Add to queue",
-          icon: "ph ph-list-plus",
+          icon: "ph ph-plus-circle",
           action: () => player.addToQueue(s),
         },
         {
