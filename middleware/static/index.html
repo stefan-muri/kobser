@@ -64,7 +64,7 @@
 
             <!-- Navigation -->
             <nav class="flex flex-col gap-1 flex-1 px-2" id="sidebar-nav">
-                <button data-view="search" id="nav-search" class="nav-btn flex items-center gap-4 px-3 py-3 rounded-xl text-peel-text bg-white/5 hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium min-w-0">
+                <button data-view="search" id="nav-search" class="nav-btn flex items-center gap-4 px-3 py-3 rounded-xl text-peel-muted hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium min-w-0">
                     <i class="ph ph-magnifying-glass text-2xl flex-shrink-0"></i>
                     <span class="sidebar-label whitespace-nowrap overflow-hidden transition-[opacity,max-width] duration-200">Search</span>
                 </button>
@@ -106,8 +106,8 @@
     <!-- Mobile Navigation Bar -->
     <nav id="mobile-nav" class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-peel-bg/95 backdrop-blur-md border-t border-white/5 user-select-none">
         <div class="flex items-stretch h-[60px]">
-            <button data-view="search" class="mob-nav-btn flex flex-col items-center justify-center gap-0.5 text-peel-accent flex-1">
-                <i class="ph-fill ph-magnifying-glass text-xl"></i>
+            <button data-view="search" class="mob-nav-btn flex flex-col items-center justify-center gap-0.5 text-peel-muted flex-1">
+                <i class="ph ph-magnifying-glass text-xl"></i>
                 <span class="text-[9px] font-medium">Search</span>
             </button>
             <button data-view="library" class="mob-nav-btn flex flex-col items-center justify-center gap-0.5 text-peel-muted flex-1">
@@ -188,18 +188,21 @@
             </button>
         </div>
 
-        <!-- Right: Like / Shuffle / Queue / Time (desktop only) -->
-        <div class="hidden md:flex items-center justify-end gap-3 w-52">
-            <button id="mp-like" data-liked="false" class="text-peel-muted hover:text-peel-accent transition-colors" title="Like">
+        <!-- Right: Like / Shuffle / Queue / Time (desktop only) + Close (always) -->
+        <div class="flex items-center justify-end gap-3 md:w-52">
+            <button id="mp-like" data-liked="false" class="hidden md:flex text-peel-muted hover:text-peel-accent transition-colors" title="Like">
                 <i class="ph ph-heart text-xl"></i>
             </button>
-            <button id="mp-shuffle" class="text-peel-muted hover:text-white transition-colors" title="Shuffle">
+            <button id="mp-shuffle" class="hidden md:flex text-peel-muted hover:text-white transition-colors" title="Shuffle">
                 <i class="ph ph-shuffle text-xl"></i>
             </button>
-            <button id="mp-queue-btn" class="text-peel-muted hover:text-white transition-colors" title="Queue">
+            <button id="mp-queue-btn" class="hidden md:flex text-peel-muted hover:text-white transition-colors" title="Queue">
                 <i class="ph ph-list text-xl"></i>
             </button>
-            <span id="mp-time" class="text-sm text-peel-muted tabular-nums">0:00 / 0:00</span>
+            <span id="mp-time" class="hidden md:inline text-sm text-peel-muted tabular-nums">0:00 / 0:00</span>
+            <button id="mp-close" class="text-peel-muted hover:text-white transition-colors flex-shrink-0" title="Close player">
+                <i class="ph ph-x text-xl"></i>
+            </button>
         </div>
     </div>
 
@@ -300,7 +303,7 @@
                        class="w-full bg-peel-bg text-peel-text placeholder-peel-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-peel-accent/50 transition-all border border-white/10">
             </label>
             <div class="flex gap-3 justify-end mt-6">
-                <button value="cancel" class="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors">Cancel</button>
+                <button value="cancel" formnovalidate class="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors">Cancel</button>
                 <button id="dl-confirm" value="ok" class="px-5 py-2.5 bg-peel-accent hover:bg-peel-accentHover text-peel-bg rounded-xl text-sm font-semibold transition-colors">Download</button>
             </div>
         </form>
@@ -320,8 +323,62 @@
     <!-- Queue panel backdrop -->
     <div id="queue-backdrop" class="fixed inset-0 z-[155] bg-black/40 hidden"></div>
 
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.js?v=2"></script>
     <script>
+      // Apply correct nav active state immediately from localStorage (no flash)
+      (function () {
+        var lastView = localStorage.getItem('peel:last-view') || 'search';
+        var MORE_VIEWS = ['liked', 'jobs', 'settings'];
+
+        // Desktop sidebar
+        var desktopBtn = document.getElementById('nav-' + lastView);
+        if (desktopBtn) {
+          desktopBtn.classList.remove('text-peel-muted');
+          desktopBtn.classList.add('text-peel-text', 'bg-white/5');
+        }
+
+        // Mobile nav
+        var moreBtn = document.getElementById('mob-nav-more');
+        if (MORE_VIEWS.indexOf(lastView) !== -1) {
+          if (moreBtn) { moreBtn.classList.remove('text-peel-muted'); moreBtn.classList.add('text-peel-accent'); }
+        } else {
+          document.querySelectorAll('.mob-nav-btn').forEach(function (btn) {
+            if (btn.dataset.view === lastView) {
+              btn.classList.remove('text-peel-muted');
+              btn.classList.add('text-peel-accent');
+              var icon = btn.querySelector('i');
+              if (icon) icon.className = icon.className.replace(/\bph\b(?!-)/, 'ph-fill');
+            }
+          });
+        }
+      })();
+
+      // More sheet — plain inline script, no module dependency
+      (function () {
+        var sheet = document.getElementById('more-sheet');
+        var backdrop = document.getElementById('more-sheet-backdrop');
+        if (!sheet || !backdrop) return;
+
+        function openSheet() {
+          sheet.classList.add('open');
+          backdrop.classList.add('open');
+        }
+        function closeSheet() {
+          sheet.classList.remove('open');
+          backdrop.classList.remove('open');
+        }
+
+        document.getElementById('mob-nav-more').addEventListener('click', openSheet);
+        backdrop.addEventListener('click', closeSheet);
+        document.querySelectorAll('.more-sheet-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            closeSheet();
+            if (typeof window.showView === 'function') window.showView(btn.dataset.view);
+          });
+        });
+      })();
+
+      // Sidebar collapse
       (function () {
         const sidebar = document.getElementById('sidebar');
         const toggle = document.getElementById('sidebar-toggle');

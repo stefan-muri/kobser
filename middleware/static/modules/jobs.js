@@ -1,4 +1,4 @@
-import { status as statusApi, listDownloads, deleteDownload as apiDeleteDownload } from "./api.js";
+import { status as statusApi, listDownloads, deleteDownload as apiDeleteDownload, cancelJob as apiCancelJob } from "./api.js";
 import { escapeHtml } from "./util.js";
 
 const activeJobs = [];   // in-memory: jobs being polled this session
@@ -98,7 +98,26 @@ function renderList(list) {
       }
     });
   });
+
+  list.querySelectorAll(".dl-cancel-btn").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      btn.disabled = true;
+      try {
+        await apiCancelJob(id);
+        const j = activeJobs.find((j) => j.id === id);
+        if (j) j.status = "cancelled";
+        rerender();
+      } catch (err) {
+        btn.disabled = false;
+        alert(`Cancel failed: ${err.message}`);
+      }
+    });
+  });
 }
+
+const ACTIVE_STATUSES = new Set(["pending", "downloading", "tagging", "scanning"]);
 
 function rowHtml(j) {
   const meta = [];
@@ -106,18 +125,24 @@ function rowHtml(j) {
   if (j.completed_at && j.started_at) meta.push(`took ${fmtDuration(j.completed_at - j.started_at)}`);
   if (j.file_size_bytes) meta.push(fmtBytes(j.file_size_bytes));
 
+  const isActive = ACTIVE_STATUSES.has(j.status);
+  const actionBtn = isActive
+    ? `<button class="dl-cancel-btn px-3 py-1 rounded-lg text-xs font-medium text-peel-muted hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+              data-id="${escapeHtml(j.id)}" title="Cancel">Cancel</button>`
+    : `<button class="dl-delete-btn w-8 h-8 rounded-full flex items-center justify-center text-peel-muted hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+              data-id="${escapeHtml(j.id)}" title="Remove">
+        <i class="ph ph-trash text-sm pointer-events-none"></i>
+      </button>`;
+
   return `
     <div class="flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-all border-b border-white/5">
       <div class="min-w-0 flex-1">
         <p class="font-medium truncate">${escapeHtml(j.artist)} — ${escapeHtml(j.title)}</p>
         ${meta.length ? `<p class="text-xs text-peel-muted mt-0.5">${meta.map(escapeHtml).join(" · ")}</p>` : ""}
-        ${j.error ? `<p class="text-xs text-red-400 mt-1 truncate"><i class="ph ph-warning mr-1"></i>${escapeHtml(j.error)}</p>` : ""}
+        ${j.error && j.status !== "cancelled" ? `<p class="text-xs text-red-400 mt-1 truncate"><i class="ph ph-warning mr-1"></i>${escapeHtml(j.error)}</p>` : ""}
       </div>
       <span class="text-xs font-semibold px-3 py-1.5 rounded-full capitalize whitespace-nowrap flex-shrink-0 ${statusClasses(j.status)}">${escapeHtml(j.status)}</span>
-      <button class="dl-delete-btn w-8 h-8 rounded-full flex items-center justify-center text-peel-muted hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
-              data-id="${escapeHtml(j.id)}" title="Remove">
-        <i class="ph ph-trash text-sm pointer-events-none"></i>
-      </button>
+      ${actionBtn}
     </div>
   `;
 }
@@ -125,7 +150,8 @@ function rowHtml(j) {
 function statusClasses(status) {
   switch (status) {
     case "done":     return "bg-peel-success/20 text-peel-success";
-    case "error":    return "bg-red-500/20 text-red-400";
+    case "error":      return "bg-red-500/20 text-red-400";
+    case "cancelled":  return "bg-white/10 text-peel-muted";
     case "downloading":
     case "tagging":
     case "scanning": return "bg-peel-accent/20 text-peel-accent";

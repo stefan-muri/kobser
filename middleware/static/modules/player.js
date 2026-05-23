@@ -10,6 +10,8 @@ let shuffleOn = false;
 let shuffledQueue = []; // indices into queue
 let shufflePos = -1;
 
+const LAST_TRACK_KEY = "peel:last-track";
+
 const $ = (id) => document.getElementById(id);
 
 // ── Expanded player ──────────────────────────────────────────────────────────
@@ -247,6 +249,65 @@ function renderQueuePanel() {
   });
 }
 
+// ── Persistence ──────────────────────────────────────────────────────────────
+
+function saveLastTrack() {
+  const track = queue[index];
+  if (!track || isPreview(track)) { localStorage.removeItem(LAST_TRACK_KEY); return; }
+  try {
+    localStorage.setItem(LAST_TRACK_KEY, JSON.stringify({ track, currentTime: audio?.currentTime ?? 0 }));
+  } catch {}
+}
+
+function closePlayer() {
+  audio.pause();
+  const miniPlayer = $("mini-player");
+  if (miniPlayer) { miniPlayer.classList.add("hidden"); miniPlayer.classList.remove("flex"); }
+  document.body.classList.remove("player-visible");
+  localStorage.removeItem(LAST_TRACK_KEY);
+}
+
+function restoreLastTrack() {
+  try {
+    const saved = localStorage.getItem(LAST_TRACK_KEY);
+    if (!saved) return;
+    const { track, currentTime } = JSON.parse(saved);
+    if (!track?.id) return;
+
+    queue = [track];
+    index = 0;
+
+    const coverEl = $("mp-cover");
+    if (coverEl) { coverEl.src = trackArtUrl(track, 96); coverEl.classList.toggle("hidden", !coverEl.src); }
+    const mpTitle = $("mp-title");
+    const mpArtist = $("mp-artist");
+    if (mpTitle) mpTitle.textContent = track.title || "—";
+    if (mpArtist) mpArtist.textContent = track.artist || "—";
+
+    const miniPlayer = $("mini-player");
+    if (miniPlayer) { miniPlayer.classList.remove("hidden"); miniPlayer.classList.add("flex"); }
+    document.body.classList.add("player-visible");
+
+    audio.src = streamUrl(track.id);
+    if (currentTime > 0) {
+      audio.addEventListener("loadedmetadata", () => {
+        audio.currentTime = Math.min(currentTime, (audio.duration || currentTime) - 1);
+      }, { once: true });
+    }
+
+    const likeBtn = $("mp-like");
+    if (likeBtn) { likeBtn.style.visibility = ""; updateLikeBtn(!!track.starred); }
+
+    const artUrl = trackArtUrl(track, 512);
+    const epCover = $("ep-cover"); if (epCover) epCover.src = artUrl;
+    const epBg = $("ep-bg"); if (epBg) epBg.style.backgroundImage = artUrl ? `url('${artUrl}')` : "";
+    const epTitle = $("ep-title"); if (epTitle) epTitle.textContent = track.title || "—";
+    const epArtist = $("ep-artist"); if (epArtist) epArtist.textContent = track.artist || "—";
+  } catch {
+    localStorage.removeItem(LAST_TRACK_KEY);
+  }
+}
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 
 export function init() {
@@ -349,6 +410,12 @@ export function init() {
   queueBtns.forEach((btn) => btn?.addEventListener("click", openQueue));
   $("queue-close")?.addEventListener("click", closeQueue);
   $("queue-backdrop")?.addEventListener("click", closeQueue);
+
+  $("mp-close")?.addEventListener("click", closePlayer);
+  audio.addEventListener("pause", saveLastTrack);
+  window.addEventListener("beforeunload", saveLastTrack);
+
+  restoreLastTrack();
 
   const epDots = $("ep-dots");
   if (epDots) {
@@ -520,6 +587,7 @@ function load() {
   const qp = $("queue-panel");
   if (qp && !qp.classList.contains("translate-x-full")) renderQueuePanel();
 
+  saveLastTrack();
   document.dispatchEvent(
     new CustomEvent("peel:track-change", { detail: { track, index } }),
   );

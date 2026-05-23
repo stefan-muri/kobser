@@ -6,8 +6,9 @@ from pydantic import BaseModel, Field
 
 import db as _db
 from auth import get_current_session
-from jobs import create_job, get_job, is_video_active, update_job
+from jobs import cancel_job, create_job, get_job, is_cancelled, is_video_active, update_job
 from services import navidrome_client, tagger_service, ytdlp_service
+from services.ytdlp_service import DownloadCancelled
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -53,16 +54,27 @@ async def _run_download(
     try:
         update_job(job_id, status="downloading")
         file_path = await to_thread.run_sync(
-            ytdlp_service.download, video_id, artist, title
+            lambda: ytdlp_service.download(
+                video_id, artist, title,
+                cancel_check=lambda: is_cancelled(job_id),
+            )
         )
+
+        if is_cancelled(job_id):
+            return
 
         update_job(job_id, status="tagging", file=file_path)
         await to_thread.run_sync(tagger_service.tag, file_path, artist, title)
+
+        if is_cancelled(job_id):
+            return
 
         update_job(job_id, status="scanning")
         await navidrome_client.trigger_scan_and_wait(username, password)
 
         update_job(job_id, status="done")
+    except DownloadCancelled:
+        pass  # cancel_job already set status; nothing more to do
     except Exception as e:
         log.exception("download job %s failed", job_id)
         update_job(job_id, status="error", error=str(e))
@@ -84,6 +96,13 @@ async def status(job_id: str):
 @router.post("/api/rescan")
 async def rescan(sess: dict = Depends(get_current_session)):
     await navidrome_client.trigger_scan_and_wait(sess["username"], sess["password"])
+    return {"ok": True}
+
+
+@router.post("/api/jobs/{job_id}/cancel", dependencies=[Depends(get_current_session)])
+def cancel_job_endpoint(job_id: str):
+    if not cancel_job(job_id):
+        raise HTTPException(status_code=404, detail="job not found or already finished")
     return {"ok": True}
 
 

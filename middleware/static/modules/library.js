@@ -92,12 +92,13 @@ export async function render(root) {
 }
 
 const SORT_OPTIONS = [
-  { key: "added-desc",   label: "Recently added" },
-  { key: "title-asc",    label: "A → Z" },
-  { key: "title-desc",   label: "Z → A" },
-  { key: "artist-asc",   label: "Artist" },
-  { key: "duration-asc", label: "Shortest" },
-  { key: "duration-desc",label: "Longest" },
+  { key: "added-desc", label: "Recently added" },
+  { key: "artist-asc", label: "Artist" },
+];
+
+const SORT_TOGGLES = [
+  { keys: ["title-asc",    "title-desc"],    labels: ["A → Z",   "Z → A"]  },
+  { keys: ["duration-asc", "duration-desc"], labels: ["Shortest", "Longest"] },
 ];
 
 function sortSongs(songs) {
@@ -115,17 +116,44 @@ function sortSongs(songs) {
 
 function buildSortBar(root, list, currentSongs) {
   const bar = root.querySelector("#sort-bar");
-  bar.innerHTML = SORT_OPTIONS.map((o) =>
+
+  const regularBtns = SORT_OPTIONS.map((o) =>
     `<button class="sort-btn flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
       sortKey === o.key
         ? "bg-peel-accent text-peel-bg"
         : "bg-white/5 text-peel-muted hover:bg-white/10 hover:text-peel-text"
     }" data-key="${o.key}">${o.label}</button>`
-  ).join("");
+  );
+
+  const toggleBtns = SORT_TOGGLES.map((t) => {
+    const activeIdx = t.keys.indexOf(sortKey);
+    const isActive = activeIdx !== -1;
+    const label = isActive ? t.labels[activeIdx] : t.labels[0];
+    const caret = isActive
+      ? `<i class="ph ${activeIdx === 0 ? "ph-caret-up" : "ph-caret-down"} text-[9px] ml-0.5"></i>`
+      : "";
+    return `<button class="sort-toggle-btn flex-shrink-0 flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+      isActive
+        ? "bg-peel-accent text-peel-bg"
+        : "bg-white/5 text-peel-muted hover:bg-white/10 hover:text-peel-text"
+    }" data-keys="${t.keys.join(",")}">${label}${caret}</button>`;
+  });
+
+  bar.innerHTML = [...regularBtns, ...toggleBtns].join("");
 
   bar.querySelectorAll(".sort-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       sortKey = btn.dataset.key;
+      buildSortBar(root, list, currentSongs);
+      applySortAndRender(list, currentSongs);
+    });
+  });
+
+  bar.querySelectorAll(".sort-toggle-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const keys = btn.dataset.keys.split(",");
+      const activeIdx = keys.indexOf(sortKey);
+      sortKey = activeIdx === -1 ? keys[0] : keys[(activeIdx + 1) % keys.length];
       buildSortBar(root, list, currentSongs);
       applySortAndRender(list, currentSongs);
     });

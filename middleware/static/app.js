@@ -14,6 +14,8 @@ const views = { search, library, liked, artists, playlists, jobs, settings };
 // Views that live in the "More" sheet (not primary mobile nav tabs)
 const MORE_VIEWS = new Set(["liked", "jobs", "settings"]);
 
+const LAST_VIEW_KEY = "peel:last-view";
+
 export function showView(name) {
   const root = document.getElementById("view");
   root.innerHTML = "";
@@ -58,6 +60,7 @@ export function showView(name) {
     }
   }
 
+  localStorage.setItem(LAST_VIEW_KEY, name);
   views[name].onShow?.();
   views[name].render(root);
 }
@@ -88,19 +91,10 @@ function initApp() {
     btn.addEventListener("click", () => showView(btn.dataset.view));
   });
 
-  // More button toggles bottom sheet
-  document.getElementById("mob-nav-more")?.addEventListener("click", openMoreSheet);
-  document.getElementById("more-sheet-backdrop")?.addEventListener("click", closeMoreSheet);
+  window.showView = showView;
 
-  // More sheet items navigate and close the sheet
-  document.querySelectorAll(".more-sheet-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      closeMoreSheet();
-      showView(btn.dataset.view);
-    });
-  });
-
-  showView("search");
+  const lastView = localStorage.getItem(LAST_VIEW_KEY);
+  showView(lastView && views[lastView] ? lastView : "search");
 }
 
 function showLogin() {

@@ -7,7 +7,7 @@ from typing import Literal
 
 import db as _db
 
-JobStatus = Literal["pending", "downloading", "tagging", "scanning", "done", "error"]
+JobStatus = Literal["pending", "downloading", "tagging", "scanning", "done", "error", "cancelled"]
 
 
 @dataclass
@@ -24,6 +24,7 @@ class Job:
 
 _jobs: dict[str, Job] = {}
 _active_video_ids: set[str] = set()
+_cancelled: set[str] = set()
 _lock = Lock()
 
 
@@ -46,14 +47,37 @@ def get_job(job_id: str) -> Job | None:
         return _jobs.get(job_id)
 
 
+def is_cancelled(job_id: str) -> bool:
+    return job_id in _cancelled
+
+
+def cancel_job(job_id: str) -> bool:
+    with _lock:
+        job = _jobs.get(job_id)
+        if job is None or job.status in ("done", "error", "cancelled"):
+            return False
+        _cancelled.add(job_id)
+        job.status = "cancelled"
+        _active_video_ids.discard(job.video_id)
+        snap = (job.job_id, job.video_id, job.artist, job.title, job.started_at)
+    jid, vid, art, tit, sat = snap
+    _db.upsert_download(jid, vid, art, tit, "cancelled",
+                        error="Cancelled by user", started_at=sat,
+                        completed_at=int(time.time()))
+    return True
+
+
 def update_job(job_id: str, **fields) -> None:
     with _lock:
         job = _jobs.get(job_id)
         if job is None:
             return
+        # Don't override a user cancellation with a late status update
+        if job.status == "cancelled":
+            return
         for k, v in fields.items():
             setattr(job, k, v)
-        if job.status in ("done", "error"):
+        if job.status in ("done", "error", "cancelled"):
             _active_video_ids.discard(job.video_id)
         snap = (job.job_id, job.video_id, job.artist, job.title,
                 job.status, job.error, job.file, job.started_at)

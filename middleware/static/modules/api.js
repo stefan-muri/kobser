@@ -87,6 +87,9 @@ export const listDownloads = () => call("/api/downloads");
 export const deleteDownload = (jobId) =>
   call(`/api/downloads/${encodeURIComponent(jobId)}`, { method: "DELETE" });
 
+export const cancelJob = (jobId) =>
+  call(`/api/jobs/${encodeURIComponent(jobId)}/cancel`, { method: "POST" });
+
 export const getStats = () => call("/api/stats");
 
 export function streamUrl(trackId) {

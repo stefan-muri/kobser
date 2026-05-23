@@ -138,7 +138,6 @@ export function render(root) {
 
   btn.addEventListener("click", go);
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
-  input.focus();
 }
 
 function renderResult(r) {

@@ -1,6 +1,10 @@
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
+
+
+class DownloadCancelled(Exception):
+    pass
 
 from yt_dlp import YoutubeDL
 
@@ -78,13 +82,18 @@ def get_stream_info(video_id: str) -> tuple[str, dict]:
     return fmt["url"], fmt.get("http_headers", {})
 
 
-def download(video_id: str, artist: str, title: str) -> str:
+def download(video_id: str, artist: str, title: str,
+             cancel_check: Callable[[], bool] | None = None) -> str:
     """Download bestaudio in its native container. Returns the absolute file path."""
     artist_dir = Path(MUSIC_DIR) / _sanitize(artist)
     artist_dir.mkdir(parents=True, exist_ok=True)
 
     filename_stem = _sanitize(f"{artist} - {title}")
     outtmpl = str(artist_dir / f"{filename_stem}.%(ext)s")
+
+    def _progress_hook(d):
+        if cancel_check and cancel_check():
+            raise DownloadCancelled("cancelled by user")
 
     opts = {
         "quiet": True,
@@ -109,6 +118,7 @@ def download(video_id: str, artist: str, title: str) -> str:
             },
         ],
         "writethumbnail": True,
+        "progress_hooks": [_progress_hook],
         **_cookies_opts(),
     }
 
