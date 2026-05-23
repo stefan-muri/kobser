@@ -154,11 +154,13 @@ function renderQueuePanel() {
           <p class="text-[10px] font-semibold text-peel-muted uppercase tracking-widest">Up Next</p>
           <button id="queue-clear-btn" class="text-xs text-peel-muted hover:text-red-400 transition-colors">Clear</button>
         </div>
-        <div class="flex flex-col gap-0.5">
+        <div class="flex flex-col gap-0.5" id="queue-upcoming-list">
           ${upcoming.map((t, i) => {
             const qIdx = index + 1 + i;
             return `
-              <div class="queue-row flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 group cursor-pointer" data-qidx="${qIdx}">
+              <div class="queue-row flex items-center gap-2 p-2 rounded-xl hover:bg-white/5 group cursor-pointer transition-colors"
+                   draggable="true" data-qidx="${qIdx}">
+                <i class="ph ph-dots-six-vertical text-peel-muted text-lg flex-shrink-0 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></i>
                 <img src="${escapeHtml(trackArtUrl(t, 64))}" alt=""
                      class="w-10 h-10 rounded-md object-cover flex-shrink-0 bg-peel-bg pointer-events-none">
                 <div class="flex-1 min-w-0 pointer-events-none">
@@ -188,18 +190,59 @@ function renderQueuePanel() {
     renderQueuePanel();
   });
 
-  list.querySelectorAll(".queue-remove-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      removeFromQueue(parseInt(btn.dataset.qidx));
-    });
-  });
+  // ── Drag-to-reorder ───────────────────────────────────────────────────────
+  let dragSrcQIdx = null;
 
   list.querySelectorAll(".queue-row").forEach((row) => {
+    const qIdx = parseInt(row.dataset.qidx);
+
     row.addEventListener("click", (e) => {
       if (e.target.closest(".queue-remove-btn")) return;
-      index = parseInt(row.dataset.qidx);
+      index = qIdx;
       load();
+    });
+
+    row.querySelector(".queue-remove-btn")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      removeFromQueue(qIdx);
+    });
+
+    row.addEventListener("dragstart", (e) => {
+      dragSrcQIdx = qIdx;
+      e.dataTransfer.effectAllowed = "move";
+      // Delay so the browser snapshot doesn't show the dimmed state
+      requestAnimationFrame(() => row.style.opacity = "0.4");
+    });
+
+    row.addEventListener("dragend", () => {
+      dragSrcQIdx = null;
+      row.style.opacity = "";
+      list.querySelectorAll(".queue-row").forEach((r) => r.style.borderTop = "");
+    });
+
+    row.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      // Show insertion line above the hovered row
+      list.querySelectorAll(".queue-row").forEach((r) => r.style.borderTop = "");
+      if (dragSrcQIdx !== null && dragSrcQIdx !== qIdx) {
+        row.style.borderTop = "2px solid var(--color-peel-accent, #ff9f1c)";
+      }
+    });
+
+    row.addEventListener("dragleave", () => {
+      row.style.borderTop = "";
+    });
+
+    row.addEventListener("drop", (e) => {
+      e.preventDefault();
+      row.style.borderTop = "";
+      if (dragSrcQIdx === null || dragSrcQIdx === qIdx) return;
+      const dragged = queue.splice(dragSrcQIdx, 1)[0];
+      // After removal, adjust target index if dragged was before it
+      const insertAt = dragSrcQIdx < qIdx ? qIdx - 1 : qIdx;
+      queue.splice(insertAt, 0, dragged);
+      renderQueuePanel();
     });
   });
 }
