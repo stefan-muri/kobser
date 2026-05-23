@@ -66,18 +66,16 @@ function openMoreSheet() {
   const sheet = document.getElementById("more-sheet");
   const backdrop = document.getElementById("more-sheet-backdrop");
   if (!sheet || !backdrop) return;
-  sheet.classList.remove("translate-y-full");
-  backdrop.classList.remove("opacity-0", "pointer-events-none");
-  backdrop.classList.add("opacity-100");
+  sheet.classList.add("open");
+  backdrop.classList.add("open");
 }
 
 function closeMoreSheet() {
   const sheet = document.getElementById("more-sheet");
   const backdrop = document.getElementById("more-sheet-backdrop");
   if (!sheet || !backdrop) return;
-  sheet.classList.add("translate-y-full");
-  backdrop.classList.remove("opacity-100");
-  backdrop.classList.add("opacity-0", "pointer-events-none");
+  sheet.classList.remove("open");
+  backdrop.classList.remove("open");
 }
 
 function initApp() {

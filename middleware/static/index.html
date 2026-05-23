@@ -37,6 +37,12 @@
           padding-bottom: calc(var(--mob-nav-h) + env(safe-area-inset-bottom, 0px) + 90px + 8px);
         }
       }
+
+      /* More sheet — plain CSS so Tailwind purge can't break it */
+      #more-sheet { transform: translateY(100%); transition: transform 0.3s ease; }
+      #more-sheet.open { transform: translateY(0); }
+      #more-sheet-backdrop { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+      #more-sheet-backdrop.open { opacity: 1; pointer-events: auto; }
     </style>
 </head>
 <body class="bg-peel-bg text-peel-text font-sans h-screen w-full overflow-hidden flex flex-col selection:bg-peel-accent selection:text-white antialiased">
@@ -124,7 +130,7 @@
     </nav>
 
     <!-- More Bottom Sheet -->
-    <div id="more-sheet" class="md:hidden fixed inset-x-0 bottom-0 z-[46] bg-peel-surface rounded-t-3xl border-t border-white/10 shadow-2xl transition-transform duration-300 translate-y-full"
+    <div id="more-sheet" class="md:hidden fixed inset-x-0 bottom-0 z-[46] bg-peel-surface rounded-t-3xl border-t border-white/10 shadow-2xl"
          style="padding-bottom: env(safe-area-inset-bottom, 0px)">
         <div class="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3 mb-1"></div>
         <div class="px-3 pb-3">
@@ -148,7 +154,7 @@
             </button>
         </div>
     </div>
-    <div id="more-sheet-backdrop" class="md:hidden fixed inset-0 z-[45] bg-black/60 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+    <div id="more-sheet-backdrop" class="md:hidden fixed inset-0 z-[45] bg-black/60"></div>
 
     <!-- Player Bar (Fixed Bottom) -->
     <div id="mini-player" class="fixed bottom-0 w-full h-[90px] bg-peel-surface border-t border-white/5 z-50 items-center px-4 md:px-6 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] user-select-none hidden">
