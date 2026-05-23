@@ -7,8 +7,10 @@
   let playlists = [];
   let loading = false;
 
-  $: if ($playlistPickerState.open && dialogEl) {
-    load().then(() => dialogEl.showModal());
+  $: if ($playlistPickerState.open) {
+    if (dialogEl && !dialogEl.open) {
+      load().then(() => { if (dialogEl && !dialogEl.open) dialogEl.showModal(); });
+    }
   }
 
   async function load() {

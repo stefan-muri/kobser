@@ -42,7 +42,7 @@
       <i class="ph-fill ph-vinyl-record text-xl"></i>
     </button>
     <h1
-      class="text-2xl font-bold tracking-tight whitespace-nowrap overflow-hidden"
+      class="font-london text-2xl whitespace-nowrap overflow-hidden"
       style:opacity={collapsed ? '0' : '1'}
       style:max-width={collapsed ? '0' : '200px'}
       style:transition={mounted ? 'opacity 200ms, max-width 200ms' : 'none'}

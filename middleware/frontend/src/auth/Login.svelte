@@ -31,10 +31,10 @@
       <div class="w-10 h-10 rounded-full bg-peel-accent flex items-center justify-center text-peel-bg shadow-[0_0_20px_rgba(255,159,28,0.5)]">
         <i class="ph-fill ph-vinyl-record text-2xl"></i>
       </div>
-      <h1 class="text-3xl font-bold tracking-tight">peel</h1>
+      <h1 class="font-london text-3xl text-peel-text">peel</h1>
     </div>
     <div class="bg-peel-surface rounded-2xl p-8 border border-white/5 shadow-2xl">
-      <h2 class="text-xl font-semibold mb-6">Sign in</h2>
+      <h2 class="text-xl font-semibold mb-6 text-peel-text">Sign in</h2>
       {#if error}
         <div class="mb-4 p-3 rounded-xl bg-red-500/10 text-red-400 text-sm">{error}</div>
       {/if}
@@ -45,7 +45,7 @@
             type="text"
             bind:value={username}
             autocomplete="username"
-            placeholder="admin"
+            placeholder="Username"
             autofocus
             on:keydown={e => { if (e.key === 'Enter') passEl?.focus(); }}
             class="w-full bg-peel-bg text-peel-text placeholder-peel-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-peel-accent/50 transition-all border border-white/10"

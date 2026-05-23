@@ -71,22 +71,10 @@
 </script>
 
 <div class="w-full max-w-5xl mx-auto p-4 md:p-8">
-  <div class="flex items-center justify-between mb-4 flex-wrap gap-3">
-    <h2 class="font-london text-3xl pl-1">Library</h2>
-    {#if sorted.length}
-      <div class="flex items-center gap-2">
-        <button on:click={() => playQueue(sorted, 0)} class="flex items-center gap-1.5 px-4 py-2 bg-peel-accent hover:bg-peel-accentHover text-peel-bg text-sm font-semibold rounded-xl transition-colors">
-          <i class="ph-fill ph-play text-sm"></i> Play all
-        </button>
-        <button on:click={() => playShuffled(sorted)} class="flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 text-sm font-medium rounded-xl transition-colors">
-          <i class="ph ph-shuffle text-sm"></i> Shuffle
-        </button>
-      </div>
-    {/if}
-  </div>
+  <h2 class="font-london text-3xl pl-1 mb-4">Library</h2>
 
-  <div class="flex items-center gap-2 mb-4 flex-wrap">
-    <div class="relative flex-1 min-w-48">
+  <div class="flex items-center gap-2 mb-3">
+    <div class="relative flex-1 min-w-0">
       <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-peel-muted"></i>
       <input
         type="text"
@@ -95,27 +83,36 @@
         class="w-full bg-peel-surface text-peel-text placeholder-peel-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-peel-accent/50 border border-white/10 text-sm"
       >
     </div>
-    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar flex-shrink-0 pb-1 -mb-1">
-      {#each SORT_OPTIONS as opt}
-        <button
-          on:click={() => setSortKey(opt.key)}
-          class="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {sortKey === opt.key ? 'bg-peel-accent text-peel-bg' : 'bg-white/5 text-peel-muted hover:bg-white/10 hover:text-peel-text'}"
-        >{opt.label}</button>
-      {/each}
-      {#each SORT_TOGGLES as tog}
-        {@const activeIdx = tog.keys.indexOf(sortKey)}
-        {@const isActive = activeIdx !== -1}
-        <button
-          on:click={() => toggleSort(tog.keys)}
-          class="flex-shrink-0 flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {isActive ? 'bg-peel-accent text-peel-bg' : 'bg-white/5 text-peel-muted hover:bg-white/10 hover:text-peel-text'}"
-        >
-          {isActive ? tog.labels[activeIdx] : tog.labels[0]}
-          {#if isActive}
-            <i class="ph {activeIdx === 0 ? 'ph-caret-up' : 'ph-caret-down'} text-[9px] ml-0.5"></i>
-          {/if}
-        </button>
-      {/each}
-    </div>
+    {#if sorted.length}
+      <button on:click={() => playQueue(sorted, 0)} class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 bg-peel-accent hover:bg-peel-accentHover text-peel-bg text-sm font-semibold rounded-xl transition-colors">
+        <i class="ph-fill ph-play text-sm"></i> Play all
+      </button>
+      <button on:click={() => playShuffled(sorted)} class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 text-sm font-medium rounded-xl transition-colors">
+        <i class="ph ph-shuffle text-sm"></i> Shuffle
+      </button>
+    {/if}
+  </div>
+
+  <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 mb-3">
+    {#each SORT_OPTIONS as opt}
+      <button
+        on:click={() => setSortKey(opt.key)}
+        class="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {sortKey === opt.key ? 'bg-peel-accent text-peel-bg' : 'bg-white/5 text-peel-muted hover:bg-white/10 hover:text-peel-text'}"
+      >{opt.label}</button>
+    {/each}
+    {#each SORT_TOGGLES as tog}
+      {@const activeIdx = tog.keys.indexOf(sortKey)}
+      {@const isActive = activeIdx !== -1}
+      <button
+        on:click={() => toggleSort(tog.keys)}
+        class="flex-shrink-0 flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {isActive ? 'bg-peel-accent text-peel-bg' : 'bg-white/5 text-peel-muted hover:bg-white/10 hover:text-peel-text'}"
+      >
+        {isActive ? tog.labels[activeIdx] : tog.labels[0]}
+        {#if isActive}
+          <i class="ph {activeIdx === 0 ? 'ph-caret-up' : 'ph-caret-down'} text-[9px] ml-0.5"></i>
+        {/if}
+      </button>
+    {/each}
   </div>
 
   {#if loading}

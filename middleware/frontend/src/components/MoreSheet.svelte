@@ -18,14 +18,14 @@
 {#if $moreSheetOpen}
   <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
   <div
-    class="md:hidden fixed inset-0 z-[45] bg-black/60 transition-opacity"
+    class="md:hidden fixed inset-0 z-[55] bg-black/60 transition-opacity"
     on:click={() => moreSheetOpen.set(false)}
   ></div>
 {/if}
 
 <!-- Sheet -->
 <div
-  class="md:hidden fixed inset-x-0 bottom-0 z-[46] bg-peel-surface rounded-t-3xl border-t border-white/10 shadow-2xl transition-transform duration-300"
+  class="md:hidden fixed inset-x-0 bottom-0 z-[56] bg-peel-surface rounded-t-3xl border-t border-white/10 shadow-2xl transition-transform duration-300"
   style:transform={$moreSheetOpen ? 'translateY(0)' : 'translateY(100%)'}
   style="padding-bottom: env(safe-area-inset-bottom, 0px)"
 >

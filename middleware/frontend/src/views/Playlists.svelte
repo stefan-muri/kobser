@@ -249,8 +249,8 @@
 
 <!-- Song picker dialog -->
 <dialog bind:this={spDialogEl} on:close={() => { songPickerOpen = false; }}
-  class="bg-peel-surface text-peel-text border border-white/10 rounded-2xl p-0 w-[90vw] max-w-lg shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm flex flex-col overflow-hidden"
-  style="max-height: 80vh">
+  class="bg-peel-surface text-peel-text border border-white/10 rounded-2xl p-0 w-[90vw] max-w-lg shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm overflow-hidden">
+  <div class="flex flex-col max-h-[80vh]">
   <div class="p-5 border-b border-white/10 flex-shrink-0">
     <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
       <i class="ph-fill ph-playlist-plus text-peel-accent"></i>
@@ -287,5 +287,6 @@
         {spSelected.size ? `Add ${spSelected.size} song${spSelected.size !== 1 ? 's' : ''}` : 'Add'}
       </button>
     </div>
+  </div>
   </div>
 </dialog>
