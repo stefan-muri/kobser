@@ -12,3 +12,14 @@
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 .user-select-none { user-select: none; -webkit-user-select: none; }
+
+/* Marquee scroll for overflowing track titles */
+@keyframes marquee-scroll {
+  0%, 10%  { transform: translateX(0); }
+  45%, 55% { transform: translateX(var(--marquee-px, 0px)); }
+  90%, 100%{ transform: translateX(0); }
+}
+.marquee-active {
+  display: inline-block;
+  animation: marquee-scroll 9s ease-in-out infinite;
+}

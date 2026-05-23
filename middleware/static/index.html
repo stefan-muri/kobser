@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Peel</title>
     <meta name="description" content="Search YouTube, download, and stream your personal music library.">
 
@@ -13,6 +13,31 @@
 
     <!-- Tailwind CSS (compiled at build time) -->
     <link rel="stylesheet" href="/dist/tailwind.css">
+    <style>
+      :root { --mob-nav-h: 60px; }
+
+      /* Mini player sits above the mobile nav */
+      @media (max-width: 767px) {
+        #mini-player {
+          bottom: calc(var(--mob-nav-h) + env(safe-area-inset-bottom, 0px));
+        }
+      }
+
+      /* Mobile nav absorbs safe area at the bottom */
+      #mobile-nav {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+
+      /* Main content: always clear the nav on mobile */
+      @media (max-width: 767px) {
+        #view {
+          padding-bottom: calc(var(--mob-nav-h) + env(safe-area-inset-bottom, 0px) + 8px);
+        }
+        body.player-visible #view {
+          padding-bottom: calc(var(--mob-nav-h) + env(safe-area-inset-bottom, 0px) + 90px + 8px);
+        }
+      }
+    </style>
 </head>
 <body class="bg-peel-bg text-peel-text font-sans h-screen w-full overflow-hidden flex flex-col selection:bg-peel-accent selection:text-white antialiased">
 
@@ -67,35 +92,63 @@
             </nav>
         </aside>
 
-        <!-- Main Content Area -->
-        <!-- pb-40 on mobile = 160px clears the player bar (90px) + mobile nav (~60px) -->
-        <main class="flex-1 overflow-y-auto h-full pb-40 md:pb-28 relative w-full" id="view"></main>
+        <!-- Main Content Area — mobile bottom padding handled by CSS (body.player-visible) -->
+        <main class="flex-1 overflow-y-auto h-full md:pb-28 relative w-full" id="view"></main>
 
     </div>
 
     <!-- Mobile Navigation Bar -->
-    <nav class="md:hidden fixed bottom-[90px] w-full bg-peel-bg/95 backdrop-blur-md border-t border-white/5 z-40 px-2 py-2 flex justify-around items-center user-select-none" id="mobile-nav">
-        <button data-view="search" class="mob-nav-btn flex flex-col items-center gap-0.5 text-peel-accent flex-1 py-1">
-            <i class="ph-fill ph-magnifying-glass text-xl"></i>
-            <span class="text-[9px] font-medium">Search</span>
-        </button>
-        <button data-view="library" class="mob-nav-btn flex flex-col items-center gap-0.5 text-peel-muted flex-1 py-1">
-            <i class="ph ph-music-notes text-xl"></i>
-            <span class="text-[9px] font-medium">Library</span>
-        </button>
-        <button data-view="liked" class="mob-nav-btn flex flex-col items-center gap-0.5 text-peel-muted flex-1 py-1">
-            <i class="ph ph-heart text-xl"></i>
-            <span class="text-[9px] font-medium">Favorites</span>
-        </button>
-        <button data-view="artists" class="mob-nav-btn flex flex-col items-center gap-0.5 text-peel-muted flex-1 py-1">
-            <i class="ph ph-microphone-stage text-xl"></i>
-            <span class="text-[9px] font-medium">Artists</span>
-        </button>
-        <button data-view="playlists" class="mob-nav-btn flex flex-col items-center gap-0.5 text-peel-muted flex-1 py-1">
-            <i class="ph ph-playlist text-xl"></i>
-            <span class="text-[9px] font-medium">Playlists</span>
-        </button>
+    <nav id="mobile-nav" class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-peel-bg/95 backdrop-blur-md border-t border-white/5 user-select-none">
+        <div class="flex items-stretch h-[60px]">
+            <button data-view="search" class="mob-nav-btn flex flex-col items-center justify-center gap-0.5 text-peel-accent flex-1">
+                <i class="ph-fill ph-magnifying-glass text-xl"></i>
+                <span class="text-[9px] font-medium">Search</span>
+            </button>
+            <button data-view="library" class="mob-nav-btn flex flex-col items-center justify-center gap-0.5 text-peel-muted flex-1">
+                <i class="ph ph-music-notes text-xl"></i>
+                <span class="text-[9px] font-medium">Library</span>
+            </button>
+            <button data-view="artists" class="mob-nav-btn flex flex-col items-center justify-center gap-0.5 text-peel-muted flex-1">
+                <i class="ph ph-microphone-stage text-xl"></i>
+                <span class="text-[9px] font-medium">Artists</span>
+            </button>
+            <button data-view="playlists" class="mob-nav-btn flex flex-col items-center justify-center gap-0.5 text-peel-muted flex-1">
+                <i class="ph ph-playlist text-xl"></i>
+                <span class="text-[9px] font-medium">Playlists</span>
+            </button>
+            <button id="mob-nav-more" class="flex flex-col items-center justify-center gap-0.5 text-peel-muted flex-1">
+                <i class="ph ph-dots-three text-xl"></i>
+                <span class="text-[9px] font-medium">More</span>
+            </button>
+        </div>
     </nav>
+
+    <!-- More Bottom Sheet -->
+    <div id="more-sheet" class="md:hidden fixed inset-x-0 bottom-0 z-[46] bg-peel-surface rounded-t-3xl border-t border-white/10 shadow-2xl transition-transform duration-300 translate-y-full"
+         style="padding-bottom: env(safe-area-inset-bottom, 0px)">
+        <div class="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3 mb-1"></div>
+        <div class="px-3 pb-3">
+            <button data-view="liked" class="more-sheet-btn w-full flex items-center gap-4 px-4 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 transition-colors text-left">
+                <div class="w-10 h-10 rounded-xl bg-peel-accent/15 flex items-center justify-center flex-shrink-0">
+                    <i class="ph ph-heart text-peel-accent text-xl"></i>
+                </div>
+                <span class="font-medium">Favorites</span>
+            </button>
+            <button data-view="jobs" class="more-sheet-btn w-full flex items-center gap-4 px-4 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 transition-colors text-left">
+                <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
+                    <i class="ph ph-download-simple text-peel-muted text-xl"></i>
+                </div>
+                <span class="font-medium">Downloads</span>
+            </button>
+            <button data-view="settings" class="more-sheet-btn w-full flex items-center gap-4 px-4 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 transition-colors text-left">
+                <div class="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">
+                    <i class="ph ph-gear text-peel-muted text-xl"></i>
+                </div>
+                <span class="font-medium">Settings</span>
+            </button>
+        </div>
+    </div>
+    <div id="more-sheet-backdrop" class="md:hidden fixed inset-0 z-[45] bg-black/60 opacity-0 pointer-events-none transition-opacity duration-300"></div>
 
     <!-- Player Bar (Fixed Bottom) -->
     <div id="mini-player" class="fixed bottom-0 w-full h-[90px] bg-peel-surface border-t border-white/5 z-50 items-center px-4 md:px-6 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] user-select-none hidden">

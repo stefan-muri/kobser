@@ -490,6 +490,7 @@ function load() {
   const miniPlayer = $("mini-player");
   miniPlayer.classList.remove("hidden");
   miniPlayer.classList.add("flex");
+  document.body.classList.add("player-visible");
 
   // Like button: hidden for previews (not in library)
   const likeBtn = $("mp-like");

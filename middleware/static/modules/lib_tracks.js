@@ -106,7 +106,9 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
         </div>
       </div>
       <div class="flex-1 min-w-0">
-        <p class="font-medium truncate">${escapeHtml(s.title)}</p>
+        <div class="overflow-hidden">
+          <span class="tl-title font-medium whitespace-nowrap">${escapeHtml(s.title)}</span>
+        </div>
         <p class="text-sm text-peel-muted truncate">${escapeHtml(s.artist || "—")} · ${fmtDuration(s.duration)}</p>
       </div>
       <button class="star-btn w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10 transition-all opacity-100 md:opacity-0 group-hover:opacity-100"
@@ -202,6 +204,20 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
 
     rows.push(row);
     container.appendChild(row);
+  });
+
+  // Marquee scroll for overflowing titles
+  requestAnimationFrame(() => {
+    rows.forEach((row) => {
+      const span = row.querySelector(".tl-title");
+      if (!span) return;
+      const wrap = span.parentElement;
+      const overflow = span.scrollWidth - wrap.clientWidth;
+      if (overflow > 2) {
+        wrap.style.setProperty("--marquee-px", `-${overflow}px`);
+        span.classList.add("marquee-active");
+      }
+    });
   });
 
   // Now-playing indicator
