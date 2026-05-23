@@ -4,6 +4,7 @@ from anyio import to_thread
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+import db as _db
 from auth import get_current_session
 from jobs import create_job, get_job, is_video_active, update_job
 from services import navidrome_client, tagger_service, ytdlp_service
@@ -83,4 +84,15 @@ async def status(job_id: str):
 @router.post("/api/rescan")
 async def rescan(sess: dict = Depends(get_current_session)):
     await navidrome_client.trigger_scan_and_wait(sess["username"], sess["password"])
+    return {"ok": True}
+
+
+@router.get("/api/downloads", dependencies=[Depends(get_current_session)])
+def list_downloads():
+    return {"downloads": _db.list_downloads()}
+
+
+@router.delete("/api/downloads/{job_id}", dependencies=[Depends(get_current_session)])
+def delete_download(job_id: str):
+    _db.delete_download_record(job_id)
     return {"ok": True}

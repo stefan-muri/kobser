@@ -82,6 +82,13 @@ export async function library(subpath, params = {}) {
 export const deleteTrack = (trackId) =>
   call(`/api/track/${encodeURIComponent(trackId)}`, { method: "DELETE" });
 
+export const listDownloads = () => call("/api/downloads");
+
+export const deleteDownload = (jobId) =>
+  call(`/api/downloads/${encodeURIComponent(jobId)}`, { method: "DELETE" });
+
+export const getStats = () => call("/api/stats");
+
 export function streamUrl(trackId) {
   return `/api/stream/${encodeURIComponent(trackId)}?session=${encodeURIComponent(sessionId())}`;
 }

@@ -5,6 +5,21 @@ import { escapeHtml, fmtDuration } from "./util.js";
 
 let lastResults = [];
 
+const HISTORY_KEY = "peel:search-history";
+const MAX_HISTORY = 20;
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]"); } catch { return []; }
+}
+function saveQuery(q) {
+  const h = getHistory().filter((x) => x !== q);
+  h.unshift(q);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, MAX_HISTORY)));
+}
+function removeQuery(q) {
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(getHistory().filter((x) => x !== q)));
+}
+
 export function render(root) {
   root.innerHTML = `
     <div class="w-full max-w-5xl mx-auto p-4 md:p-8 animate-slide-up">
@@ -14,6 +29,9 @@ export function render(root) {
             <i class="ph ph-magnifying-glass absolute left-5 top-1/2 transform -translate-y-1/2 text-peel-muted text-xl"></i>
             <input type="text" id="search-q" placeholder="Search for artists, albums, or tracks..."
                    class="w-full bg-peel-surface text-peel-text placeholder-peel-muted rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-peel-accent/50 transition-all text-lg font-medium">
+            <div id="search-history-drop"
+                 class="hidden absolute top-full left-0 right-0 mt-2 bg-peel-surface border border-white/10 rounded-2xl shadow-2xl z-20 overflow-hidden">
+            </div>
           </div>
           <button id="search-btn" class="bg-peel-accent hover:bg-peel-accentHover text-peel-bg font-semibold rounded-2xl px-6 transition-colors flex items-center gap-2 shrink-0">
             <i class="ph-bold ph-magnifying-glass text-lg"></i>
@@ -32,10 +50,64 @@ export function render(root) {
   const input = root.querySelector("#search-q");
   const btn = root.querySelector("#search-btn");
   const out = root.querySelector("#search-results");
+  const histDrop = root.querySelector("#search-history-drop");
+
+  function renderHistoryDrop() {
+    const h = getHistory();
+    if (!h.length) { histDrop.classList.add("hidden"); return; }
+    histDrop.innerHTML = `
+      <div class="p-2">
+        <div class="flex items-center justify-between px-3 py-1.5 mb-1">
+          <span class="text-xs text-peel-muted font-semibold uppercase tracking-wide">Recent searches</span>
+          <button id="hist-clear-all" class="text-xs text-peel-muted hover:text-peel-text transition-colors">Clear all</button>
+        </div>
+        ${h.map((q) => `
+          <div class="hist-item flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/5 cursor-pointer group" data-q="${escapeHtml(q)}">
+            <i class="ph ph-clock-counter-clockwise text-peel-muted text-base flex-shrink-0"></i>
+            <span class="flex-1 text-sm truncate">${escapeHtml(q)}</span>
+            <button class="hist-del w-6 h-6 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all flex-shrink-0" data-q="${escapeHtml(q)}">
+              <i class="ph ph-x text-xs pointer-events-none"></i>
+            </button>
+          </div>`).join("")}
+      </div>`;
+    histDrop.classList.remove("hidden");
+
+    histDrop.querySelectorAll(".hist-item").forEach((item) => {
+      item.addEventListener("click", (e) => {
+        if (e.target.closest(".hist-del")) return;
+        input.value = item.dataset.q;
+        histDrop.classList.add("hidden");
+        go();
+      });
+    });
+    histDrop.querySelectorAll(".hist-del").forEach((b) => {
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        removeQuery(b.dataset.q);
+        renderHistoryDrop();
+      });
+    });
+    histDrop.querySelector("#hist-clear-all")?.addEventListener("click", () => {
+      localStorage.removeItem(HISTORY_KEY);
+      histDrop.classList.add("hidden");
+    });
+  }
+
+  function showHistory() { if (!input.value.trim()) renderHistoryDrop(); }
+  function hideHistory() { histDrop.classList.add("hidden"); }
+
+  input.addEventListener("focus", showHistory);
+  input.addEventListener("input", () => { input.value.trim() ? hideHistory() : showHistory(); });
+  input.addEventListener("keydown", (e) => { if (e.key === "Escape") hideHistory(); });
+  document.addEventListener("click", (e) => {
+    if (!histDrop.contains(e.target) && e.target !== input) hideHistory();
+  });
 
   async function go() {
     const q = input.value.trim();
     if (!q) return;
+    hideHistory();
+    saveQuery(q);
     out.innerHTML = '<div class="flex flex-col items-center justify-center py-20 opacity-50"><i class="ph ph-circle-notch text-4xl mb-4 animate-spin-slow"></i><p class="text-lg">Searching…</p></div>';
     root.querySelector("#search-heading").textContent = `Searching for "${q}"`;
     try {
@@ -47,15 +119,12 @@ export function render(root) {
         lastResults.map(renderResult).join("") ||
         '<div class="flex flex-col items-center justify-center py-20 opacity-50"><i class="ph ph-magnifying-glass text-6xl mb-4"></i><p class="text-lg">No tracks found. Try a different search.</p></div>';
 
-      // Row click → preview
       out.querySelectorAll(".search-row").forEach((row, i) => {
         row.addEventListener("click", (e) => {
           if (e.target.closest(".dl-btn")) return;
           playPreview(lastResults[i]);
         });
       });
-
-      // Download button → dialog
       out.querySelectorAll("[data-vid]").forEach((el) => {
         el.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -68,9 +137,7 @@ export function render(root) {
   }
 
   btn.addEventListener("click", go);
-  input.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") go();
-  });
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
   input.focus();
 }
 

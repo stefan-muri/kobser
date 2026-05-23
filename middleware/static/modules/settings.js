@@ -1,4 +1,4 @@
-import { getSession, setSession, logout, library as libApi } from "./api.js";
+import { getSession, setSession, logout, library as libApi, getStats } from "./api.js";
 import { escapeHtml } from "./util.js";
 
 export function render(root) {
@@ -41,6 +41,21 @@ export function render(root) {
           </button>
         </div>
 
+        <!-- System Stats -->
+        <div class="bg-peel-surface rounded-2xl p-6">
+          <div class="flex items-center justify-between mb-5">
+            <h3 class="text-lg font-semibold text-peel-accent">System</h3>
+            <button id="stats-refresh-btn" class="flex items-center gap-1.5 text-sm text-peel-muted hover:text-peel-text transition-colors">
+              <i class="ph ph-arrows-clockwise"></i> Refresh
+            </button>
+          </div>
+          <div id="system-stats">
+            <div class="flex items-center gap-2 text-sm text-peel-muted">
+              <i class="ph ph-circle-notch animate-spin-slow"></i> Loading…
+            </div>
+          </div>
+        </div>
+
         <!-- Rescan -->
         <div class="bg-peel-surface rounded-2xl p-6">
           <h3 class="text-lg font-semibold mb-2 text-peel-accent">Library</h3>
@@ -56,9 +71,14 @@ export function render(root) {
   `;
 
   checkStatus(root.querySelector("#server-status"));
+  loadStats(root.querySelector("#system-stats"));
 
   root.querySelector("#refresh-btn").addEventListener("click", () =>
     checkStatus(root.querySelector("#server-status"))
+  );
+
+  root.querySelector("#stats-refresh-btn").addEventListener("click", () =>
+    loadStats(root.querySelector("#system-stats"))
   );
 
   root.querySelector("#logout-btn").addEventListener("click", async () => {
@@ -90,6 +110,59 @@ export function render(root) {
       btn.innerHTML = '<i class="ph ph-magnifying-glass mr-2"></i>Scan library';
     }
   });
+}
+
+async function loadStats(el) {
+  el.innerHTML = `<div class="flex items-center gap-2 text-sm text-peel-muted"><i class="ph ph-circle-notch animate-spin-slow"></i> Loading…</div>`;
+  try {
+    const s = await getStats();
+    el.innerHTML = `
+      <div class="flex flex-col gap-5">
+        ${statBar("Storage", s.disk.used, s.disk.total, "ph-hard-drive")}
+        ${statBar("Memory", s.ram.used, s.ram.total, "ph-cpu")}
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="flex items-center gap-1.5 text-sm font-medium">
+              <i class="ph ph-activity text-peel-muted"></i> CPU
+            </span>
+            <span class="text-sm font-semibold">${s.cpu_percent.toFixed(1)}%</span>
+          </div>
+          <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <div class="h-full rounded-full transition-all ${s.cpu_percent > 80 ? "bg-red-400" : "bg-peel-accent"}"
+                 style="width:${Math.min(s.cpu_percent, 100).toFixed(1)}%"></div>
+          </div>
+        </div>
+      </div>`;
+  } catch (e) {
+    el.innerHTML = `<p class="text-sm text-red-400">Could not load stats: ${escapeHtml(e.message)}</p>`;
+  }
+}
+
+function statBar(label, used, total, icon) {
+  const pct = total > 0 ? (used / total) * 100 : 0;
+  const color = pct > 85 ? "bg-red-400" : pct > 65 ? "bg-yellow-400" : "bg-peel-accent";
+  return `
+    <div>
+      <div class="flex items-center justify-between mb-1.5">
+        <span class="flex items-center gap-1.5 text-sm font-medium">
+          <i class="ph ${icon} text-peel-muted"></i> ${label}
+        </span>
+        <span class="text-sm font-semibold">${fmtBytes(used)} / ${fmtBytes(total)}</span>
+      </div>
+      <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+        <div class="h-full rounded-full transition-all ${color}" style="width:${pct.toFixed(1)}%"></div>
+      </div>
+      <p class="text-xs text-peel-muted mt-1">${fmtBytes(total - used)} free</p>
+    </div>`;
+}
+
+function fmtBytes(bytes) {
+  if (!bytes) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  let v = bytes;
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+  return `${v.toFixed(i > 1 ? 1 : 0)} ${units[i]}`;
 }
 
 async function checkStatus(el) {

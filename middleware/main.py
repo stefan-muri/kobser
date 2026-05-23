@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 
 from db import init_db
 from routes import auth as auth_routes
-from routes import download, library, search, stream, tracks
+from routes import download, library, search, stats, stream, tracks
 
 
 @asynccontextmanager
@@ -22,6 +22,7 @@ app.include_router(download.router)
 app.include_router(library.router)
 app.include_router(stream.router)
 app.include_router(tracks.router)
+app.include_router(stats.router)
 
 
 @app.get("/health")
