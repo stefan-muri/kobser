@@ -259,10 +259,12 @@ export function init() {
   audio.addEventListener("play", () => {
     if (playIcon) playIcon.className = "ph-fill ph-pause text-2xl";
     syncExpandedPlayIcon();
+    document.dispatchEvent(new CustomEvent("peel:playback-state", { detail: { playing: true } }));
   });
   audio.addEventListener("pause", () => {
     if (playIcon) playIcon.className = "ph-fill ph-play text-2xl";
     syncExpandedPlayIcon();
+    document.dispatchEvent(new CustomEvent("peel:playback-state", { detail: { playing: false } }));
   });
   audio.addEventListener("ended", () => next());
   audio.addEventListener("timeupdate", () => {
@@ -554,6 +556,15 @@ export function prev() {
 
 export function current() {
   return queue[index];
+}
+
+export function isPlaying() {
+  return audio ? !audio.paused : false;
+}
+
+export function togglePlayPause() {
+  if (!audio) return;
+  audio.paused ? audio.play() : audio.pause();
 }
 
 function fmt(sec) {

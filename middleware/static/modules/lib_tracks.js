@@ -88,6 +88,7 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
     const row = document.createElement("div");
     row.className =
       "group flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer";
+    row.dataset.songId = s.id;
     row.innerHTML = `
       <div class="tl-checkbox-wrap hidden flex-shrink-0 w-5 items-center justify-center">
         <input type="checkbox" class="tl-checkbox w-4 h-4 rounded accent-peel-accent cursor-pointer">
@@ -97,6 +98,11 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
              class="w-full h-full object-cover">
         <div class="tl-play-overlay absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
           <i class="ph-fill ph-play text-white text-lg pointer-events-none"></i>
+        </div>
+        <div class="tl-now-playing absolute inset-0 bg-black/60 hidden items-end justify-center gap-[3px] pb-[9px]">
+          <span class="block w-[3px] bg-peel-accent rounded-sm origin-bottom animate-bar1" style="height:12px"></span>
+          <span class="block w-[3px] bg-peel-accent rounded-sm origin-bottom animate-bar2" style="height:12px"></span>
+          <span class="block w-[3px] bg-peel-accent rounded-sm origin-bottom animate-bar3" style="height:12px"></span>
         </div>
       </div>
       <div class="flex-1 min-w-0">
@@ -113,7 +119,7 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
       </button>
     `;
 
-    // Row click → play (unless in select mode or clicking a button)
+    // Row click → play/pause if active, else start playing
     row.addEventListener("click", (e) => {
       if (e.target.closest(".star-btn") || e.target.closest(".dots-btn") || e.target.closest(".tl-checkbox-wrap")) return;
       if (selectMode) {
@@ -121,6 +127,10 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
         cb.checked = !cb.checked;
         if (cb.checked) selected.add(i); else selected.delete(i);
         updateActionBar();
+        return;
+      }
+      if (player.current()?.id === s.id) {
+        player.togglePlayPause();
         return;
       }
       player.playQueue(songs, i);
@@ -193,6 +203,63 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
     rows.push(row);
     container.appendChild(row);
   });
+
+  // Now-playing indicator
+  let currentTrackId = null;
+
+  function setOverlayIcon(row, showPause) {
+    const icon = row.querySelector(".tl-play-overlay i");
+    if (icon) icon.className = showPause
+      ? "ph-fill ph-pause text-white text-lg pointer-events-none"
+      : "ph-fill ph-play text-white text-lg pointer-events-none";
+  }
+
+  function updateNowPlaying(trackId) {
+    currentTrackId = trackId;
+    rows.forEach((row) => {
+      const indicator = row.querySelector(".tl-now-playing");
+      if (!indicator) return;
+      const isActive = !!trackId && row.dataset.songId === trackId;
+      indicator.classList.toggle("hidden", !isActive);
+      indicator.classList.toggle("flex", isActive);
+      setOverlayIcon(row, isActive && player.isPlaying());
+    });
+  }
+
+  function setBarsPaused(paused) {
+    container.querySelectorAll(".tl-now-playing span").forEach((bar) => {
+      bar.style.animationPlayState = paused ? "paused" : "running";
+    });
+    // Update overlay icon for the active row
+    if (currentTrackId) {
+      const activeRow = rows.find((r) => r.dataset.songId === currentTrackId);
+      if (activeRow) setOverlayIcon(activeRow, !paused);
+    }
+  }
+
+  // Apply immediately if something is already playing
+  updateNowPlaying(player.current()?.id ?? null);
+  setBarsPaused(!player.isPlaying());
+
+  const trackChangeHandler = (e) => {
+    if (!container.isConnected) {
+      document.removeEventListener("peel:track-change", trackChangeHandler);
+      document.removeEventListener("peel:playback-state", playbackStateHandler);
+      return;
+    }
+    updateNowPlaying(e.detail?.track?.id ?? null);
+  };
+
+  const playbackStateHandler = (e) => {
+    if (!container.isConnected) {
+      document.removeEventListener("peel:playback-state", playbackStateHandler);
+      return;
+    }
+    setBarsPaused(!e.detail?.playing);
+  };
+
+  document.addEventListener("peel:track-change", trackChangeHandler);
+  document.addEventListener("peel:playback-state", playbackStateHandler);
 
   // Header: enter select mode
   list.querySelector("#tl-select-btn").addEventListener("click", enterSelectMode);

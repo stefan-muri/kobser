@@ -22,48 +22,47 @@
     <div class="flex-1 flex overflow-hidden">
 
         <!-- Sidebar (Desktop) -->
-        <aside class="hidden md:flex flex-col w-64 bg-peel-bg border-r border-white/5 h-full pt-8 pb-28 px-4 user-select-none">
-            <!-- Logo -->
-            <div class="flex items-center gap-3 px-4 mb-10 cursor-pointer">
-                <div class="w-8 h-8 rounded-full bg-peel-accent flex items-center justify-center text-peel-bg shadow-[0_0_15px_rgba(255,159,28,0.4)]">
+        <aside id="sidebar" class="hidden md:flex flex-col bg-peel-bg border-r border-white/5 h-full pt-8 pb-28 user-select-none transition-[width] duration-200 ease-in-out w-64 overflow-hidden">
+            <!-- Logo + collapse toggle -->
+            <div id="sidebar-logo" class="flex items-center gap-3 px-5 mb-10 min-w-0">
+                <button id="sidebar-toggle" class="w-8 h-8 rounded-full bg-peel-accent flex-shrink-0 flex items-center justify-center text-peel-bg shadow-[0_0_15px_rgba(255,159,28,0.4)] hover:bg-peel-accentHover transition-colors" title="Toggle sidebar">
                     <i class="ph-fill ph-vinyl-record text-xl"></i>
-                </div>
-                <h1 class="text-2xl font-bold tracking-tight">peel</h1>
+                </button>
+                <h1 class="sidebar-label text-2xl font-bold tracking-tight whitespace-nowrap overflow-hidden transition-[opacity,max-width] duration-200">peel</h1>
             </div>
 
             <!-- Navigation -->
-            <nav class="flex flex-col gap-1 flex-1" id="sidebar-nav">
-                <button data-view="search" id="nav-search" class="nav-btn flex items-center gap-4 px-4 py-3 rounded-xl text-peel-text bg-white/5 hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium">
-                    <i class="ph ph-magnifying-glass text-2xl"></i>
-                    Search
+            <nav class="flex flex-col gap-1 flex-1 px-2" id="sidebar-nav">
+                <button data-view="search" id="nav-search" class="nav-btn flex items-center gap-4 px-3 py-3 rounded-xl text-peel-text bg-white/5 hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium min-w-0">
+                    <i class="ph ph-magnifying-glass text-2xl flex-shrink-0"></i>
+                    <span class="sidebar-label whitespace-nowrap overflow-hidden transition-[opacity,max-width] duration-200">Search</span>
                 </button>
-                <button data-view="library" id="nav-library" class="nav-btn flex items-center gap-4 px-4 py-3 rounded-xl text-peel-muted hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium">
-                    <i class="ph ph-music-notes text-2xl"></i>
-                    Library
+                <button data-view="library" id="nav-library" class="nav-btn flex items-center gap-4 px-3 py-3 rounded-xl text-peel-muted hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium min-w-0">
+                    <i class="ph ph-music-notes text-2xl flex-shrink-0"></i>
+                    <span class="sidebar-label whitespace-nowrap overflow-hidden transition-[opacity,max-width] duration-200">Library</span>
                 </button>
-
-                <button data-view="liked" id="nav-liked" class="nav-btn flex items-center gap-4 px-4 py-3 rounded-xl text-peel-muted hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium">
-                    <i class="ph ph-heart text-2xl"></i>
-                    Favorites
+                <button data-view="liked" id="nav-liked" class="nav-btn flex items-center gap-4 px-3 py-3 rounded-xl text-peel-muted hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium min-w-0">
+                    <i class="ph ph-heart text-2xl flex-shrink-0"></i>
+                    <span class="sidebar-label whitespace-nowrap overflow-hidden transition-[opacity,max-width] duration-200">Favorites</span>
                 </button>
-                <button data-view="artists" id="nav-artists" class="nav-btn flex items-center gap-4 px-4 py-3 rounded-xl text-peel-muted hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium">
-                    <i class="ph ph-microphone-stage text-2xl"></i>
-                    Artists
+                <button data-view="artists" id="nav-artists" class="nav-btn flex items-center gap-4 px-3 py-3 rounded-xl text-peel-muted hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium min-w-0">
+                    <i class="ph ph-microphone-stage text-2xl flex-shrink-0"></i>
+                    <span class="sidebar-label whitespace-nowrap overflow-hidden transition-[opacity,max-width] duration-200">Artists</span>
                 </button>
-                <button data-view="playlists" id="nav-playlists" class="nav-btn flex items-center gap-4 px-4 py-3 rounded-xl text-peel-muted hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium">
-                    <i class="ph ph-playlist text-2xl"></i>
-                    Playlists
+                <button data-view="playlists" id="nav-playlists" class="nav-btn flex items-center gap-4 px-3 py-3 rounded-xl text-peel-muted hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium min-w-0">
+                    <i class="ph ph-playlist text-2xl flex-shrink-0"></i>
+                    <span class="sidebar-label whitespace-nowrap overflow-hidden transition-[opacity,max-width] duration-200">Playlists</span>
                 </button>
 
                 <div class="flex-1"></div>
 
-                <button data-view="jobs" id="nav-jobs" class="nav-btn flex items-center gap-4 px-4 py-3 rounded-xl text-peel-muted hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium">
-                    <i class="ph ph-download-simple text-2xl"></i>
-                    Downloads
+                <button data-view="jobs" id="nav-jobs" class="nav-btn flex items-center gap-4 px-3 py-3 rounded-xl text-peel-muted hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium min-w-0">
+                    <i class="ph ph-download-simple text-2xl flex-shrink-0"></i>
+                    <span class="sidebar-label whitespace-nowrap overflow-hidden transition-[opacity,max-width] duration-200">Downloads</span>
                 </button>
-                <button data-view="settings" id="nav-settings" class="nav-btn flex items-center gap-4 px-4 py-3 rounded-xl text-peel-muted hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium">
-                    <i class="ph ph-gear text-2xl"></i>
-                    Settings
+                <button data-view="settings" id="nav-settings" class="nav-btn flex items-center gap-4 px-3 py-3 rounded-xl text-peel-muted hover:text-peel-text hover:bg-white/5 transition-all text-left font-medium min-w-0">
+                    <i class="ph ph-gear text-2xl flex-shrink-0"></i>
+                    <span class="sidebar-label whitespace-nowrap overflow-hidden transition-[opacity,max-width] duration-200">Settings</span>
                 </button>
             </nav>
         </aside>
@@ -263,5 +262,43 @@
     <div id="queue-backdrop" class="fixed inset-0 z-[155] bg-black/40 hidden"></div>
 
     <script type="module" src="app.js"></script>
+    <script>
+      (function () {
+        const sidebar = document.getElementById('sidebar');
+        const toggle = document.getElementById('sidebar-toggle');
+        if (!sidebar || !toggle) return;
+
+        const COLLAPSED_KEY = 'peel:sidebar-collapsed';
+        let collapsed = localStorage.getItem(COLLAPSED_KEY) === '1';
+
+        function apply(animate) {
+          if (!animate) sidebar.style.transition = 'none';
+          if (collapsed) {
+            sidebar.style.width = '64px';
+            sidebar.querySelectorAll('.sidebar-label').forEach(el => {
+              el.style.opacity = '0';
+              el.style.maxWidth = '0';
+            });
+            toggle.title = 'Expand sidebar';
+          } else {
+            sidebar.style.width = '256px';
+            sidebar.querySelectorAll('.sidebar-label').forEach(el => {
+              el.style.opacity = '1';
+              el.style.maxWidth = '200px';
+            });
+            toggle.title = 'Collapse sidebar';
+          }
+          if (!animate) requestAnimationFrame(() => { sidebar.style.transition = ''; });
+        }
+
+        apply(false);
+
+        toggle.addEventListener('click', () => {
+          collapsed = !collapsed;
+          localStorage.setItem(COLLAPSED_KEY, collapsed ? '1' : '0');
+          apply(true);
+        });
+      })();
+    </script>
 </body>
 </html>
