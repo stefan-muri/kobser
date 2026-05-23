@@ -1,6 +1,7 @@
 import { streamUrl, coverArtUrl, library as libApi, deleteTrack as apiDeleteTrack } from "./api.js";
 import * as contextMenu from "./context_menu.js";
 import { showPlaylistPicker } from "./lib_tracks.js";
+import { escapeHtml } from "./util.js";
 
 let audio;
 let queue = [];
@@ -87,6 +88,120 @@ function updateExpandedShuffle() {
     btn.classList.remove("text-peel-accent");
     btn.classList.add("text-peel-muted");
   }
+}
+
+// ── Queue panel ──────────────────────────────────────────────────────────────
+
+export function addToQueue(track) {
+  if (!track) return;
+  if (queue.length === 0 || index === -1) {
+    playQueue([track], 0);
+    return;
+  }
+  queue.push(track);
+  renderQueuePanel();
+}
+
+function openQueue() {
+  renderQueuePanel();
+  const panel = $("queue-panel");
+  const backdrop = $("queue-backdrop");
+  if (panel) { panel.classList.remove("translate-x-full"); panel.classList.add("translate-x-0"); }
+  if (backdrop) { backdrop.classList.remove("hidden"); }
+}
+
+function closeQueue() {
+  const panel = $("queue-panel");
+  const backdrop = $("queue-backdrop");
+  if (panel) { panel.classList.remove("translate-x-0"); panel.classList.add("translate-x-full"); }
+  if (backdrop) { backdrop.classList.add("hidden"); }
+}
+
+function removeFromQueue(qIdx) {
+  if (qIdx === index) return;
+  queue.splice(qIdx, 1);
+  if (qIdx < index) index--;
+  renderQueuePanel();
+}
+
+function renderQueuePanel() {
+  const list = $("queue-list");
+  if (!list) return;
+
+  const current = queue[index];
+  const upcoming = queue.slice(index + 1);
+  let html = "";
+
+  if (current) {
+    html += `
+      <div class="px-4 pt-5 pb-3">
+        <p class="text-[10px] font-semibold text-peel-muted uppercase tracking-widest mb-3">Now Playing</p>
+        <div class="flex items-center gap-3 p-2 rounded-xl bg-white/5">
+          <img src="${escapeHtml(trackArtUrl(current, 64))}" alt=""
+               class="w-10 h-10 rounded-md object-cover flex-shrink-0 bg-peel-bg">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium truncate text-peel-accent">${escapeHtml(current.title || "—")}</p>
+            <p class="text-xs text-peel-muted truncate">${escapeHtml(current.artist || "—")}</p>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  if (upcoming.length) {
+    html += `
+      <div class="px-4 pb-4">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-[10px] font-semibold text-peel-muted uppercase tracking-widest">Up Next</p>
+          <button id="queue-clear-btn" class="text-xs text-peel-muted hover:text-red-400 transition-colors">Clear</button>
+        </div>
+        <div class="flex flex-col gap-0.5">
+          ${upcoming.map((t, i) => {
+            const qIdx = index + 1 + i;
+            return `
+              <div class="queue-row flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 group cursor-pointer" data-qidx="${qIdx}">
+                <img src="${escapeHtml(trackArtUrl(t, 64))}" alt=""
+                     class="w-10 h-10 rounded-md object-cover flex-shrink-0 bg-peel-bg pointer-events-none">
+                <div class="flex-1 min-w-0 pointer-events-none">
+                  <p class="text-sm font-medium truncate">${escapeHtml(t.title || "—")}</p>
+                  <p class="text-xs text-peel-muted truncate">${escapeHtml(t.artist || "—")}</p>
+                </div>
+                <button class="queue-remove-btn w-8 h-8 flex items-center justify-center text-peel-muted hover:text-white rounded-full hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
+                        data-qidx="${qIdx}">
+                  <i class="ph ph-x text-sm pointer-events-none"></i>
+                </button>
+              </div>`;
+          }).join("")}
+        </div>
+      </div>`;
+  } else if (!current) {
+    html = `
+      <div class="flex flex-col items-center justify-center h-full gap-3 opacity-40 p-8 text-center">
+        <i class="ph ph-list text-5xl"></i>
+        <p class="text-sm">Queue is empty</p>
+      </div>`;
+  }
+
+  list.innerHTML = html;
+
+  list.querySelector("#queue-clear-btn")?.addEventListener("click", () => {
+    queue = queue.slice(0, index + 1);
+    renderQueuePanel();
+  });
+
+  list.querySelectorAll(".queue-remove-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      removeFromQueue(parseInt(btn.dataset.qidx));
+    });
+  });
+
+  list.querySelectorAll(".queue-row").forEach((row) => {
+    row.addEventListener("click", (e) => {
+      if (e.target.closest(".queue-remove-btn")) return;
+      index = parseInt(row.dataset.qidx);
+      load();
+    });
+  });
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
@@ -184,6 +299,12 @@ export function init() {
     });
   }
 
+  // Queue buttons
+  const queueBtns = [$("mp-queue-btn"), $("ep-queue")];
+  queueBtns.forEach((btn) => btn?.addEventListener("click", openQueue));
+  $("queue-close")?.addEventListener("click", closeQueue);
+  $("queue-backdrop")?.addEventListener("click", closeQueue);
+
   const epDots = $("ep-dots");
   if (epDots) {
     epDots.addEventListener("click", () => {
@@ -200,6 +321,11 @@ export function init() {
           label: isLiked ? "Unlike" : "Like",
           icon: isLiked ? "ph-fill ph-heart" : "ph ph-heart",
           action: () => toggleLike(),
+        },
+        {
+          label: "View queue",
+          icon: "ph ph-list",
+          action: () => openQueue(),
         },
         null,
         {
@@ -333,6 +459,10 @@ function load() {
   if (ep && !ep.classList.contains("translate-y-full")) {
     syncExpandedState();
   }
+
+  // Refresh queue panel if open
+  const qp = $("queue-panel");
+  if (qp && !qp.classList.contains("translate-x-full")) renderQueuePanel();
 
   document.dispatchEvent(
     new CustomEvent("peel:track-change", { detail: { track, index } }),

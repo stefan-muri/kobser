@@ -11,7 +11,7 @@ export function show(anchorEl, items) {
 
   const menu = document.createElement("div");
   menu.className =
-    "fixed z-[60] bg-peel-surface border border-white/10 rounded-xl shadow-2xl py-1 min-w-[196px]";
+    "fixed z-[200] bg-peel-surface border border-white/10 rounded-xl shadow-2xl py-1 min-w-[196px]";
 
   for (const item of items) {
     if (item === null) {

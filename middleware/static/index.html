@@ -132,13 +132,16 @@
             </button>
         </div>
 
-        <!-- Right: Like / Shuffle / Time (desktop only) -->
-        <div class="hidden md:flex items-center justify-end gap-3 w-40">
+        <!-- Right: Like / Shuffle / Queue / Time (desktop only) -->
+        <div class="hidden md:flex items-center justify-end gap-3 w-52">
             <button id="mp-like" data-liked="false" class="text-peel-muted hover:text-peel-accent transition-colors" title="Like">
                 <i class="ph ph-heart text-xl"></i>
             </button>
             <button id="mp-shuffle" class="text-peel-muted hover:text-white transition-colors" title="Shuffle">
                 <i class="ph ph-shuffle text-xl"></i>
+            </button>
+            <button id="mp-queue-btn" class="text-peel-muted hover:text-white transition-colors" title="Queue">
+                <i class="ph ph-list text-xl"></i>
             </button>
             <span id="mp-time" class="text-sm text-peel-muted tabular-nums">0:00 / 0:00</span>
         </div>
@@ -214,7 +217,9 @@
                 <button id="ep-next" class="w-11 h-11 flex items-center justify-center text-peel-muted hover:text-white transition-colors">
                     <i class="ph-fill ph-skip-forward text-3xl"></i>
                 </button>
-                <button id="ep-shuffle-placeholder" class="w-11 h-11"></button>
+                <button id="ep-queue" class="w-11 h-11 flex items-center justify-center text-peel-muted hover:text-white transition-colors rounded-full hover:bg-white/10">
+                    <i class="ph ph-list text-2xl"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -244,6 +249,20 @@
             </div>
         </form>
     </dialog>
+
+    <!-- Queue Panel -->
+    <div id="queue-panel"
+         class="fixed inset-y-0 right-0 w-full sm:w-96 z-[160] flex flex-col bg-peel-surface border-l border-white/10 shadow-2xl translate-x-full transition-transform duration-300 ease-in-out">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-white/10 flex-shrink-0">
+            <h2 class="text-base font-semibold">Queue</h2>
+            <button id="queue-close" class="w-9 h-9 flex items-center justify-center text-peel-muted hover:text-white transition-colors rounded-full hover:bg-white/10">
+                <i class="ph ph-x text-lg"></i>
+            </button>
+        </div>
+        <div id="queue-list" class="flex-1 overflow-y-auto pb-6"></div>
+    </div>
+    <!-- Queue panel backdrop -->
+    <div id="queue-backdrop" class="fixed inset-0 z-[155] bg-black/40 hidden"></div>
 
     <script type="module" src="app.js"></script>
 </body>

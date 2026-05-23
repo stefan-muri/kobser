@@ -141,6 +141,11 @@ export function renderTrackList(list, songs, { allStarred = false, playlistId = 
           action: () => player.playQueue(songs, i),
         },
         {
+          label: "Add to queue",
+          icon: "ph ph-list-plus",
+          action: () => player.addToQueue(s),
+        },
+        {
           label: "Add to playlist",
           icon: "ph ph-playlist-plus",
           action: () => showPlaylistPicker([s.id]),
