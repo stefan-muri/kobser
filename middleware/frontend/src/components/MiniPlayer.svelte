@@ -6,6 +6,7 @@
   } from '../lib/stores/playerStore.js';
   import { expandedPlayerOpen, queuePanelOpen } from '../lib/stores/uiStore.js';
   import { fmtTime } from '../lib/util.js';
+  import Marquee from './Marquee.svelte';
 
   $: track = $currentTrack;
   $: visible = !!track;
@@ -55,13 +56,13 @@
   <!-- Track info -->
   <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
   <div class="flex-1 min-w-0 cursor-pointer" on:click={() => expandedPlayerOpen.set(true)}>
-    <h4 class="text-sm font-semibold text-white truncate">{track?.title ?? 'Not Playing'}</h4>
-    <p class="text-xs text-peel-muted truncate">{track?.artist ?? 'Select a track'}</p>
+    <Marquee text={track?.title ?? 'Not Playing'} cls="text-sm font-semibold text-white" />
+    <Marquee text={track?.artist ?? 'Select a track'} cls="text-xs text-peel-muted" />
   </div>
 
   <!-- Controls -->
   <div class="flex items-center gap-3 flex-shrink-0">
-    <button on:click={prev} class="hidden sm:flex text-peel-muted hover:text-white transition-colors">
+    <button on:click={prev} class="text-peel-muted hover:text-white transition-colors">
       <i class="ph-fill ph-skip-back text-xl"></i>
     </button>
     <button on:click={togglePlayPause} class="play-btn rounded-full flex items-center justify-center">
@@ -124,10 +125,12 @@
     box-shadow:
       0 4px 20px rgba(0, 0, 0, 0.85),
       0 0 0 2px rgba(255, 255, 255, 0.18);
+    animation: vinyl-spin 3s linear infinite;
+    animation-play-state: paused;
   }
 
   .vinyl-disc.spinning {
-    animation: vinyl-spin 3s linear infinite;
+    animation-play-state: running;
   }
 
   @keyframes vinyl-spin {

@@ -4,6 +4,7 @@
   import { fmtDuration } from '../lib/util.js';
   import { trackJob } from '../lib/jobs.js';
   import DownloadDialog from '../components/DownloadDialog.svelte';
+  import Marquee from '../components/Marquee.svelte';
 
   const HISTORY_KEY = 'peel:search-history';
   const MAX_HISTORY = 20;
@@ -189,8 +190,8 @@
               </div>
             </div>
             <div class="flex-1 min-w-0 pr-4">
-              <h3 class="font-medium text-base truncate text-peel-text">{result.title || 'Untitled'}</h3>
-              <p class="text-sm text-peel-muted truncate">{result.channel || '—'} · {fmtDuration(result.duration)}</p>
+              <Marquee text={result.title || 'Untitled'} cls="font-medium text-base text-peel-text" />
+              <Marquee text="{result.channel || '—'} · {fmtDuration(result.duration)}" cls="text-sm text-peel-muted" />
             </div>
             <div class="flex items-center gap-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity pr-2">
               <button

@@ -9,6 +9,7 @@
   import { showPlaylistPicker } from '../lib/stores/playlistPickerStore.js';
   import { deleteTrack } from '../lib/api.js';
   import { fmtTime } from '../lib/util.js';
+  import Marquee from './Marquee.svelte';
 
   $: track = $currentTrack;
   $: liked = !!track?.starred;
@@ -85,8 +86,10 @@
     <!-- Track info + like -->
     <div class="flex items-center gap-4 mt-6 mb-5 flex-shrink-0">
       <div class="flex-1 min-w-0">
-        <h2 class="text-2xl font-bold truncate">{track?.title ?? '—'}</h2>
-        <p class="text-peel-muted mt-1 truncate">{track?.artist ?? '—'}</p>
+        <Marquee text={track?.title ?? '—'} cls="text-2xl font-bold" />
+        <div class="mt-1">
+          <Marquee text={track?.artist ?? '—'} cls="text-peel-muted" />
+        </div>
       </div>
       {#if !preview}
         <button

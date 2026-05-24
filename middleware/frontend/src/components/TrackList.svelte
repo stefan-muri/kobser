@@ -1,5 +1,4 @@
 <script>
-  import { afterUpdate } from 'svelte';
   import {
     currentTrack, playing,
     playQueue, addToQueue, togglePlayPause,
@@ -9,6 +8,7 @@
   import { fmtDuration } from '../lib/util.js';
   import { showContextMenu } from '../lib/stores/contextMenuStore.js';
   import { showPlaylistPicker } from '../lib/stores/playlistPickerStore.js';
+  import Marquee from './Marquee.svelte';
 
   export let songs = [];
   export let allStarred = false;
@@ -109,23 +109,6 @@
     ]);
   }
 
-  // Marquee: check for overflow after each render
-  let rowEls = [];
-  afterUpdate(() => {
-    rowEls.forEach(el => {
-      if (!el) return;
-      const span = el.querySelector('.tl-title');
-      const wrap = span?.parentElement;
-      if (!span || !wrap) return;
-      const overflow = span.scrollWidth - wrap.clientWidth;
-      if (overflow > 2) {
-        wrap.style.setProperty('--marquee-px', `-${overflow}px`);
-        span.classList.add('marquee-active');
-      } else {
-        span.classList.remove('marquee-active');
-      }
-    });
-  });
 </script>
 
 {#if selectMode}
@@ -168,7 +151,6 @@
     {@const starred = song.id in starredOverrides ? starredOverrides[song.id] : (allStarred || !!song.starred)}
     <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
     <div
-      bind:this={rowEls[i]}
       class="group flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer"
       on:click={e => handleRowClick(e, song, i)}
       role="row"
@@ -205,10 +187,8 @@
 
       <!-- Title / artist -->
       <div class="flex-1 min-w-0 pr-2">
-        <div class="overflow-hidden">
-          <span class="tl-title font-medium whitespace-nowrap">{song.title ?? '—'}</span>
-        </div>
-        <p class="text-sm text-peel-muted truncate">{song.artist ?? '—'} · {fmtDuration(song.duration)}</p>
+        <Marquee text={song.title ?? '—'} cls="font-medium" />
+        <Marquee text="{song.artist ?? '—'} · {fmtDuration(song.duration)}" cls="text-sm text-peel-muted" />
       </div>
 
       <!-- Star button -->

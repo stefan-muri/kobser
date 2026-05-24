@@ -21,7 +21,12 @@
 }
 .marquee-active {
   display: inline-block;
-  animation: marquee-scroll 9s ease-in-out infinite;
+  animation: marquee-scroll 6s ease-in-out infinite;
+}
+
+@keyframes marquee-continuous {
+  from { transform: translateX(0); }
+  to   { transform: translateX(var(--mlp)); }
 }
 
 /* Layout */
