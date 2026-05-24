@@ -1,7 +1,7 @@
 <script>
   import {
-    currentTrack, playing, shuffleOn, playbackProgress,
-    next, prev, togglePlayPause, toggleShuffle, toggleLike, seekFraction,
+    currentTrack, playing, shuffleOn, repeatMode, playbackProgress,
+    next, prev, togglePlayPause, toggleShuffle, toggleRepeat, toggleLike, seekFraction,
     trackArtUrl, isPreview,
   } from '../lib/stores/playerStore.js';
   import { expandedPlayerOpen, queuePanelOpen } from '../lib/stores/uiStore.js';
@@ -139,10 +139,10 @@
         <i class="ph-fill ph-skip-forward text-3xl"></i>
       </button>
       <button
-        on:click={() => queuePanelOpen.set(true)}
-        class="w-11 h-11 flex items-center justify-center text-peel-muted hover:text-white transition-colors rounded-full hover:bg-white/10"
+        on:click={toggleRepeat}
+        class="w-11 h-11 flex items-center justify-center transition-colors rounded-full hover:bg-white/10 {$repeatMode !== 'off' ? 'text-peel-accent' : 'text-peel-muted hover:text-white'}"
       >
-        <i class="ph ph-list text-2xl"></i>
+        <i class="ph {$repeatMode === 'one' ? 'ph-repeat-once' : 'ph-repeat'} text-2xl"></i>
       </button>
     </div>
   </div>

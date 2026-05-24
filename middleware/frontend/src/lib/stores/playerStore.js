@@ -7,6 +7,7 @@ export const queue = writable([]);
 export const currentIndex = writable(-1);
 export const playing = writable(false);
 export const shuffleOn = writable(false);
+export const repeatMode = writable('off'); // 'off' | 'one' | 'all'
 export const playbackProgress = writable({ currentTime: 0, duration: 0 });
 
 // Derived: current track
@@ -37,7 +38,14 @@ export function initAudio(audioEl) {
     playing.set(false);
     saveLastTrack();
   });
-  _audio.addEventListener('ended', () => next());
+  _audio.addEventListener('ended', () => {
+    if (get(repeatMode) === 'one') {
+      _audio.currentTime = 0;
+      _audio.play().catch(() => {});
+    } else {
+      next();
+    }
+  });
   _audio.addEventListener('timeupdate', () => {
     playbackProgress.set({
       currentTime: _audio.currentTime,
@@ -88,11 +96,19 @@ export function next() {
       _shufflePos++;
       currentIndex.set(_shuffledQueue[_shufflePos]);
       _load();
+    } else if (get(repeatMode) === 'all') {
+      _buildShuffleOrder(_shuffledQueue[0], get(queue).length);
+      currentIndex.set(_shuffledQueue[0]);
+      _load();
     }
   } else {
     const $index = get(currentIndex);
-    if ($index < get(queue).length - 1) {
+    const qLen = get(queue).length;
+    if ($index < qLen - 1) {
       currentIndex.update(i => i + 1);
+      _load();
+    } else if (get(repeatMode) === 'all') {
+      currentIndex.set(0);
       _load();
     }
   }
@@ -127,6 +143,12 @@ export function seekFraction(fraction) {
   if (_audio && _audio.duration) {
     _audio.currentTime = fraction * _audio.duration;
   }
+}
+
+export function toggleRepeat() {
+  const modes = ['off', 'one', 'all'];
+  const cur = get(repeatMode);
+  repeatMode.set(modes[(modes.indexOf(cur) + 1) % modes.length]);
 }
 
 export function toggleShuffle() {

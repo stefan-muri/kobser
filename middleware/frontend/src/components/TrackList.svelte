@@ -165,7 +165,7 @@
 <div class="flex flex-col gap-1">
   {#each songs as song, i (song.id)}
     {@const isActive = $currentTrack?.id === song.id}
-    {@const starred = isStarred(song)}
+    {@const starred = song.id in starredOverrides ? starredOverrides[song.id] : (allStarred || !!song.starred)}
     <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
     <div
       bind:this={rowEls[i]}
