@@ -36,7 +36,7 @@ class AddToPlaylistViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getPlaylists()
                 .onSuccess { resp ->
-                    playlists = resp.subsonicResponse.playlists?.playlist ?: emptyList()
+                    playlists = resp.playlists?.playlist ?: emptyList()
                 }
             isLoading = false
         }
