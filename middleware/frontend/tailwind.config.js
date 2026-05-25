@@ -6,7 +6,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        london: ['UnifrakturMaguntia', 'serif'],
+        london: ['Manufacturing Consent', 'serif'],
       },
       colors: {
         kobser: {
