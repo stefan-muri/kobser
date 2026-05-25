@@ -9,7 +9,7 @@ export default {
         london: ['UnifrakturMaguntia', 'serif'],
       },
       colors: {
-        peel: {
+        kobser: {
           bg: '#121212',
           surface: '#1E1E1E',
           accent: '#FF9F1C',

@@ -67,16 +67,16 @@
   {#if songs.length || loading}
     <div class="flex items-center gap-2 mb-3">
       <div class="relative flex-1 min-w-0">
-        <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-peel-muted"></i>
+        <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-kobser-muted"></i>
         <input
           type="text"
           bind:value={filterQuery}
           placeholder="Search favorites…"
-          class="w-full bg-peel-surface text-peel-text placeholder-peel-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-peel-accent/50 border border-white/10 text-sm"
+          class="w-full bg-kobser-surface text-kobser-text placeholder-kobser-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 border border-white/10 text-sm"
         >
       </div>
       {#if sorted.length}
-        <button on:click={() => playQueue(sorted, 0)} class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 bg-peel-accent hover:bg-peel-accentHover text-peel-bg text-sm font-semibold rounded-xl transition-colors">
+        <button on:click={() => playQueue(sorted, 0)} class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg text-sm font-semibold rounded-xl transition-colors">
           <i class="ph-fill ph-play text-sm"></i> Play all
         </button>
         <button on:click={() => playShuffled(sorted)} class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 text-sm font-medium rounded-xl transition-colors">
@@ -89,7 +89,7 @@
       {#each SORT_OPTIONS as opt}
         <button
           on:click={() => setSortKey(opt.key)}
-          class="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {sortKey === opt.key ? 'bg-peel-accent text-peel-bg' : 'bg-white/5 text-peel-muted hover:bg-white/10 hover:text-peel-text'}"
+          class="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {sortKey === opt.key ? 'bg-kobser-accent text-kobser-bg' : 'bg-white/5 text-kobser-muted hover:bg-white/10 hover:text-kobser-text'}"
         >{opt.label}</button>
       {/each}
       {#each SORT_TOGGLES as tog}
@@ -97,7 +97,7 @@
         {@const isActive = activeIdx !== -1}
         <button
           on:click={() => toggleSort(tog.keys)}
-          class="flex-shrink-0 flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {isActive ? 'bg-peel-accent text-peel-bg' : 'bg-white/5 text-peel-muted hover:bg-white/10 hover:text-peel-text'}"
+          class="flex-shrink-0 flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {isActive ? 'bg-kobser-accent text-kobser-bg' : 'bg-white/5 text-kobser-muted hover:bg-white/10 hover:text-kobser-text'}"
         >
           {isActive ? tog.labels[activeIdx] : tog.labels[0]}
           {#if isActive}

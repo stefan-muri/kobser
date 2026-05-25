@@ -1,7 +1,7 @@
 import { writable, derived, get } from 'svelte/store';
 import { streamUrl, coverArtUrl, library as libApi } from '../api.js';
 
-const LAST_TRACK_KEY = 'peel:last-track';
+const LAST_TRACK_KEY = 'kobser:last-track';
 
 export const queue = writable([]);
 export const currentIndex = writable(-1);

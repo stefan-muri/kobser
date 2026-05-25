@@ -113,7 +113,7 @@
 
 {#if selectMode}
   <div class="flex items-center gap-2 pb-2 px-1 overflow-x-auto no-scrollbar flex-nowrap">
-    <span class="text-sm text-peel-muted mr-1">{selected.size} selected</span>
+    <span class="text-sm text-kobser-muted mr-1">{selected.size} selected</span>
     <button
       on:click={() => showPlaylistPicker(getSelectedIds(), exitSelectMode)}
       disabled={selected.size === 0}
@@ -163,13 +163,13 @@
             checked={selected.has(i)}
             on:change={() => toggleSelect(i)}
             on:click|stopPropagation
-            class="w-4 h-4 rounded accent-peel-accent cursor-pointer"
+            class="w-4 h-4 rounded accent-kobser-accent cursor-pointer"
           >
         </div>
       {/if}
 
       <!-- Art / now-playing indicator -->
-      <div class="relative w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-peel-surface">
+      <div class="relative w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-kobser-surface">
         <img src={coverArtUrl(song.coverArt, 64)} alt="" loading="lazy" class="w-full h-full object-cover">
         <!-- Hover play/pause overlay -->
         <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity {isActive ? 'opacity-100' : ''}">
@@ -178,9 +178,9 @@
         <!-- Now-playing animated bars -->
         {#if isActive}
           <div class="absolute inset-0 bg-black/60 flex items-end justify-center gap-[3px] pb-[9px] {$playing ? '' : 'opacity-60'}">
-            <span class="block w-[3px] bg-peel-accent rounded-sm origin-bottom {$playing ? 'animate-bar1' : ''}" style="height:12px"></span>
-            <span class="block w-[3px] bg-peel-accent rounded-sm origin-bottom {$playing ? 'animate-bar2' : ''}" style="height:12px"></span>
-            <span class="block w-[3px] bg-peel-accent rounded-sm origin-bottom {$playing ? 'animate-bar3' : ''}" style="height:12px"></span>
+            <span class="block w-[3px] bg-kobser-accent rounded-sm origin-bottom {$playing ? 'animate-bar1' : ''}" style="height:12px"></span>
+            <span class="block w-[3px] bg-kobser-accent rounded-sm origin-bottom {$playing ? 'animate-bar2' : ''}" style="height:12px"></span>
+            <span class="block w-[3px] bg-kobser-accent rounded-sm origin-bottom {$playing ? 'animate-bar3' : ''}" style="height:12px"></span>
           </div>
         {/if}
       </div>
@@ -188,7 +188,7 @@
       <!-- Title / artist -->
       <div class="flex-1 min-w-0 pr-2">
         <Marquee text={song.title ?? '—'} cls="font-medium" />
-        <Marquee text="{song.artist ?? '—'} · {fmtDuration(song.duration)}" cls="text-sm text-peel-muted" />
+        <Marquee text="{song.artist ?? '—'} · {fmtDuration(song.duration)}" cls="text-sm text-kobser-muted" />
       </div>
 
       <!-- Star button -->
@@ -197,7 +197,7 @@
         title={starred ? 'Unlike' : 'Like'}
         on:click={e => toggleStar(song, e)}
       >
-        <i class="{starred ? 'ph-fill ph-heart text-peel-accent' : 'ph ph-heart text-peel-muted'} text-lg pointer-events-none"></i>
+        <i class="{starred ? 'ph-fill ph-heart text-kobser-accent' : 'ph ph-heart text-kobser-muted'} text-lg pointer-events-none"></i>
       </button>
 
       <!-- Dots menu button -->
@@ -206,7 +206,7 @@
         title="More options"
         on:click={e => openDots(e, song, i)}
       >
-        <i class="ph ph-dots-three-vertical text-peel-muted text-lg pointer-events-none"></i>
+        <i class="ph ph-dots-three-vertical text-kobser-muted text-lg pointer-events-none"></i>
       </button>
     </div>
   {/each}

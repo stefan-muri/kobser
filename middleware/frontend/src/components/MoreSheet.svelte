@@ -25,7 +25,7 @@
 
 <!-- Sheet -->
 <div
-  class="md:hidden fixed inset-x-0 bottom-0 z-[56] bg-peel-surface rounded-t-3xl border-t border-white/10 shadow-2xl transition-transform duration-300"
+  class="md:hidden fixed inset-x-0 bottom-0 z-[56] bg-kobser-surface rounded-t-3xl border-t border-white/10 shadow-2xl transition-transform duration-300"
   style:transform={$moreSheetOpen ? 'translateY(0)' : 'translateY(100%)'}
   style="padding-bottom: env(safe-area-inset-bottom, 0px)"
 >
@@ -36,8 +36,8 @@
         on:click={() => navigate(item.view)}
         class="w-full flex items-center gap-4 px-4 py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 transition-colors text-left"
       >
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 {item.accent ? 'bg-peel-accent/15' : 'bg-white/5'}">
-          <i class="ph {item.icon} text-xl {item.accent ? 'text-peel-accent' : 'text-peel-muted'}"></i>
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 {item.accent ? 'bg-kobser-accent/15' : 'bg-white/5'}">
+          <i class="ph {item.icon} text-xl {item.accent ? 'text-kobser-accent' : 'text-kobser-muted'}"></i>
         </div>
         <span class="font-medium">{item.label}</span>
       </button>

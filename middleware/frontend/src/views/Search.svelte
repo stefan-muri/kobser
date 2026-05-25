@@ -6,7 +6,7 @@
   import DownloadDialog from '../components/DownloadDialog.svelte';
   import Marquee from '../components/Marquee.svelte';
 
-  const HISTORY_KEY = 'peel:search-history';
+  const HISTORY_KEY = 'kobser:search-history';
   const MAX_HISTORY = 20;
 
   let query = '';
@@ -100,29 +100,29 @@
   <h2 class="font-london text-3xl mb-6 pl-2">Search</h2>
 
   <!-- Search bar (sticky) -->
-  <div class="sticky top-0 bg-peel-bg/90 backdrop-blur-md pt-2 pb-6 z-10">
+  <div class="sticky top-0 bg-kobser-bg/90 backdrop-blur-md pt-2 pb-6 z-10">
     <div class="relative w-full shadow-lg shadow-black/20 rounded-2xl flex gap-2">
       <div class="relative flex-1">
-        <i class="ph ph-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-peel-muted text-xl"></i>
+        <i class="ph ph-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-kobser-muted text-xl"></i>
         <input
           bind:this={inputEl}
           bind:value={query}
           type="text"
           placeholder="Search for artists, albums, or tracks..."
-          class="w-full bg-peel-surface text-peel-text placeholder-peel-muted rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-peel-accent/50 transition-all text-lg font-medium"
+          class="w-full bg-kobser-surface text-kobser-text placeholder-kobser-muted rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 transition-all text-lg font-medium"
           on:focus={showHistory}
           on:input={() => query.trim() ? hideHistory() : showHistory()}
           on:keydown={e => { if (e.key === 'Enter') go(); if (e.key === 'Escape') hideHistory(); }}
         >
         <!-- Search history dropdown -->
         {#if historyVisible && history.length}
-          <div class="absolute top-full left-0 right-0 mt-2 bg-peel-surface border border-white/10 rounded-2xl shadow-2xl z-20 overflow-hidden">
+          <div class="absolute top-full left-0 right-0 mt-2 bg-kobser-surface border border-white/10 rounded-2xl shadow-2xl z-20 overflow-hidden">
             <div class="p-2">
               <div class="flex items-center justify-between px-3 py-1.5 mb-1">
-                <span class="text-xs text-peel-muted font-semibold uppercase tracking-wide">Recent searches</span>
+                <span class="text-xs text-kobser-muted font-semibold uppercase tracking-wide">Recent searches</span>
                 <button
                   on:click={() => { localStorage.removeItem(HISTORY_KEY); historyVisible = false; }}
-                  class="text-xs text-peel-muted hover:text-peel-text transition-colors"
+                  class="text-xs text-kobser-muted hover:text-kobser-text transition-colors"
                 >Clear all</button>
               </div>
               {#each history as h}
@@ -133,7 +133,7 @@
                   role="option"
                   aria-selected="false"
                 >
-                  <i class="ph ph-clock-counter-clockwise text-peel-muted text-base flex-shrink-0"></i>
+                  <i class="ph ph-clock-counter-clockwise text-kobser-muted text-base flex-shrink-0"></i>
                   <span class="flex-1 text-sm truncate">{h}</span>
                   <button
                     class="w-6 h-6 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all flex-shrink-0"
@@ -149,7 +149,7 @@
       </div>
       <button
         on:click={go}
-        class="bg-peel-accent hover:bg-peel-accentHover text-peel-bg font-semibold rounded-2xl px-6 transition-colors flex items-center gap-2 shrink-0"
+        class="bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg font-semibold rounded-2xl px-6 transition-colors flex items-center gap-2 shrink-0"
       >
         <i class="ph-bold ph-magnifying-glass text-lg"></i>
         Search
@@ -190,12 +190,12 @@
               </div>
             </div>
             <div class="flex-1 min-w-0 pr-4">
-              <Marquee text={result.title || 'Untitled'} cls="font-medium text-base text-peel-text" />
-              <Marquee text="{result.channel || '—'} · {fmtDuration(result.duration)}" cls="text-sm text-peel-muted" />
+              <Marquee text={result.title || 'Untitled'} cls="font-medium text-base text-kobser-text" />
+              <Marquee text="{result.channel || '—'} · {fmtDuration(result.duration)}" cls="text-sm text-kobser-muted" />
             </div>
             <div class="flex items-center gap-3 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity pr-2">
               <button
-                class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors text-peel-muted hover:text-white"
+                class="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors text-kobser-muted hover:text-white"
                 title="Download to library"
                 on:click|stopPropagation={() => openDownload(result)}
               >

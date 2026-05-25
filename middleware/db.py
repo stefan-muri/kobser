@@ -4,9 +4,9 @@ import time
 from contextlib import contextmanager
 from pathlib import Path
 
-from config import PEEL_DATA_DIR
+from config import KOBSER_DATA_DIR
 
-DB_PATH = Path(PEEL_DATA_DIR) / "peel.db"
+DB_PATH = Path(KOBSER_DATA_DIR) / "kobser.db"
 
 
 def init_db() -> None:

@@ -61,7 +61,7 @@
 
   function statBar(label, used, total, icon) {
     const pct = total > 0 ? (used / total) * 100 : 0;
-    const color = pct > 85 ? 'bg-red-400' : pct > 65 ? 'bg-yellow-400' : 'bg-peel-accent';
+    const color = pct > 85 ? 'bg-red-400' : pct > 65 ? 'bg-yellow-400' : 'bg-kobser-accent';
     return { label, used, total, pct, color, icon };
   }
 
@@ -82,16 +82,16 @@
 
   <div class="flex flex-col gap-6">
     <!-- Account -->
-    <div class="bg-peel-surface rounded-2xl p-6">
-      <h3 class="text-lg font-semibold mb-4 text-peel-accent">Account</h3>
+    <div class="bg-kobser-surface rounded-2xl p-6">
+      <h3 class="text-lg font-semibold mb-4 text-kobser-accent">Account</h3>
       <div class="flex items-center justify-between py-2">
         <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-peel-accent/20 flex items-center justify-center">
-            <i class="ph-fill ph-user text-peel-accent text-lg"></i>
+          <div class="w-10 h-10 rounded-full bg-kobser-accent/20 flex items-center justify-center">
+            <i class="ph-fill ph-user text-kobser-accent text-lg"></i>
           </div>
           <div>
             <p class="font-medium">{session?.username ?? '—'}</p>
-            <p class="text-sm text-peel-muted">Navidrome account</p>
+            <p class="text-sm text-kobser-muted">Navidrome account</p>
           </div>
         </div>
         <button on:click={doLogout} class="px-4 py-2 bg-white/5 hover:bg-red-500/10 hover:text-red-400 rounded-xl text-sm font-medium transition-colors">
@@ -101,32 +101,32 @@
     </div>
 
     <!-- Server + System -->
-    <div class="bg-peel-surface rounded-2xl p-6">
+    <div class="bg-kobser-surface rounded-2xl p-6">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-peel-accent">Server</h3>
-        <button on:click={refreshAll} class="flex items-center gap-1.5 text-sm text-peel-muted hover:text-peel-text transition-colors">
+        <h3 class="text-lg font-semibold text-kobser-accent">Server</h3>
+        <button on:click={refreshAll} class="flex items-center gap-1.5 text-sm text-kobser-muted hover:text-kobser-text transition-colors">
           <i class="ph ph-arrows-clockwise"></i> Refresh
         </button>
       </div>
 
       <!-- Navidrome connection -->
       {#if serverStatus === 'loading'}
-        <div class="flex items-center gap-2 text-sm text-peel-muted mb-5">
+        <div class="flex items-center gap-2 text-sm text-kobser-muted mb-5">
           <i class="ph ph-circle-notch animate-spin-slow"></i> Checking…
         </div>
       {:else if serverStatus === 'ok'}
         <div class="flex items-center gap-3 py-1 mb-5">
-          <div class="w-2.5 h-2.5 rounded-full bg-peel-success shadow-[0_0_8px_rgba(46,196,182,0.6)] flex-shrink-0"></div>
+          <div class="w-2.5 h-2.5 rounded-full bg-kobser-success shadow-[0_0_8px_rgba(46,196,182,0.6)] flex-shrink-0"></div>
           <div>
-            <p class="font-medium text-peel-text text-sm">Navidrome</p>
-            <p class="text-xs text-peel-muted">Connected · v{serverVersion}</p>
+            <p class="font-medium text-kobser-text text-sm">Navidrome</p>
+            <p class="text-xs text-kobser-muted">Connected · v{serverVersion}</p>
           </div>
         </div>
       {:else}
         <div class="flex items-center gap-3 py-1 mb-5">
           <div class="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0"></div>
           <div>
-            <p class="font-medium text-peel-text text-sm">Navidrome</p>
+            <p class="font-medium text-kobser-text text-sm">Navidrome</p>
             <p class="text-xs text-red-400">Unreachable</p>
           </div>
         </div>
@@ -135,7 +135,7 @@
       <!-- System stats -->
       <div class="border-t border-white/5 pt-5">
         {#if statsLoading}
-          <div class="flex items-center gap-2 text-sm text-peel-muted"><i class="ph ph-circle-notch animate-spin-slow"></i> Loading…</div>
+          <div class="flex items-center gap-2 text-sm text-kobser-muted"><i class="ph ph-circle-notch animate-spin-slow"></i> Loading…</div>
         {:else if statsError}
           <p class="text-sm text-red-400">Could not load stats: {statsError}</p>
         {:else if stats}
@@ -145,26 +145,26 @@
                 <div>
                   <div class="flex items-center justify-between mb-1.5">
                     <span class="flex items-center gap-1.5 text-sm font-medium">
-                      <i class="ph {bar.icon} text-peel-muted"></i> {bar.label}
+                      <i class="ph {bar.icon} text-kobser-muted"></i> {bar.label}
                     </span>
                     <span class="text-sm font-semibold">{fmtBytes(bar.used)} / {fmtBytes(bar.total)}</span>
                   </div>
                   <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                     <div class="h-full rounded-full transition-all {bar.color}" style:width="{bar.pct.toFixed(1)}%"></div>
                   </div>
-                  <p class="text-xs text-peel-muted mt-1">{fmtBytes(bar.total - bar.used)} free</p>
+                  <p class="text-xs text-kobser-muted mt-1">{fmtBytes(bar.total - bar.used)} free</p>
                 </div>
               {/if}
             {/each}
             <div>
               <div class="flex items-center justify-between mb-1.5">
                 <span class="flex items-center gap-1.5 text-sm font-medium">
-                  <i class="ph ph-activity text-peel-muted"></i> CPU
+                  <i class="ph ph-activity text-kobser-muted"></i> CPU
                 </span>
                 <span class="text-sm font-semibold">{stats.cpu_percent.toFixed(1)}%</span>
               </div>
               <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                <div class="h-full rounded-full transition-all {stats.cpu_percent > 80 ? 'bg-red-400' : 'bg-peel-accent'}"
+                <div class="h-full rounded-full transition-all {stats.cpu_percent > 80 ? 'bg-red-400' : 'bg-kobser-accent'}"
                      style:width="{Math.min(stats.cpu_percent, 100).toFixed(1)}%"></div>
               </div>
             </div>
@@ -174,9 +174,9 @@
     </div>
 
     <!-- Library Rescan -->
-    <div class="bg-peel-surface rounded-2xl p-6">
-      <h3 class="text-lg font-semibold mb-2 text-peel-accent">Library</h3>
-      <p class="text-sm text-peel-muted mb-4">Trigger a Navidrome library scan to pick up any manually added files.</p>
+    <div class="bg-kobser-surface rounded-2xl p-6">
+      <h3 class="text-lg font-semibold mb-2 text-kobser-accent">Library</h3>
+      <p class="text-sm text-kobser-muted mb-4">Trigger a Navidrome library scan to pick up any manually added files.</p>
       <button
         on:click={rescan}
         disabled={rescanLoading}
@@ -189,7 +189,7 @@
         {/if}
       </button>
       {#if rescanMsg}
-        <p class="text-sm mt-3 {rescanState === 'success' ? 'text-peel-success' : 'text-red-400'}">{rescanMsg}</p>
+        <p class="text-sm mt-3 {rescanState === 'success' ? 'text-kobser-success' : 'text-red-400'}">{rescanMsg}</p>
       {/if}
     </div>
   </div>

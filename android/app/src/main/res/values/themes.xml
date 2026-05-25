@@ -1,0 +1,5 @@
+<resources>
+    <style name="Theme.Kobser" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/black</item>
+    </style>
+</resources>

@@ -1,7 +1,7 @@
 services:
   navidrome:
     image: deluan/navidrome:latest
-    container_name: peel-navidrome
+    container_name: kobser-navidrome
     restart: unless-stopped
     ports:
       - "${NAVIDROME_PORT:-4533}:4533"
@@ -14,25 +14,25 @@ services:
       ND_SCANSCHEDULE: "0"
       ND_ENABLEINSIGHTSCOLLECTOR: "false"
     networks:
-      - peel
+      - kobser
 
   middleware:
     build: ./middleware
-    container_name: peel-middleware
+    container_name: kobser-middleware
     restart: unless-stopped
     ports:
-      - "${PEEL_PORT:-8000}:8000"
+      - "${KOBSER_PORT:-8000}:8000"
     volumes:
       - ${MUSIC_DIR:-./data/music}:/music
       - ./secrets:/app/secrets:ro
-      - ./data/peel:/app/data
+      - ./data/kobser:/app/data
     environment:
       NAVIDROME_URL: http://navidrome:4533
       MUSIC_DIR: /music
       YTDLP_COOKIES_FILE: ${YTDLP_COOKIES_FILE:-}
     networks:
-      - peel
+      - kobser
 
 networks:
-  peel:
+  kobser:
     driver: bridge

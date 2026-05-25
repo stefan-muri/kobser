@@ -50,7 +50,7 @@
   style:pointer-events={$expandedPlayerOpen ? 'auto' : 'none'}
 >
   <!-- Blurred background -->
-  <div class="absolute inset-0 bg-peel-bg bg-cover bg-center scale-110"
+  <div class="absolute inset-0 bg-kobser-bg bg-cover bg-center scale-110"
        style:background-image={artUrl ? `url('${artUrl}')` : ''}
        style="filter: blur(48px) brightness(0.25)"></div>
   <div class="absolute inset-0 bg-black/50"></div>
@@ -61,15 +61,15 @@
     <div class="flex items-center justify-between py-5 flex-shrink-0">
       <button
         on:click={() => expandedPlayerOpen.set(false)}
-        class="w-10 h-10 flex items-center justify-center text-peel-muted hover:text-white transition-colors rounded-full hover:bg-white/10"
+        class="w-10 h-10 flex items-center justify-center text-kobser-muted hover:text-white transition-colors rounded-full hover:bg-white/10"
       >
         <i class="ph ph-caret-down text-2xl"></i>
       </button>
-      <p class="text-sm font-semibold tracking-wide text-peel-muted uppercase">Now Playing</p>
+      <p class="text-sm font-semibold tracking-wide text-kobser-muted uppercase">Now Playing</p>
       <button
         bind:this={dotsBtn}
         on:click={openDots}
-        class="w-10 h-10 flex items-center justify-center text-peel-muted hover:text-white transition-colors rounded-full hover:bg-white/10"
+        class="w-10 h-10 flex items-center justify-center text-kobser-muted hover:text-white transition-colors rounded-full hover:bg-white/10"
         style:visibility={preview ? 'hidden' : 'visible'}
       >
         <i class="ph ph-dots-three-vertical text-2xl"></i>
@@ -88,13 +88,13 @@
       <div class="flex-1 min-w-0">
         <Marquee text={track?.title ?? '—'} cls="text-2xl font-bold" />
         <div class="mt-1">
-          <Marquee text={track?.artist ?? '—'} cls="text-peel-muted" />
+          <Marquee text={track?.artist ?? '—'} cls="text-kobser-muted" />
         </div>
       </div>
       {#if !preview}
         <button
           on:click={toggleLike}
-          class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors flex-shrink-0 {liked ? 'text-peel-accent' : 'text-peel-muted'}"
+          class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors flex-shrink-0 {liked ? 'text-kobser-accent' : 'text-kobser-muted'}"
         >
           <i class="{liked ? 'ph-fill' : 'ph'} ph-heart text-2xl"></i>
         </button>
@@ -109,13 +109,13 @@
         on:click={handleProgressClick}
       >
         <div
-          class="h-full bg-peel-accent rounded-full relative group-hover:bg-peel-accentHover transition-colors"
+          class="h-full bg-kobser-accent rounded-full relative group-hover:bg-kobser-accentHover transition-colors"
           style:width="{progress}%"
         >
           <div class="absolute right-0 top-1/2 -translate-y-1/2 -mr-2 w-4 h-4 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity"></div>
         </div>
       </div>
-      <div class="flex justify-between text-xs text-peel-muted">
+      <div class="flex justify-between text-xs text-kobser-muted">
         <span>{fmtTime($playbackProgress.currentTime)}</span>
         <span>{fmtTime($playbackProgress.duration)}</span>
       </div>
@@ -125,25 +125,25 @@
     <div class="flex items-center justify-between flex-shrink-0 mt-6 mb-10">
       <button
         on:click={toggleShuffle}
-        class="w-11 h-11 flex items-center justify-center transition-colors rounded-full hover:bg-white/10 {$shuffleOn ? 'text-peel-accent' : 'text-peel-muted hover:text-white'}"
+        class="w-11 h-11 flex items-center justify-center transition-colors rounded-full hover:bg-white/10 {$shuffleOn ? 'text-kobser-accent' : 'text-kobser-muted hover:text-white'}"
       >
         <i class="ph ph-shuffle text-2xl"></i>
       </button>
-      <button on:click={prev} class="w-11 h-11 flex items-center justify-center text-peel-muted hover:text-white transition-colors">
+      <button on:click={prev} class="w-11 h-11 flex items-center justify-center text-kobser-muted hover:text-white transition-colors">
         <i class="ph-fill ph-skip-back text-3xl"></i>
       </button>
       <button
         on:click={togglePlayPause}
-        class="w-16 h-16 rounded-full bg-white text-peel-bg flex items-center justify-center hover:scale-105 transition-transform shadow-xl"
+        class="w-16 h-16 rounded-full bg-white text-kobser-bg flex items-center justify-center hover:scale-105 transition-transform shadow-xl"
       >
         <i class="ph-fill {$playing ? 'ph-pause' : 'ph-play'} text-2xl"></i>
       </button>
-      <button on:click={next} class="w-11 h-11 flex items-center justify-center text-peel-muted hover:text-white transition-colors">
+      <button on:click={next} class="w-11 h-11 flex items-center justify-center text-kobser-muted hover:text-white transition-colors">
         <i class="ph-fill ph-skip-forward text-3xl"></i>
       </button>
       <button
         on:click={toggleRepeat}
-        class="w-11 h-11 flex items-center justify-center transition-colors rounded-full hover:bg-white/10 {$repeatMode !== 'off' ? 'text-peel-accent' : 'text-peel-muted hover:text-white'}"
+        class="w-11 h-11 flex items-center justify-center transition-colors rounded-full hover:bg-white/10 {$repeatMode !== 'off' ? 'text-kobser-accent' : 'text-kobser-muted hover:text-white'}"
       >
         <i class="ph {$repeatMode === 'one' ? 'ph-repeat-once' : 'ph-repeat'} text-2xl"></i>
       </button>

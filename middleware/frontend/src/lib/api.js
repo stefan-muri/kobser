@@ -1,4 +1,4 @@
-const KEY_SESSION = "peel.session";
+const KEY_SESSION = "kobser.session";
 
 export function getSession() {
   try {

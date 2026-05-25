@@ -7,7 +7,7 @@ import httpx
 
 from config import NAVIDROME_URL
 
-CLIENT_ID = "peel-middleware"
+CLIENT_ID = "kobser-middleware"
 API_VERSION = "1.16.1"
 
 

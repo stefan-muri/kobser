@@ -46,13 +46,13 @@
 
   function statusClasses(status) {
     switch (status) {
-      case 'done':       return 'bg-peel-success/20 text-peel-success';
+      case 'done':       return 'bg-kobser-success/20 text-kobser-success';
       case 'error':      return 'bg-red-500/20 text-red-400';
-      case 'cancelled':  return 'bg-white/10 text-peel-muted';
+      case 'cancelled':  return 'bg-white/10 text-kobser-muted';
       case 'downloading':
       case 'tagging':
-      case 'scanning':   return 'bg-peel-accent/20 text-peel-accent';
-      default:           return 'bg-white/10 text-peel-muted';
+      case 'scanning':   return 'bg-kobser-accent/20 text-kobser-accent';
+      default:           return 'bg-white/10 text-kobser-muted';
     }
   }
 
@@ -94,7 +94,7 @@
         <div class="flex items-center gap-4 p-4 rounded-xl hover:bg-white/5 transition-all border-b border-white/5">
           <div class="min-w-0 flex-1">
             <p class="font-medium truncate">{job.artist} — {job.title}</p>
-            <p class="text-xs text-peel-muted mt-0.5">
+            <p class="text-xs text-kobser-muted mt-0.5">
               {#if job.started_at}{fmtDate(job.started_at)}{/if}
               {#if job.completed_at && job.started_at} · took {fmtDur(job.completed_at - job.started_at)}{/if}
               {#if job.file_size_bytes} · {fmtBytes(job.file_size_bytes)}{/if}
@@ -107,12 +107,12 @@
           {#if isActive}
             <button
               on:click={() => cancel(job.id)}
-              class="px-3 py-1 rounded-lg text-xs font-medium text-peel-muted hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+              class="px-3 py-1 rounded-lg text-xs font-medium text-kobser-muted hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
             >Cancel</button>
           {:else}
             <button
               on:click={() => remove(job.id)}
-              class="w-8 h-8 rounded-full flex items-center justify-center text-peel-muted hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-kobser-muted hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
               title="Remove"
             >
               <i class="ph ph-trash text-sm pointer-events-none"></i>

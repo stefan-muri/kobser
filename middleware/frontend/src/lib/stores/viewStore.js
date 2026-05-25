@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 
-const LAST_VIEW_KEY = 'peel:last-view';
+const LAST_VIEW_KEY = 'kobser:last-view';
 const VALID_VIEWS = ['search', 'library', 'liked', 'artists', 'playlists', 'jobs', 'settings'];
 const MORE_VIEWS = new Set(['liked', 'jobs', 'settings']);
 

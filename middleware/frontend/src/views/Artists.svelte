@@ -56,14 +56,14 @@
 
   <!-- Breadcrumb -->
   {#if stack.length > 1}
-    <div class="flex items-center gap-2 text-sm text-peel-muted mb-6 flex-wrap">
+    <div class="flex items-center gap-2 text-sm text-kobser-muted mb-6 flex-wrap">
       {#each stack as crumb, i}
         {#if i < stack.length - 1}
           <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-          <span class="cursor-pointer hover:text-peel-text transition-colors" on:click={() => goTo(i)} role="link" tabindex="0">{crumb.label}</span>
+          <span class="cursor-pointer hover:text-kobser-text transition-colors" on:click={() => goTo(i)} role="link" tabindex="0">{crumb.label}</span>
           <i class="ph ph-caret-right text-xs"></i>
         {:else}
-          <span class="text-peel-text font-medium">{crumb.label}</span>
+          <span class="text-kobser-text font-medium">{crumb.label}</span>
         {/if}
       {/each}
     </div>
@@ -85,12 +85,12 @@
       </div>
     {:else}
       <div class="relative mb-4">
-        <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-peel-muted"></i>
+        <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-kobser-muted"></i>
         <input type="text" bind:value={artistFilter} placeholder="Search artists…"
-          class="w-full bg-peel-surface text-peel-text placeholder-peel-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-peel-accent/50 border border-white/10 text-sm">
+          class="w-full bg-kobser-surface text-kobser-text placeholder-kobser-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 border border-white/10 text-sm">
       </div>
       {#if !filteredArtists.length}
-        <p class="text-center py-10 text-peel-muted text-sm">No artists match "{artistFilter}"</p>
+        <p class="text-center py-10 text-kobser-muted text-sm">No artists match "{artistFilter}"</p>
       {:else}
         <div class="flex flex-col gap-1">
           {#each filteredArtists as artist}
@@ -100,13 +100,13 @@
               on:click={() => push({ type: 'artist', id: artist.id, label: artist.name })}
               role="row"
             >
-              <img class="w-12 h-12 rounded-full object-cover flex-shrink-0 bg-peel-surface"
+              <img class="w-12 h-12 rounded-full object-cover flex-shrink-0 bg-kobser-surface"
                    src={coverArtUrl(artist.coverArt, 96)} alt="" loading="lazy">
               <div class="flex-1 min-w-0">
                 <p class="font-medium truncate">{artist.name}</p>
-                <p class="text-sm text-peel-muted">{artist.albumCount || 0} album{artist.albumCount === 1 ? '' : 's'}</p>
+                <p class="text-sm text-kobser-muted">{artist.albumCount || 0} album{artist.albumCount === 1 ? '' : 's'}</p>
               </div>
-              <i class="ph ph-caret-right text-peel-muted opacity-0 group-hover:opacity-100 transition-opacity"></i>
+              <i class="ph ph-caret-right text-kobser-muted opacity-0 group-hover:opacity-100 transition-opacity"></i>
             </div>
           {/each}
         </div>
@@ -114,30 +114,30 @@
     {/if}
   {:else if top.type === 'artist'}
     {#if !albums.length}
-      <p class="text-center py-12 text-peel-muted">No albums.</p>
+      <p class="text-center py-12 text-kobser-muted">No albums.</p>
     {:else}
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {#each albums as album}
           <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
           <div class="group cursor-pointer" on:click={() => push({ type: 'album', id: album.id, label: album.name })} role="gridcell">
-            <div class="relative w-full aspect-square rounded-xl overflow-hidden mb-3 shadow-lg bg-peel-surface">
+            <div class="relative w-full aspect-square rounded-xl overflow-hidden mb-3 shadow-lg bg-kobser-surface">
               <img src={coverArtUrl(album.coverArt, 300)} alt="" loading="lazy"
                    class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105">
               <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                <div class="w-12 h-12 bg-peel-accent rounded-full flex items-center justify-center shadow-xl translate-y-2 group-hover:translate-y-0 transition-transform">
-                  <i class="ph-fill ph-play text-peel-bg text-xl"></i>
+                <div class="w-12 h-12 bg-kobser-accent rounded-full flex items-center justify-center shadow-xl translate-y-2 group-hover:translate-y-0 transition-transform">
+                  <i class="ph-fill ph-play text-kobser-bg text-xl"></i>
                 </div>
               </div>
             </div>
             <p class="font-medium truncate text-sm">{album.name}</p>
-            <p class="text-xs text-peel-muted">{album.songCount || 0} track{album.songCount === 1 ? '' : 's'}</p>
+            <p class="text-xs text-kobser-muted">{album.songCount || 0} track{album.songCount === 1 ? '' : 's'}</p>
           </div>
         {/each}
       </div>
     {/if}
   {:else if top.type === 'album'}
     {#if !songs.length}
-      <p class="text-center py-12 text-peel-muted">No tracks.</p>
+      <p class="text-center py-12 text-kobser-muted">No tracks.</p>
     {:else}
       <TrackList {songs} onRefresh={() => loadAlbum(top.id)} />
     {/if}

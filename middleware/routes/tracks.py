@@ -93,7 +93,7 @@ async def delete_track(track_id: str, sess: dict = Depends(get_current_session))
 
     if not file_path.exists():
         # Navidrome's stored path doesn't match what's on disk.
-        # Try to find the file by reconstructing the Peel download path (artist/artist - title.*).
+        # Try to find the file by reconstructing the Kobser download path (artist/artist - title.*).
         song = body["song"]
         s_artist = _sanitize(song.get("artist", ""))
         s_title = _sanitize(song.get("title", ""))

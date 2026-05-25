@@ -60,15 +60,15 @@
 </script>
 
 {#if checking}
-  <div class="fixed inset-0 bg-peel-bg flex items-center justify-center">
-    <div class="w-10 h-10 rounded-full bg-peel-accent flex items-center justify-center shadow-[0_0_20px_rgba(255,159,28,0.5)] animate-pulse">
-      <i class="ph-fill ph-vinyl-record text-2xl text-peel-bg"></i>
+  <div class="fixed inset-0 bg-kobser-bg flex items-center justify-center">
+    <div class="w-10 h-10 rounded-full bg-kobser-accent flex items-center justify-center shadow-[0_0_20px_rgba(255,159,28,0.5)] animate-pulse">
+      <i class="ph-fill ph-vinyl-record text-2xl text-kobser-bg"></i>
     </div>
   </div>
 {:else if !authed}
   <Login on:success={onLoginSuccess} />
 {:else}
-  <div class="bg-peel-bg text-peel-text font-sans h-screen w-full overflow-hidden flex flex-col selection:bg-peel-accent selection:text-white antialiased">
+  <div class="bg-kobser-bg text-kobser-text font-sans h-screen w-full overflow-hidden flex flex-col selection:bg-kobser-accent selection:text-white antialiased">
     <div class="flex-1 flex overflow-hidden">
       <Sidebar />
       <main class="flex-1 overflow-y-auto h-full md:pb-28 relative w-full" id="view">

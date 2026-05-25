@@ -13,7 +13,7 @@
 </script>
 
 <nav
-  class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-peel-bg/95 backdrop-blur-md border-t border-white/5 user-select-none"
+  class="md:hidden fixed bottom-0 inset-x-0 z-40 bg-kobser-bg/95 backdrop-blur-md border-t border-white/5 user-select-none"
   style="padding-bottom: env(safe-area-inset-bottom, 0px)"
 >
   <div class="flex items-stretch h-[60px]">
@@ -21,7 +21,7 @@
       {@const active = $currentView === tab.view}
       <button
         on:click={() => showView(tab.view)}
-        class="flex flex-col items-center justify-center gap-0.5 flex-1 transition-colors {active ? 'text-peel-accent' : 'text-peel-muted'}"
+        class="flex flex-col items-center justify-center gap-0.5 flex-1 transition-colors {active ? 'text-kobser-accent' : 'text-kobser-muted'}"
       >
         <i class="{active ? 'ph-fill' : 'ph'} {tab.icon} text-xl"></i>
         <span class="text-[9px] font-medium">{tab.label}</span>
@@ -29,7 +29,7 @@
     {/each}
     <button
       on:click={() => moreSheetOpen.set(true)}
-      class="flex flex-col items-center justify-center gap-0.5 flex-1 transition-colors {moreActive ? 'text-peel-accent' : 'text-peel-muted'}"
+      class="flex flex-col items-center justify-center gap-0.5 flex-1 transition-colors {moreActive ? 'text-kobser-accent' : 'text-kobser-muted'}"
     >
       <i class="ph ph-dots-three text-xl"></i>
       <span class="text-[9px] font-medium">More</span>

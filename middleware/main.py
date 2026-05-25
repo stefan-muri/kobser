@@ -16,7 +16,7 @@ async def lifespan(_: FastAPI):
     yield
 
 
-app = FastAPI(title="Peel Middleware", lifespan=lifespan)
+app = FastAPI(title="Kobser Middleware", lifespan=lifespan)
 
 
 class NoCacheStaticMiddleware(BaseHTTPMiddleware):
