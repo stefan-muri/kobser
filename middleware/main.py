@@ -45,4 +45,4 @@ def health() -> dict[str, str]:
 
 
 # Static SPA last so /api/* and /health win the route table.
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+app.mount("/", StaticFiles(directory="frontend/dist", html=True), name="static")
