@@ -17,8 +17,8 @@ Built on [Navidrome](https://www.navidrome.org/) (music server) + a FastAPI midd
 
 ```bash
 # 1. Clone
-git clone https://git.unterhaken.at/phaneschema/peel
-cd peel
+git clone https://git.unterhaken.at/phaneschema/kobser
+cd kobser
 
 # 2. Configure
 cp .env.example .env
