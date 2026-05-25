@@ -28,6 +28,7 @@ import com.kobser.app.ui.playlists.PlaylistDetailScreen
 import com.kobser.app.ui.playlists.PlaylistsScreen
 import com.kobser.app.ui.downloads.DownloadsScreen
 import com.kobser.app.ui.search.SearchScreen
+import com.kobser.app.ui.settings.SettingsScreen
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -128,6 +129,7 @@ fun MainScreen(
                 composable(Screen.Settings.route) {
                     SettingsScreen(onLogout = { viewModel.logout {} })
                 }
+
                 composable(Screen.Playlists.route) {
                     PlaylistsScreen(
                         onPlaylistClick = { id -> navController.navigate("playlist/$id") },
@@ -177,13 +179,3 @@ fun MainScreen(
     }
 }
 
-@Composable
-fun SettingsScreen(onLogout: () -> Unit) {
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("Settings", style = MaterialTheme.typography.headlineMedium)
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onLogout) {
-            Text("Logout")
-        }
-    }
-}
