@@ -21,12 +21,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kobser.app.ui.library.AlbumDetailScreen
 import com.kobser.app.ui.library.ArtistDetailScreen
-import com.kobser.app.ui.library.ArtistsScreen
 import com.kobser.app.ui.library.LibraryScreen
 import com.kobser.app.ui.player.ExpandedPlayerScreen
 import com.kobser.app.ui.player.MiniPlayer
 import com.kobser.app.ui.playlists.PlaylistDetailScreen
 import com.kobser.app.ui.playlists.PlaylistsScreen
+import com.kobser.app.ui.downloads.DownloadsScreen
 import com.kobser.app.ui.search.SearchScreen
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -41,7 +41,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Library : Screen("library", "Library", Icons.Default.LibraryMusic)
     object Favorites : Screen("favorites", "Favorites", Icons.Default.Favorite)
     object Search : Screen("search", "Search", Icons.Default.Search)
-    object Artists : Screen("artists", "Artists", Icons.Default.Person)
+    object Downloads : Screen("downloads", "Downloads", Icons.Default.Download)
     object Playlists : Screen("playlists", "Playlists", Icons.AutoMirrored.Filled.PlaylistPlay)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
 }
@@ -54,10 +54,10 @@ fun MainScreen(
     val navController = rememberNavController()
     val items = listOf(
         Screen.Library,
-        Screen.Favorites,
         Screen.Search,
-        Screen.Artists,
+        Screen.Downloads,
         Screen.Playlists,
+        Screen.Favorites,
     )
 
     var expandedPlayerOpen by rememberSaveable { mutableStateOf(false) }
@@ -116,18 +116,14 @@ fun MainScreen(
                         onOpenSettings = { navController.navigate(Screen.Settings.route) },
                     )
                 }
-                composable(Screen.Artists.route) {
-                    ArtistsScreen(
-                        onArtistClick = { artist ->
-                            navController.navigate("artist/${artist.id}")
-                        },
-                    )
-                }
                 composable(Screen.Favorites.route) {
                     LibraryScreen(isFavorites = true, onSongClick = { /* TODO: Play song */ })
                 }
                 composable(Screen.Search.route) {
                     SearchScreen()
+                }
+                composable(Screen.Downloads.route) {
+                    DownloadsScreen()
                 }
                 composable(Screen.Settings.route) {
                     SettingsScreen(onLogout = { viewModel.logout {} })
