@@ -32,7 +32,7 @@ class LibrarySessionCallback @Inject constructor(
                 MediaMetadata.Builder()
                     .setIsBrowsable(true)
                     .setIsPlayable(false)
-                    .setTitle("Peel Library")
+                    .setTitle("Kobser Library")
                     .build()
             )
             .build()

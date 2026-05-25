@@ -12,7 +12,7 @@ import androidx.compose.ui.Modifier
 import com.kobser.app.data.repository.PreferencesRepository
 import com.kobser.app.ui.login.LoginScreen
 import com.kobser.app.ui.main.MainScreen
-import com.kobser.app.ui.theme.PeelTheme
+import com.kobser.app.ui.theme.KobserTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            PeelTheme {
+            KobserTheme {
                 val sessionId by prefs.sessionId.collectAsState(initial = null)
                 
                 Surface(

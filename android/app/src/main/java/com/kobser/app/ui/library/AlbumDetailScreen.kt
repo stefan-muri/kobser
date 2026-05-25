@@ -122,7 +122,7 @@ fun AlbumDetailScreen(
 
 @Composable
 private fun AlbumHeader(
-    album: com.peel.app.data.api.AlbumDetail,
+    album: com.kobser.app.data.api.AlbumDetail,
     getCoverUrl: suspend (String) -> String,
     onPlayAll: () -> Unit,
     onShuffle: () -> Unit,

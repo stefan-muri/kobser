@@ -11,19 +11,19 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PeelYellow,
-    onPrimary = PeelBlack,
-    secondary = PeelGray,
-    onSecondary = PeelWhite,
-    background = PeelBlack,
-    onBackground = PeelWhite,
-    surface = PeelGray,
-    onSurface = PeelWhite,
+    primary = KobserYellow,
+    onPrimary = KobserBlack,
+    secondary = KobserGray,
+    onSecondary = KobserWhite,
+    background = KobserBlack,
+    onBackground = KobserWhite,
+    surface = KobserGray,
+    onSurface = KobserWhite,
 )
 
 @Composable
-fun PeelTheme(
-    darkTheme: Boolean = true, // Force dark theme for Peel branding
+fun KobserTheme(
+    darkTheme: Boolean = true, // Force dark theme for Kobser branding
     content: @Composable () -> Unit
 ) {
     val colorScheme = DarkColorScheme
@@ -31,7 +31,7 @@ fun PeelTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = PeelBlack.toArgb()
+            window.statusBarColor = KobserBlack.toArgb()
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
         }
     }
