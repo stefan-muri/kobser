@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kobser.app.data.api.Song
+import com.kobser.app.ui.components.AddToPlaylistSheet
 import com.kobser.app.ui.components.SongRow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,6 +25,7 @@ fun LibraryScreen(
     val items = if (isFavorites) viewModel.favorites else viewModel.songs
 
     var deleteTarget by remember { mutableStateOf<Song?>(null) }
+    var playlistTarget by remember { mutableStateOf<Song?>(null) }
 
     Scaffold(
         topBar = {
@@ -82,11 +84,16 @@ fun LibraryScreen(
                                 onSongClick(song)
                             },
                             onDelete = { deleteTarget = song },
+                            onAddToPlaylist = { playlistTarget = song },
                         )
                     }
                 }
             }
         }
+    }
+
+    playlistTarget?.let { song ->
+        AddToPlaylistSheet(song = song, onDismiss = { playlistTarget = null })
     }
 
     val target = deleteTarget

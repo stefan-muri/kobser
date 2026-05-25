@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kobser.app.data.api.Song
+import com.kobser.app.ui.components.AddToPlaylistSheet
 import com.kobser.app.ui.components.MenuAction
 import com.kobser.app.ui.components.SongRow
 
@@ -38,6 +39,7 @@ fun PlaylistDetailScreen(
     val playlist = viewModel.playlist
     var deleteTarget by remember { mutableStateOf<Song?>(null) }
     var pickerOpen by remember { mutableStateOf(false) }
+    var playlistTarget by remember { mutableStateOf<Song?>(null) }
 
     Scaffold(
         topBar = {
@@ -121,6 +123,7 @@ fun PlaylistDetailScreen(
                             onAddToQueue = { viewModel.addToQueue(song) },
                             onPlay = { viewModel.playFromIndex(index) },
                             onDelete = { deleteTarget = song },
+                            onAddToPlaylist = { playlistTarget = song },
                             extraMenuItems = listOf(
                                 MenuAction(
                                     label = "Remove from playlist",
@@ -133,6 +136,10 @@ fun PlaylistDetailScreen(
                 }
             }
         }
+    }
+
+    playlistTarget?.let { song ->
+        AddToPlaylistSheet(song = song, onDismiss = { playlistTarget = null })
     }
 
     val target = deleteTarget

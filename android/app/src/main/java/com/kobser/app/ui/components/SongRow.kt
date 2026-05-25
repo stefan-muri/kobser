@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
@@ -40,6 +41,7 @@ fun SongRow(
     onAddToQueue: () -> Unit,
     onPlay: () -> Unit,
     onDelete: () -> Unit,
+    onAddToPlaylist: (() -> Unit)? = null,
     extraMenuItems: List<MenuAction> = emptyList(),
 ) {
     val coverUrl by produceState<String?>(initialValue = null, song.coverArt) {
@@ -111,6 +113,13 @@ fun SongRow(
                     leadingIcon = { Icon(Icons.AutoMirrored.Filled.QueueMusic, null) },
                     onClick = { menuOpen = false; onAddToQueue() },
                 )
+                if (onAddToPlaylist != null) {
+                    DropdownMenuItem(
+                        text = { Text("Add to playlist") },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, null) },
+                        onClick = { menuOpen = false; onAddToPlaylist() },
+                    )
+                }
                 DropdownMenuItem(
                     text = { Text(if (isStarred) "Unlike" else "Like") },
                     leadingIcon = {

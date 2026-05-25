@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kobser.app.data.api.Song
+import com.kobser.app.ui.components.AddToPlaylistSheet
 import com.kobser.app.ui.components.SongRow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -31,6 +32,7 @@ fun AlbumDetailScreen(
 ) {
     val album = viewModel.album
     var deleteTarget by remember { mutableStateOf<Song?>(null) }
+    var playlistTarget by remember { mutableStateOf<Song?>(null) }
 
     Scaffold(
         topBar = {
@@ -89,11 +91,16 @@ fun AlbumDetailScreen(
                             onAddToQueue = { viewModel.addToQueue(song) },
                             onPlay = { viewModel.playFromIndex(index) },
                             onDelete = { deleteTarget = song },
+                            onAddToPlaylist = { playlistTarget = song },
                         )
                     }
                 }
             }
         }
+    }
+
+    playlistTarget?.let { song ->
+        AddToPlaylistSheet(song = song, onDismiss = { playlistTarget = null })
     }
 
     val target = deleteTarget
