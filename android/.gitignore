@@ -1,0 +1,23 @@
+# Build outputs
+build/
+app/build/
+
+# Gradle wrapper (keep wrapper jar, ignore generated files)
+.gradle/
+gradle/wrapper/gradle-wrapper.jar
+
+# Local config (machine-specific)
+local.properties
+
+# IDE
+.idea/
+*.iml
+
+# JVM crash dumps
+*.hprof
+
+# Android Studio Navigation editor temp files
+.navigation/
+
+# Generated files
+app/src/main/assets/flutter_assets/

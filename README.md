@@ -1,8 +1,8 @@
-# peel
+# kobser
 
 A self-hosted music system for home labs. Search YouTube, download tracks, and stream your personal library — all from a clean web UI.
 
-Built on [Navidrome](https://www.navidrome.org/) (music server) + a FastAPI middleware + a vanilla JS single-page app.
+Built on [Navidrome](https://www.navidrome.org/) (music server) + a FastAPI middleware + a Svelte single-page app.
 
 ---
 
@@ -43,7 +43,7 @@ All configuration lives in `.env`. Copy `.env.example` to get started.
 | Variable | Default | Description |
 |---|---|---|
 | `MUSIC_DIR` | `./data/music` | Where music files are stored on the host |
-| `PEEL_PORT` | `8000` | Port for the Peel web UI |
+| `KOBSER_PORT` | `8000` | Port for the Kobser web UI |
 | `NAVIDROME_PORT` | `4533` | Port for the Navidrome admin UI (first-run only) |
 | `YTDLP_COOKIES_FILE` | _(unset)_ | Path to a `cookies.txt` for age-restricted videos |
 
@@ -76,7 +76,7 @@ YTDLP_COOKIES_FILE=./secrets/cookies.txt
 ```
 Browser
   │
-  └─► Peel UI (port 8000)
+  └─► Kobser UI (port 8000)
         │
         ├─► FastAPI middleware  ──► yt-dlp (search + download)
         │        │
@@ -87,7 +87,7 @@ Browser
               └─► Music files (shared volume)
 ```
 
-User accounts are Navidrome accounts. Peel stores only a session token in the browser (localStorage) — no separate user database.
+User accounts are Navidrome accounts. Kobser stores only a session token in the browser (localStorage) — no separate user database.
 
 ---
 
@@ -97,7 +97,7 @@ User accounts are Navidrome accounts. Peel stores only a session token in the br
 |---|---|
 | `./data/music/` | Downloaded music files |
 | `./data/navidrome/` | Navidrome database and config |
-| `./data/peel/` | Peel session database |
+| `./data/kobser/` | Kobser session database |
 
 All three are bind-mounted from the host and survive container rebuilds.
 
