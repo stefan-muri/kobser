@@ -7,25 +7,25 @@ RUN npm install
 
 COPY frontend/ ./frontend/
 RUN cd frontend && npm run build
-# frontend/dist/ now has index.html + assets/ (hashed JS/CSS bundles + bundled fonts)
 
 # Stage 2: Python runtime
-FROM python:3.12-slim
+FROM python:3.12-alpine
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+# ffmpeg from Alpine is statically-linked and much leaner than the Debian version.
+# gcc + musl-dev are needed to compile uvloop (uvicorn[standard]) and psutil;
+# they're removed in the same layer so they don't bloat the final image.
+RUN apk add --no-cache ffmpeg \
+    && apk add --no-cache --virtual .build-deps gcc musl-dev linux-headers \
+    && pip install --no-cache-dir uvicorn[standard] psutil \
+    && apk del .build-deps
 
 WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy Python source
 COPY . .
-
-# Overwrite static/ with the compiled frontend
-COPY --from=assets /assets/frontend/dist/ ./static/
+COPY --from=assets /assets/frontend/dist/ ./frontend/dist/
 
 EXPOSE 8000
 
