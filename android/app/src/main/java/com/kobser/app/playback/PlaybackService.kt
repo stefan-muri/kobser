@@ -1,12 +1,14 @@
 package com.kobser.app.playback
 
+import android.app.PendingIntent
+import android.content.Intent
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
+import com.kobser.app.MainActivity
 import dagger.hilt.android.AndroidEntryPoint
-
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -24,16 +26,31 @@ class PlaybackService : MediaLibraryService() {
                     .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
                     .setUsage(C.USAGE_MEDIA)
                     .build(),
-                true
+                true,
             )
             .build()
 
+        val sessionActivity = PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+
         mediaSession = MediaLibrarySession.Builder(this, player, callback)
+            .setSessionActivity(sessionActivity)
             .build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
         return mediaSession
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        val session = mediaSession ?: return
+        if (!session.player.playWhenReady) {
+            stopSelf()
+        }
     }
 
     override fun onDestroy() {
