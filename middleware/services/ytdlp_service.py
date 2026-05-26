@@ -46,16 +46,40 @@ def search(query: str, limit: int = 10, source: str = "youtube") -> list[dict[st
     }
     with YoutubeDL(opts) as ydl:
         result = ydl.extract_info(url, download=False)
-    entries = (result or {}).get("entries") or []
-    return [_normalize_entry(e) for e in entries if e][:limit]
+    raw_entries = (result or {}).get("entries") or []
+    # YT Music search returns shelf sections as top-level entries; flatten them
+    flat = _flatten_entries(raw_entries)
+    normalized = [_normalize_entry(e) for e in flat if e]
+    # Drop non-song entries (albums/artists have no duration or video id)
+    songs = [e for e in normalized if e["videoId"] and e["duration"]]
+    return songs[:limit]
+
+
+def _flatten_entries(entries: list) -> list:
+    """YT Music search nests songs inside shelf sections; flatten one level."""
+    flat = []
+    for e in entries:
+        if not e:
+            continue
+        if e.get("_type") in ("playlist", "multi_video") and e.get("entries"):
+            flat.extend(e["entries"])
+        else:
+            flat.append(e)
+    return flat
 
 
 def _normalize_entry(entry: dict) -> dict[str, Any]:
     return {
         "videoId": entry.get("id"),
-        "title": entry.get("title"),
-        "channel": entry.get("channel") or entry.get("uploader"),
-        "duration": entry.get("duration"),
+        "title": entry.get("title") or "Unknown",
+        "channel": (
+            entry.get("channel")
+            or entry.get("uploader")
+            or entry.get("artist")
+            or entry.get("creator")
+            or "Unknown"
+        ),
+        "duration": entry.get("duration") or 0,
         "thumbnail": _best_thumbnail(entry),
     }
 
