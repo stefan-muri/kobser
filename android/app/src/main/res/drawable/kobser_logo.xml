@@ -1,11 +1,13 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="200dp"
-    android:height="100dp"
-    android:viewportWidth="200"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="100"
     android:viewportHeight="100">
-    <!-- Placeholder for text logo. Ideally a real SVG would go here. -->
-    <!-- Using a simple rectangle with the color as a placeholder for the "splash logo" -->
+    <!-- A stylized 'K' represented as a vector path -->
+    <!-- This consists of a vertical stem and two diagonal strokes -->
     <path
         android:fillColor="#FF9F1C"
-        android:pathData="M20,40 L180,40 L180,60 L20,60 Z" />
+        android:pathData="M25,20 L35,20 L35,80 L25,80 Z
+                  M35,50 L65,20 L78,20 L45,53 Z
+                  M42,50 L78,80 L65,80 L35,55 Z" />
 </vector>
