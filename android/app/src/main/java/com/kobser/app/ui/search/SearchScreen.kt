@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kobser.app.data.api.SearchResult
+import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,47 +34,68 @@ fun SearchScreen(
     var downloadTarget by remember { mutableStateOf<SearchResult?>(null) }
     val focusManager = LocalFocusManager.current
 
+    val sources = listOf("youtube" to "YouTube", "youtube_music" to "YT Music")
+
     Scaffold(
         topBar = {
             Surface(
                 color = MaterialTheme.colorScheme.background,
                 modifier = Modifier.statusBarsPadding()
             ) {
-                OutlinedTextField(
-                    value = viewModel.query,
-                    onValueChange = { viewModel.query = it },
-                    placeholder = { Text("Search YouTube...") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    shape = CircleShape,
-                    singleLine = true,
-                    leadingIcon = {
-                        Icon(
-                            Icons.Default.Search,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    },
-                    trailingIcon = {
-                        if (viewModel.query.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.query = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear")
+                Column {
+                    OutlinedTextField(
+                        value = viewModel.query,
+                        onValueChange = { viewModel.query = it },
+                        placeholder = {
+                            Text(if (viewModel.searchSource == "youtube_music") "Search YouTube Music..." else "Search YouTube...")
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        shape = CircleShape,
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        trailingIcon = {
+                            if (viewModel.query.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.query = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                }
                             }
-                        }
-                    },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                    keyboardActions = KeyboardActions(onSearch = {
-                        viewModel.search()
-                        focusManager.clearFocus()
-                    }),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
+                        },
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = {
+                            viewModel.search()
+                            focusManager.clearFocus()
+                        }),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            focusedBorderColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
+                        )
                     )
-                )
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 8.dp),
+                    ) {
+                        sources.forEachIndexed { index, (value, label) ->
+                            SegmentedButton(
+                                selected = viewModel.searchSource == value,
+                                onClick = { viewModel.setSearchSource(value) },
+                                shape = SegmentedButtonDefaults.itemShape(index, sources.size),
+                                label = { Text(label, fontSize = 12.sp) },
+                            )
+                        }
+                    }
+                }
             }
         }
     ) { padding ->

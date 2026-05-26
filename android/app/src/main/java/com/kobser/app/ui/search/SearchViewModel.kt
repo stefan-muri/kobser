@@ -9,13 +9,15 @@ import com.kobser.app.data.api.DownloadRequest
 import com.kobser.app.data.api.KobserApi
 import com.kobser.app.data.api.SearchRequest
 import com.kobser.app.data.api.SearchResult
+import com.kobser.app.data.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class SearchViewModel @Inject constructor(
-    private val api: KobserApi
+    private val api: KobserApi,
+    private val prefs: PreferencesRepository,
 ) : ViewModel() {
 
     var query by mutableStateOf("")
@@ -23,15 +25,27 @@ class SearchViewModel @Inject constructor(
     var isLoading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
     var downloadStates by mutableStateOf<Map<String, DownloadState>>(emptyMap())
+    var searchSource by mutableStateOf("youtube")
+        private set
+
+    init {
+        viewModelScope.launch {
+            prefs.searchSource.collect { searchSource = it }
+        }
+    }
+
+    fun setSearchSource(source: String) {
+        viewModelScope.launch { prefs.saveSearchSource(source) }
+    }
 
     fun search() {
         if (query.isBlank()) return
-        
         isLoading = true
         error = null
+        results = emptyList()
         viewModelScope.launch {
             try {
-                val response = api.search(SearchRequest(query))
+                val response = api.search(SearchRequest(query = query, source = searchSource))
                 if (response.isSuccessful) {
                     results = response.body() ?: emptyList()
                 } else {
@@ -52,7 +66,8 @@ class SearchViewModel @Inject constructor(
                 val response = api.download(DownloadRequest(
                     videoId = result.videoId,
                     title = title,
-                    artist = artist
+                    artist = artist,
+                    source = searchSource,
                 ))
                 downloadStates = downloadStates + (result.videoId to
                     if (response.isSuccessful) DownloadState.DONE else DownloadState.ERROR)
