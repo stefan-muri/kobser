@@ -50,16 +50,16 @@ export const logout = () => call("/api/logout", { method: "POST" });
 
 export const me = () => call("/api/me");
 
-export const search = (query, limit = 10) =>
+export const search = (query, limit = 10, source = "youtube") =>
   call("/api/search", {
     method: "POST",
-    body: JSON.stringify({ query, limit }),
+    body: JSON.stringify({ query, limit, source }),
   });
 
-export const download = (videoId, artist, title) =>
+export const download = (videoId, artist, title, source = "youtube") =>
   call("/api/download", {
     method: "POST",
-    body: JSON.stringify({ videoId, artist, title }),
+    body: JSON.stringify({ videoId, artist, title, source }),
   });
 
 export const status = (jobId) =>

@@ -7,6 +7,7 @@
   import Marquee from '../components/Marquee.svelte';
 
   const HISTORY_KEY = 'kobser:search-history';
+  const SOURCE_KEY = 'kobser:search-source';
   const MAX_HISTORY = 20;
 
   let query = '';
@@ -16,6 +17,15 @@
   let error = '';
   let historyVisible = false;
   let inputEl;
+
+  let source = localStorage.getItem(SOURCE_KEY) || 'youtube';
+
+  function setSource(s) {
+    source = s;
+    localStorage.setItem(SOURCE_KEY, s);
+    results = [];
+    heading = 'Results';
+  }
 
   // Download dialog state
   let dlOpen = false;
@@ -52,7 +62,7 @@
     error = '';
     heading = `Searching for "${q}"`;
     try {
-      results = await searchApi(q, 15);
+      results = await searchApi(q, 15, source);
       heading = results.length ? `Results for "${q}"` : `No results for "${q}"`;
     } catch (e) {
       error = e.message;
@@ -100,7 +110,7 @@
   <h2 class="font-london text-3xl mb-6 pl-2">Search</h2>
 
   <!-- Search bar (sticky) -->
-  <div class="sticky top-0 bg-kobser-bg/90 backdrop-blur-md pt-2 pb-6 z-10">
+  <div class="sticky top-0 bg-kobser-bg/90 backdrop-blur-md pt-2 pb-4 z-10">
     <div class="relative w-full shadow-lg shadow-black/20 rounded-2xl flex gap-2">
       <div class="relative flex-1">
         <i class="ph ph-magnifying-glass absolute left-5 top-1/2 -translate-y-1/2 text-kobser-muted text-xl"></i>
@@ -153,6 +163,24 @@
       >
         <i class="ph-bold ph-magnifying-glass text-lg"></i>
         Search
+      </button>
+    </div>
+
+    <!-- Source toggle -->
+    <div class="flex gap-1 mt-3 p-1 bg-kobser-surface rounded-xl w-fit">
+      <button
+        on:click={() => setSource('youtube')}
+        class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all {source === 'youtube' ? 'bg-kobser-accent text-kobser-bg' : 'text-kobser-muted hover:text-kobser-text'}"
+      >
+        <i class="ph ph-youtube-logo text-base"></i>
+        YouTube
+      </button>
+      <button
+        on:click={() => setSource('youtube_music')}
+        class="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium transition-all {source === 'youtube_music' ? 'bg-kobser-accent text-kobser-bg' : 'text-kobser-muted hover:text-kobser-text'}"
+      >
+        <i class="ph ph-music-notes text-base"></i>
+        YT Music
       </button>
     </div>
   </div>
@@ -214,5 +242,6 @@
   videoId={dlVideoId}
   bind:artist={dlArtist}
   bind:title={dlTitle}
+  {source}
   on:download={e => trackJob(e.detail.jobId, e.detail.artist, e.detail.title)}
 />

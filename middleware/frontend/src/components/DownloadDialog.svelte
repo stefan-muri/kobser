@@ -9,6 +9,7 @@
   export let videoId = '';
   export let artist = '';
   export let title = '';
+  export let source = 'youtube';
 
   let dialogEl;
   let onDone = null;
@@ -27,7 +28,7 @@
     if (!a || !t) return;
     close();
     try {
-      const { jobId } = await downloadApi(videoId, a, t);
+      const { jobId } = await downloadApi(videoId, a, t, source);
       dispatch('download', { jobId, artist: a, title: t });
       showToast(`Downloading '${t}'...`, 'info');
     } catch (e) {

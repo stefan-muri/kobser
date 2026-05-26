@@ -29,7 +29,8 @@ def _sanitize(s: str) -> str:
     return s or "Unknown"
 
 
-def search(query: str, limit: int = 10) -> list[dict[str, Any]]:
+def search(query: str, limit: int = 10, source: str = "youtube") -> list[dict[str, Any]]:
+    prefix = "ytmsearch" if source == "youtube_music" else "ytsearch"
     opts = {
         "quiet": True,
         "no_warnings": True,
@@ -39,7 +40,7 @@ def search(query: str, limit: int = 10) -> list[dict[str, Any]]:
         **_cookies_opts(),
     }
     with YoutubeDL(opts) as ydl:
-        result = ydl.extract_info(f"ytsearch{limit}:{query}", download=False)
+        result = ydl.extract_info(f"{prefix}{limit}:{query}", download=False)
     entries = (result or {}).get("entries") or []
     return [_normalize_entry(e) for e in entries if e]
 
@@ -82,9 +83,9 @@ def get_stream_info(video_id: str) -> tuple[str, dict]:
     return fmt["url"], fmt.get("http_headers", {})
 
 
-def download(video_id: str, artist: str, title: str,
-             cancel_check: Callable[[], bool] | None = None) -> str:
-    """Download bestaudio in its native container. Returns the absolute file path."""
+def download(video_id: str, artist: str, title: str, source: str = "youtube",
+             cancel_check: Callable[[], bool] | None = None) -> tuple[str, str]:
+    """Download bestaudio in its native container. Returns (absolute_file_path, album)."""
     artist_dir = Path(MUSIC_DIR) / _sanitize(artist)
     artist_dir.mkdir(parents=True, exist_ok=True)
 
@@ -122,13 +123,19 @@ def download(video_id: str, artist: str, title: str,
         **_cookies_opts(),
     }
 
-    url = f"https://www.youtube.com/watch?v={video_id}"
+    if source == "youtube_music":
+        url = f"https://music.youtube.com/watch?v={video_id}"
+    else:
+        url = f"https://www.youtube.com/watch?v={video_id}"
+
     with YoutubeDL(opts) as ydl:
         info = ydl.extract_info(url, download=True)
         if not info:
             raise RuntimeError("yt-dlp returned no info")
 
+        album = info.get("album") or "Singles"
+
         requested = info.get("requested_downloads") or []
         if requested and requested[0].get("filepath"):
-            return requested[0]["filepath"]
-        return ydl.prepare_filename(info)
+            return requested[0]["filepath"], album
+        return ydl.prepare_filename(info), album
