@@ -1,0 +1,11 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="100dp"
+    android:viewportWidth="200"
+    android:viewportHeight="100">
+    <!-- Placeholder for text logo. Ideally a real SVG would go here. -->
+    <!-- Using a simple rectangle with the color as a placeholder for the "splash logo" -->
+    <path
+        android:fillColor="#FF9F1C"
+        android:pathData="M20,40 L180,40 L180,60 L20,60 Z" />
+</vector>
