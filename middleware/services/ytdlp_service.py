@@ -30,19 +30,24 @@ def _sanitize(s: str) -> str:
 
 
 def search(query: str, limit: int = 10, source: str = "youtube") -> list[dict[str, Any]]:
-    prefix = "ytmsearch" if source == "youtube_music" else "ytsearch"
+    if source == "youtube_music":
+        import urllib.parse
+        url = f"https://music.youtube.com/search?q={urllib.parse.quote(query)}"
+    else:
+        url = f"ytsearch{limit}:{query}"
     opts = {
         "quiet": True,
         "no_warnings": True,
         "noconfig": True,
         "extract_flat": True,
         "skip_download": True,
+        "playlistend": limit,
         **_cookies_opts(),
     }
     with YoutubeDL(opts) as ydl:
-        result = ydl.extract_info(f"{prefix}{limit}:{query}", download=False)
+        result = ydl.extract_info(url, download=False)
     entries = (result or {}).get("entries") or []
-    return [_normalize_entry(e) for e in entries if e]
+    return [_normalize_entry(e) for e in entries if e][:limit]
 
 
 def _normalize_entry(entry: dict) -> dict[str, Any]:
