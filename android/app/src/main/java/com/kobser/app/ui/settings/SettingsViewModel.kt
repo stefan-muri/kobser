@@ -25,7 +25,19 @@ class SettingsViewModel @Inject constructor(
     var rescanLoading by mutableStateOf(false)
     var rescanMessage by mutableStateOf<String?>(null)
 
-    init { loadStats() }
+    var searchSource by mutableStateOf("youtube_music")
+        private set
+
+    init {
+        loadStats()
+        viewModelScope.launch {
+            prefs.searchSource.collect { searchSource = it }
+        }
+    }
+
+    fun setSearchSource(source: String) {
+        viewModelScope.launch { prefs.saveSearchSource(source) }
+    }
 
     fun loadStats() {
         statsLoading = true

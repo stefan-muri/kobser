@@ -18,7 +18,8 @@ class DownloadRequest(BaseModel):
     videoId: str = Field(min_length=1)
     artist: str = Field(min_length=1)
     title: str = Field(min_length=1)
-    source: str = Field(default="youtube", pattern="^(youtube|youtube_music)$")
+    source: str = Field(default="youtube_music", pattern="^(youtube|youtube_music)$")
+    album: str = Field(default="")
 
 
 @router.post("/api/download")
@@ -41,6 +42,7 @@ async def download(
         sess["username"],
         sess["password"],
         body.source,
+        body.album,
     )
     return {"jobId": job.job_id, "status": job.status}
 
@@ -52,11 +54,12 @@ async def _run_download(
     title: str,
     username: str,
     password: str,
-    source: str = "youtube",
+    source: str = "youtube_music",
+    album: str = "",
 ) -> None:
     try:
         update_job(job_id, status="downloading")
-        file_path, album = await to_thread.run_sync(
+        file_path = await to_thread.run_sync(
             lambda: ytdlp_service.download(
                 video_id, artist, title, source,
                 cancel_check=lambda: is_cancelled(job_id),
@@ -66,8 +69,9 @@ async def _run_download(
         if is_cancelled(job_id):
             return
 
+        final_album = album.strip() or "Singles"
         update_job(job_id, status="tagging", file=file_path)
-        await to_thread.run_sync(tagger_service.tag, file_path, artist, title, album)
+        await to_thread.run_sync(tagger_service.tag, file_path, artist, title, final_album)
 
         if is_cancelled(job_id):
             return

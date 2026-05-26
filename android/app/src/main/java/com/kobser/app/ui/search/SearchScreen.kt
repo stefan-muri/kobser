@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kobser.app.data.api.SearchResult
-import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,8 +32,6 @@ fun SearchScreen(
 ) {
     var downloadTarget by remember { mutableStateOf<SearchResult?>(null) }
     val focusManager = LocalFocusManager.current
-
-    val sources = listOf("youtube" to "YouTube", "youtube_music" to "YT Music")
 
     Scaffold(
         topBar = {
@@ -46,9 +43,7 @@ fun SearchScreen(
                     OutlinedTextField(
                         value = viewModel.query,
                         onValueChange = { viewModel.query = it },
-                        placeholder = {
-                            Text(if (viewModel.searchSource == "youtube_music") "Search YouTube Music..." else "Search YouTube...")
-                        },
+                        placeholder = { Text("Search YouTube Music...") },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -80,21 +75,6 @@ fun SearchScreen(
                             unfocusedBorderColor = Color.Transparent,
                         )
                     )
-                    SingleChoiceSegmentedButtonRow(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 8.dp),
-                    ) {
-                        sources.forEachIndexed { index, (value, label) ->
-                            SegmentedButton(
-                                selected = viewModel.searchSource == value,
-                                onClick = { viewModel.setSearchSource(value) },
-                                shape = SegmentedButtonDefaults.itemShape(index, sources.size),
-                                label = { Text(label, fontSize = 12.sp) },
-                            )
-                        }
-                    }
                 }
             }
         }
@@ -127,8 +107,9 @@ fun SearchScreen(
     downloadTarget?.let { result ->
         DownloadDialog(
             result = result,
-            onConfirm = { artist, title ->
-                viewModel.download(result, artist, title)
+            source = viewModel.searchSource,
+            onConfirm = { artist, title, album ->
+                viewModel.download(result, artist, title, album)
                 downloadTarget = null
             },
             onDismiss = { downloadTarget = null },
@@ -139,11 +120,17 @@ fun SearchScreen(
 @Composable
 private fun DownloadDialog(
     result: SearchResult,
-    onConfirm: (artist: String, title: String) -> Unit,
+    source: String,
+    onConfirm: (artist: String, title: String, album: String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var artist by remember { mutableStateOf(result.channel) }
-    var title by remember { mutableStateOf(result.title) }
+    val initialArtist = result.channel
+    val initialTitle = result.title
+    val initialAlbum = if (source == "youtube_music") result.album.orEmpty() else ""
+
+    var artist by remember { mutableStateOf(initialArtist) }
+    var title by remember { mutableStateOf(initialTitle) }
+    var album by remember { mutableStateOf(initialAlbum) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -164,11 +151,18 @@ private fun DownloadDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                OutlinedTextField(
+                    value = album,
+                    onValueChange = { album = it },
+                    label = { Text("Album (optional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(artist.trim(), title.trim()) },
+                onClick = { onConfirm(artist.trim(), title.trim(), album.trim().ifBlank { null }) },
                 enabled = artist.isNotBlank() && title.isNotBlank(),
             ) { Text("Download") }
         },

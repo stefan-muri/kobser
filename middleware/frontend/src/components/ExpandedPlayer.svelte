@@ -45,18 +45,19 @@
 </script>
 
 <div
-  class="fixed inset-0 z-[150] flex flex-col pointer-events-none transition-transform duration-300 ease-in-out"
+  class="fixed inset-0 z-[150] flex flex-col pointer-events-none transition-transform duration-300 ease-in-out overflow-hidden"
   style:transform={$expandedPlayerOpen ? 'translateY(0)' : 'translateY(100%)'}
   style:pointer-events={$expandedPlayerOpen ? 'auto' : 'none'}
+  style:isolation="isolate"
 >
   <!-- Blurred background -->
-  <div class="absolute inset-0 bg-kobser-bg bg-cover bg-center scale-110"
+  <div class="absolute inset-0 z-0 bg-kobser-bg bg-cover bg-center scale-110"
        style:background-image={artUrl ? `url('${artUrl}')` : ''}
-       style="filter: blur(48px) brightness(0.25)"></div>
-  <div class="absolute inset-0 bg-black/50"></div>
+       style="filter: blur(48px) brightness(0.25); will-change: filter;"></div>
+  <div class="absolute inset-0 z-0 bg-black/50"></div>
 
   <!-- Content -->
-  <div class="relative flex flex-col h-full w-full max-w-lg mx-auto px-8" style="padding-top: env(safe-area-inset-top, 0px)">
+  <div class="relative z-10 flex flex-col h-full w-full max-w-lg mx-auto px-8" style="padding-top: env(safe-area-inset-top, 0px); transform: translateZ(0);">
     <!-- Top bar -->
     <div class="flex items-center justify-between py-5 flex-shrink-0">
       <button

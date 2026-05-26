@@ -50,17 +50,33 @@ export const logout = () => call("/api/logout", { method: "POST" });
 
 export const me = () => call("/api/me");
 
-export const search = (query, limit = 10, source = "youtube") =>
+// Returns { songs: [...], artists: [...] }
+export const search = (query, limit = 10, source = "youtube_music") =>
   call("/api/search", {
     method: "POST",
     body: JSON.stringify({ query, limit, source }),
   });
 
-export const download = (videoId, artist, title, source = "youtube") =>
+export const download = (videoId, artist, title, source = "youtube_music", album = "") =>
   call("/api/download", {
     method: "POST",
-    body: JSON.stringify({ videoId, artist, title, source }),
+    body: JSON.stringify({ videoId, artist, title, source, album }),
   });
+
+export const searchArtists = (query, limit = 10) =>
+  call("/api/search/artists", {
+    method: "POST",
+    body: JSON.stringify({ query, limit }),
+  });
+
+export const getArtist = (channelId) =>
+  call(`/api/artist/${encodeURIComponent(channelId)}`);
+
+export const getArtistSongs = (channelId) =>
+  call(`/api/artist/${encodeURIComponent(channelId)}/songs`);
+
+export const getAlbum = (browseId) =>
+  call(`/api/album/${encodeURIComponent(browseId)}`);
 
 export const status = (jobId) =>
   call(`/api/status/${encodeURIComponent(jobId)}`);

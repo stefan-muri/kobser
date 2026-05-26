@@ -1,7 +1,14 @@
 <script>
   import { getSession, setSession, logout, library as libApi, getStats } from '../lib/api.js';
 
+  const SOURCE_KEY = 'kobser:search-source';
   const session = getSession();
+  let searchSource = localStorage.getItem(SOURCE_KEY) || 'youtube_music';
+
+  function setSearchSource(s) {
+    searchSource = s;
+    localStorage.setItem(SOURCE_KEY, s);
+  }
   let serverStatus = 'loading';
   let serverVersion = '';
   let stats = null;
@@ -170,6 +177,28 @@
             </div>
           </div>
         {/if}
+      </div>
+    </div>
+
+    <!-- Search source -->
+    <div class="bg-kobser-surface rounded-2xl p-6">
+      <h3 class="text-lg font-semibold mb-1 text-kobser-accent">Search</h3>
+      <p class="text-sm text-kobser-muted mb-4">Choose where to search and download music from.</p>
+      <div class="flex gap-1 p-1 bg-kobser-bg rounded-xl w-fit">
+        <button
+          on:click={() => setSearchSource('youtube_music')}
+          class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all {searchSource === 'youtube_music' ? 'bg-kobser-accent text-kobser-bg' : 'text-kobser-muted hover:text-kobser-text'}"
+        >
+          <i class="ph ph-music-notes-simple text-base"></i>
+          YouTube Music
+        </button>
+        <button
+          on:click={() => setSearchSource('youtube')}
+          class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all {searchSource === 'youtube' ? 'bg-kobser-accent text-kobser-bg' : 'text-kobser-muted hover:text-kobser-text'}"
+        >
+          <i class="ph ph-youtube-logo text-base"></i>
+          YouTube
+        </button>
       </div>
     </div>
 

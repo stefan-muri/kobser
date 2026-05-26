@@ -34,10 +34,6 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    fun setSearchSource(source: String) {
-        viewModelScope.launch { prefs.saveSearchSource(source) }
-    }
-
     fun search() {
         if (query.isBlank()) return
         isLoading = true
@@ -47,7 +43,7 @@ class SearchViewModel @Inject constructor(
             try {
                 val response = api.search(SearchRequest(query = query, source = searchSource))
                 if (response.isSuccessful) {
-                    results = response.body() ?: emptyList()
+                    results = response.body()?.songs ?: emptyList()
                 } else {
                     error = "Search failed: ${response.code()}"
                 }
@@ -59,7 +55,7 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    fun download(result: SearchResult, artist: String, title: String) {
+    fun download(result: SearchResult, artist: String, title: String, album: String?) {
         downloadStates = downloadStates + (result.videoId to DownloadState.LOADING)
         viewModelScope.launch {
             try {
@@ -68,6 +64,7 @@ class SearchViewModel @Inject constructor(
                     title = title,
                     artist = artist,
                     source = searchSource,
+                    album = album?.takeIf { it.isNotBlank() },
                 ))
                 downloadStates = downloadStates + (result.videoId to
                     if (response.isSuccessful) DownloadState.DONE else DownloadState.ERROR)

@@ -7,7 +7,7 @@ from starlette.requests import Request
 
 from db import init_db
 from routes import auth as auth_routes
-from routes import download, library, search, stats, stream, tracks
+from routes import artist, download, library, search, stats, stream, tracks
 
 
 @asynccontextmanager
@@ -32,6 +32,7 @@ app.add_middleware(NoCacheStaticMiddleware)
 
 app.include_router(auth_routes.router)
 app.include_router(search.router)
+app.include_router(artist.router)
 app.include_router(download.router)
 app.include_router(library.router)
 app.include_router(stream.router)

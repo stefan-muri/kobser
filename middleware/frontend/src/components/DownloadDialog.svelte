@@ -9,12 +9,20 @@
   export let videoId = '';
   export let artist = '';
   export let title = '';
-  export let source = 'youtube';
+  export let album = '';
+  export let source = 'youtube_music';
 
   let dialogEl;
-  let onDone = null;
+  let localArtist = '';
+  let localTitle = '';
+  let localAlbum = '';
 
-  $: if (open && dialogEl) dialogEl.showModal();
+  $: if (open) {
+    localArtist = artist;
+    localTitle = title;
+    localAlbum = album;
+    if (dialogEl) dialogEl.showModal();
+  }
 
   function close() {
     open = false;
@@ -23,12 +31,12 @@
   }
 
   async function confirm() {
-    const a = artist.trim();
-    const t = title.trim();
+    const a = localArtist.trim();
+    const t = localTitle.trim();
     if (!a || !t) return;
     close();
     try {
-      const { jobId } = await downloadApi(videoId, a, t, source);
+      const { jobId } = await downloadApi(videoId, a, t, source, localAlbum.trim());
       dispatch('download', { jobId, artist: a, title: t });
       showToast(`Downloading '${t}'...`, 'info');
     } catch (e) {
@@ -50,7 +58,7 @@
     <span class="block text-sm text-kobser-muted mb-1.5 font-medium">Artist</span>
     <input
       type="text"
-      bind:value={artist}
+      bind:value={localArtist}
       required
       placeholder="e.g. M83"
       class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 transition-all border border-white/10"
@@ -60,9 +68,18 @@
     <span class="block text-sm text-kobser-muted mb-1.5 font-medium">Title</span>
     <input
       type="text"
-      bind:value={title}
+      bind:value={localTitle}
       required
       placeholder="e.g. Midnight City"
+      class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 transition-all border border-white/10"
+    >
+  </label>
+  <label class="block mb-4">
+    <span class="block text-sm text-kobser-muted mb-1.5 font-medium">Album <span class="text-kobser-muted/50 font-normal">(optional)</span></span>
+    <input
+      type="text"
+      bind:value={localAlbum}
+      placeholder="e.g. Hurry Up, We're Dreaming"
       class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 transition-all border border-white/10"
     >
   </label>

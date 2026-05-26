@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kobser.app.data.api.StatsResponse
 
@@ -57,6 +58,29 @@ fun SettingsScreen(
                         modifier = Modifier.padding(16.dp),
                     )
                     viewModel.stats != null -> StatsSection(viewModel.stats!!)
+                }
+            }
+
+            // ── Search source ────────────────────────────────────────────────
+            SectionCard(title = "Search") {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Where to search and download music from.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    val sources = listOf("youtube_music" to "YouTube Music", "youtube" to "YouTube")
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        sources.forEachIndexed { index, (value, label) ->
+                            SegmentedButton(
+                                selected = viewModel.searchSource == value,
+                                onClick = { viewModel.setSearchSource(value) },
+                                shape = SegmentedButtonDefaults.itemShape(index, sources.size),
+                                label = { Text(label, fontSize = 12.sp) },
+                            )
+                        }
+                    }
                 }
             }
 

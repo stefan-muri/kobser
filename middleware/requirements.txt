@@ -8,3 +8,4 @@ psutil>=5.9
 # yt-dlp updates frequently to keep up with YouTube changes.
 # Unpinned by design; rebuild the image periodically to pick up the latest.
 yt-dlp
+ytmusicapi
