@@ -10,6 +10,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +43,7 @@ fun AlbumDetailScreen(
                     Text(
                         text = album?.name ?: "Album",
                         color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.headlineMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -56,9 +59,15 @@ fun AlbumDetailScreen(
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+        val pullState = rememberPullToRefreshState()
+        PullToRefreshBox(
+            isRefreshing = viewModel.isLoading,
+            onRefresh = { viewModel.load() },
+            state = pullState,
+            modifier = Modifier.padding(padding).fillMaxSize(),
+        ) {
             when {
-                viewModel.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                viewModel.isLoading && album == null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 viewModel.error != null -> Text(
                     text = viewModel.error!!,
                     color = MaterialTheme.colorScheme.error,
@@ -69,7 +78,7 @@ fun AlbumDetailScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.align(Alignment.Center),
                 )
-                else -> LazyColumn {
+                else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                     item {
                         AlbumHeader(
                             album = album,
@@ -82,16 +91,25 @@ fun AlbumDetailScreen(
                         items = album.song,
                         key = { _, song -> song.id },
                     ) { index, song ->
+                        val isStarred = remember(song.id, viewModel.starredOverrides) {
+                            viewModel.isStarred(song)
+                        }
+                        val onToggleStar = remember(song) { { viewModel.toggleStar(song) } }
+                        val onAddToQueue = remember(song) { { viewModel.addToQueue(song) } }
+                        val onClick = remember(index) { { viewModel.playFromIndex(index) } }
+                        val onDelete = remember(song) { { deleteTarget = song } }
+                        val onAddToPlaylist = remember(song) { { playlistTarget = song } }
+
                         SongRow(
                             song = song,
-                            isStarred = viewModel.isStarred(song),
+                            isStarred = isStarred,
                             getCoverUrl = { viewModel.getCoverUrl(it, 128) },
-                            onClick = { viewModel.playFromIndex(index) },
-                            onToggleStar = { viewModel.toggleStar(song) },
-                            onAddToQueue = { viewModel.addToQueue(song) },
-                            onPlay = { viewModel.playFromIndex(index) },
-                            onDelete = { deleteTarget = song },
-                            onAddToPlaylist = { playlistTarget = song },
+                            onClick = onClick,
+                            onToggleStar = onToggleStar,
+                            onAddToQueue = onAddToQueue,
+                            onPlay = onClick,
+                            onDelete = onDelete,
+                            onAddToPlaylist = onAddToPlaylist,
                         )
                     }
                 }
@@ -130,14 +148,12 @@ fun AlbumDetailScreen(
 @Composable
 private fun AlbumHeader(
     album: com.kobser.app.data.api.AlbumDetail,
-    getCoverUrl: suspend (String) -> String,
+    getCoverUrl: (String) -> String,
     onPlayAll: () -> Unit,
     onShuffle: () -> Unit,
 ) {
     val coverArt = album.song.firstOrNull()?.coverArt
-    val coverUrl by produceState<String?>(initialValue = null, coverArt) {
-        value = coverArt?.let { getCoverUrl(it) }
-    }
+    val coverUrl = remember(coverArt) { coverArt?.let { getCoverUrl(it) } }
 
     Column(
         modifier = Modifier.fillMaxWidth().padding(16.dp),

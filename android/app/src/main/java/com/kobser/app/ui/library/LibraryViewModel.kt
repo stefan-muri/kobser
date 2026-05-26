@@ -1,6 +1,8 @@
 package com.kobser.app.ui.library
 
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -10,6 +12,8 @@ import com.kobser.app.data.api.Song
 import com.kobser.app.data.repository.LibraryRepository
 import com.kobser.app.playback.MusicPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -24,23 +28,47 @@ class LibraryViewModel @Inject constructor(
     var favorites by mutableStateOf<List<Song>>(emptyList())
     var isLoading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
+    var filterQuery by mutableStateOf("")
+
+    val filteredSongs by derivedStateOf {
+        if (filterQuery.isBlank()) songs
+        else songs.filter {
+            it.title.contains(filterQuery, ignoreCase = true) ||
+            it.artist.contains(filterQuery, ignoreCase = true)
+        }
+    }
+
+    val filteredFavorites by derivedStateOf {
+        if (filterQuery.isBlank()) favorites
+        else favorites.filter {
+            it.title.contains(filterQuery, ignoreCase = true) ||
+            it.artist.contains(filterQuery, ignoreCase = true)
+        }
+    }
 
     // Local override of starred state so the heart flips immediately on tap
     // without needing to reload the list. Mirrors web's `starredOverrides`.
-    var starredOverrides by mutableStateOf<Map<String, Boolean>>(emptyMap())
+    var starredOverrides = mutableStateMapOf<String, Boolean>()
         private set
 
     init {
-        loadAll()
+        if (songs.isEmpty() && artists.isEmpty()) {
+            loadAll()
+        }
+        viewModelScope.launch {
+            repository.libraryChanged.collect { loadAll() }
+        }
     }
 
     fun loadAll() {
         isLoading = true
         error = null
         viewModelScope.launch {
-            loadArtists()
-            loadSongs()
-            loadFavorites()
+            awaitAll(
+                async { loadArtists() },
+                async { loadSongs() },
+                async { loadFavorites() },
+            )
             isLoading = false
         }
     }
@@ -82,12 +110,12 @@ class LibraryViewModel @Inject constructor(
 
     fun toggleStar(song: Song, defaultStarred: Boolean = false) {
         val was = isStarred(song, defaultStarred)
-        starredOverrides = starredOverrides + (song.id to !was)
+        starredOverrides[song.id] = !was
         viewModelScope.launch {
             val result = if (was) repository.unstar(song.id) else repository.star(song.id)
             if (result.isFailure) {
                 // Revert on failure
-                starredOverrides = starredOverrides + (song.id to was)
+                starredOverrides[song.id] = was
             }
         }
     }
@@ -98,10 +126,11 @@ class LibraryViewModel @Inject constructor(
             if (result.isSuccess) {
                 songs = songs.filter { it.id != song.id }
                 favorites = favorites.filter { it.id != song.id }
+                repository.notifyLibraryChanged()
             }
             onComplete(result)
         }
     }
 
-    suspend fun getCoverArtUrl(id: String) = repository.getCoverArtUrl(id)
+    fun getCoverArtUrl(id: String) = repository.getCoverArtUrl(id)
 }

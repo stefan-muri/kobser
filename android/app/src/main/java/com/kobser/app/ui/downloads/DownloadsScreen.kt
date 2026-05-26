@@ -9,11 +9,13 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.HourglassEmpty
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -33,11 +35,12 @@ fun DownloadsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Downloads", color = MaterialTheme.colorScheme.primary) },
-                actions = {
-                    IconButton(onClick = { viewModel.load() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
-                    }
+                title = { 
+                    Text(
+                        "Downloads", 
+                        color = MaterialTheme.colorScheme.primary, 
+                        style = MaterialTheme.typography.headlineMedium
+                    ) 
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
@@ -45,9 +48,15 @@ fun DownloadsScreen(
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+        val pullState = rememberPullToRefreshState()
+        PullToRefreshBox(
+            isRefreshing = viewModel.isLoading,
+            onRefresh = { viewModel.load() },
+            state = pullState,
+            modifier = Modifier.padding(padding).fillMaxSize(),
+        ) {
             when {
-                viewModel.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                viewModel.isLoading && viewModel.downloads.isEmpty() -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 viewModel.error != null -> Text(
                     text = viewModel.error!!,
                     color = MaterialTheme.colorScheme.error,
@@ -58,12 +67,14 @@ fun DownloadsScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.align(Alignment.Center),
                 )
-                else -> LazyColumn {
+                else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(viewModel.downloads, key = { it.id }) { record ->
+                        val onCancel = remember(record.id) { { viewModel.cancel(record.id) } }
+                        val onDelete = remember(record.id) { { deleteTarget = record } }
                         DownloadRow(
                             record = record,
-                            onCancel = { viewModel.cancel(record.id) },
-                            onDelete = { deleteTarget = record },
+                            onCancel = onCancel,
+                            onDelete = onDelete,
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
                     }

@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
@@ -13,14 +14,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.kobser.app.ui.library.AlbumDetailScreen
 import com.kobser.app.ui.library.ArtistDetailScreen
+import com.kobser.app.ui.library.ArtistsScreen
 import com.kobser.app.ui.library.LibraryScreen
 import com.kobser.app.ui.player.ExpandedPlayerScreen
 import com.kobser.app.ui.player.MiniPlayer
@@ -40,10 +45,11 @@ import androidx.navigation.navArgument
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Library : Screen("library", "Library", Icons.Default.LibraryMusic)
-    object Favorites : Screen("favorites", "Favorites", Icons.Default.Favorite)
     object Search : Screen("search", "Search", Icons.Default.Search)
     object Downloads : Screen("downloads", "Downloads", Icons.Default.Download)
     object Playlists : Screen("playlists", "Playlists", Icons.AutoMirrored.Filled.PlaylistPlay)
+    object Favorites : Screen("favorites", "Favorites", Icons.Default.Favorite)
+    object Artists : Screen("artists", "Artists", Icons.Default.Person)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
 }
 
@@ -53,15 +59,15 @@ fun MainScreen(
     viewModel: MainViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
-    val items = listOf(
+    val navItems = listOf(
         Screen.Library,
-        Screen.Search,
-        Screen.Downloads,
-        Screen.Playlists,
         Screen.Favorites,
+        Screen.Search,
+        Screen.Playlists,
     )
 
     var expandedPlayerOpen by rememberSaveable { mutableStateOf(false) }
+    var moreSheetOpen by remember { mutableStateOf(false) }
 
     val currentSong by viewModel.musicPlayer.currentSong.collectAsState()
     if (currentSong == null && expandedPlayerOpen) {
@@ -74,15 +80,15 @@ fun MainScreen(
                 Column {
                     MiniPlayer(onExpand = { expandedPlayerOpen = true })
                     NavigationBar(
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        contentColor = MaterialTheme.colorScheme.primary
+                        containerColor = MaterialTheme.colorScheme.background,
+                        tonalElevation = 0.dp,
                     ) {
                         val navBackStackEntry by navController.currentBackStackEntryAsState()
                         val currentDestination = navBackStackEntry?.destination
-                        items.forEach { screen ->
+                        navItems.forEach { screen ->
                             NavigationBarItem(
                                 icon = { Icon(screen.icon, contentDescription = null) },
-                                label = { Text(screen.label) },
+                                label = { Text(screen.label, fontSize = 10.sp) },
                                 selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                                 onClick = {
                                     navController.navigate(screen.route) {
@@ -102,6 +108,23 @@ fun MainScreen(
                                 )
                             )
                         }
+                        NavigationBarItem(
+                            icon = { Icon(Icons.Default.MoreHoriz, contentDescription = null) },
+                            label = { Text("More", fontSize = 10.sp) },
+                            selected = currentDestination?.hierarchy?.any {
+                                it.route == Screen.Downloads.route ||
+                                it.route == Screen.Artists.route ||
+                                it.route == Screen.Settings.route
+                            } == true,
+                            onClick = { moreSheetOpen = true },
+                            colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                    indicatorColor = MaterialTheme.colorScheme.secondary
+                                )
+                        )
                     }
                 }
             }
@@ -113,12 +136,17 @@ fun MainScreen(
             ) {
                 composable(Screen.Library.route) {
                     LibraryScreen(
-                        onSongClick = { /* TODO: Play song */ },
+                        onSongClick = { expandedPlayerOpen = true },
                         onOpenSettings = { navController.navigate(Screen.Settings.route) },
                     )
                 }
                 composable(Screen.Favorites.route) {
-                    LibraryScreen(isFavorites = true, onSongClick = { /* TODO: Play song */ })
+                    LibraryScreen(isFavorites = true, onSongClick = { expandedPlayerOpen = true })
+                }
+                composable(Screen.Artists.route) {
+                    ArtistsScreen(
+                        onArtistClick = { artist -> navController.navigate("artist/${artist.id}") },
+                    )
                 }
                 composable(Screen.Search.route) {
                     SearchScreen()
@@ -175,6 +203,67 @@ fun MainScreen(
             ),
         ) {
             ExpandedPlayerScreen(onClose = { expandedPlayerOpen = false })
+        }
+    }
+
+    if (moreSheetOpen) {
+        MoreSheet(
+            onDismiss = { moreSheetOpen = false },
+            onNavigate = { route ->
+                moreSheetOpen = false
+                navController.navigate(route) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun MoreSheet(
+    onDismiss: () -> Unit,
+    onNavigate: (String) -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val items = listOf(
+        Triple(Screen.Downloads.route, "Downloads", Icons.Default.Download),
+        Triple(Screen.Artists.route, "Artists", Icons.Default.Person),
+        Triple(Screen.Settings.route, "Settings", Icons.Default.Settings),
+    )
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+            Text(
+                text = "More",
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            )
+            HorizontalDivider()
+            items.forEach { (route, label, icon) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onNavigate(route) }
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    Text(text = label, style = MaterialTheme.typography.bodyLarge)
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+            }
         }
     }
 }

@@ -85,7 +85,10 @@ class PlaylistDetailViewModel @Inject constructor(
     fun deleteSong(song: Song) {
         viewModelScope.launch {
             val result = repository.deleteTrack(song.id)
-            if (result.isSuccess) load()
+            if (result.isSuccess) {
+                load()
+                repository.notifyLibraryChanged()
+            }
         }
     }
 
@@ -121,6 +124,6 @@ class PlaylistDetailViewModel @Inject constructor(
         }
     }
 
-    suspend fun getCoverUrl(id: String, size: Int = 128): String =
+    fun getCoverUrl(id: String, size: Int = 128): String =
         repository.getCoverArtUrl(id, size)
 }

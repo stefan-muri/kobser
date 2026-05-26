@@ -42,6 +42,6 @@ class ArtistDetailViewModel @Inject constructor(
         }
     }
 
-    suspend fun getCoverUrl(id: String, size: Int = 300): String =
+    fun getCoverUrl(id: String, size: Int = 300): String =
         repository.getCoverArtUrl(id, size)
 }

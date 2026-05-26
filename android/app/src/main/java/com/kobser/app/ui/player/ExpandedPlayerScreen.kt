@@ -51,9 +51,7 @@ fun ExpandedPlayerScreen(
     LaunchedEffect(song) { if (song == null) onClose() }
     val currentSong = song ?: return
 
-    val coverUrl by produceState<String?>(initialValue = null, currentSong.coverArt) {
-        value = currentSong.coverArt?.let { viewModel.getCoverUrl(it, 1024) }
-    }
+    val coverUrl = remember(currentSong.coverArt) { currentSong.coverArt?.let { viewModel.getCoverUrl(it, 1024) } }
 
     var menuOpen by remember { mutableStateOf(false) }
     var deleteConfirmOpen by remember { mutableStateOf(false) }

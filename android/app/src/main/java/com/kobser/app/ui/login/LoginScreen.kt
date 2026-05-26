@@ -24,10 +24,10 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "KOBSER",
-            fontSize = 48.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary
+            text = "kobser",
+            style = MaterialTheme.typography.headlineLarge,
+            fontSize = 56.sp,
+            color = MaterialTheme.colorScheme.primary,
         )
         
         Spacer(modifier = Modifier.height(48.dp))

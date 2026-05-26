@@ -1,5 +1,6 @@
 package com.kobser.app.ui.playlists
 
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -21,9 +22,10 @@ class PlaylistsViewModel @Inject constructor(
     var isLoading by mutableStateOf(true)
     var error by mutableStateOf<String?>(null)
 
-    val filtered: List<Playlist>
-        get() = if (filter.isBlank()) playlists
-                else playlists.filter { it.name.contains(filter, ignoreCase = true) }
+    val filtered by derivedStateOf {
+        if (filter.isBlank()) playlists
+        else playlists.filter { it.name.contains(filter, ignoreCase = true) }
+    }
 
     init { load() }
 

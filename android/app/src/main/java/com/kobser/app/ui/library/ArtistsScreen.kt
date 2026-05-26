@@ -5,11 +5,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -24,27 +27,46 @@ fun ArtistsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Artists", color = MaterialTheme.colorScheme.primary) },
+                title = { 
+                    Text(
+                        "Artists", 
+                        color = MaterialTheme.colorScheme.primary, 
+                        style = MaterialTheme.typography.headlineMedium
+                    ) 
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            if (viewModel.isLoading) {
+        val pullState = rememberPullToRefreshState()
+        PullToRefreshBox(
+            isRefreshing = viewModel.isLoading,
+            onRefresh = { viewModel.loadAll() },
+            state = pullState,
+            modifier = Modifier.padding(padding).fillMaxSize(),
+        ) {
+            if (viewModel.isLoading && viewModel.artists.isEmpty()) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (viewModel.error != null) {
+            } else if (viewModel.error != null && viewModel.artists.isEmpty()) {
                 Text(
                     text = viewModel.error!!,
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.align(Alignment.Center)
                 )
+            } else if (viewModel.artists.isEmpty()) {
+                Text(
+                    text = "No artists yet",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.align(Alignment.Center)
+                )
             } else {
-                LazyColumn {
-                    items(viewModel.artists) { artist ->
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(viewModel.artists, key = { it.id }) { artist ->
+                        val onClick = remember(artist.id) { { onArtistClick(artist) } }
                         ArtistItem(
                             artist = artist,
                             getCoverUrl = { viewModel.getCoverArtUrl(it) },
-                            onClick = { onArtistClick(artist) }
+                            onClick = onClick
                         )
                     }
                 }
@@ -56,12 +78,10 @@ fun ArtistsScreen(
 @Composable
 fun ArtistItem(
     artist: Artist,
-    getCoverUrl: suspend (String) -> String,
+    getCoverUrl: (String) -> String,
     onClick: () -> Unit
 ) {
-    val coverUrl = produceState<String?>(initialValue = null, artist.coverArt) {
-        artist.coverArt?.let { value = getCoverUrl(it) }
-    }
+    val coverUrl = remember(artist.coverArt) { artist.coverArt?.let { getCoverUrl(it) } }
 
     Row(
         modifier = Modifier
@@ -71,7 +91,7 @@ fun ArtistItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
-            model = coverUrl.value,
+            model = coverUrl,
             contentDescription = null,
             modifier = Modifier.size(60.dp),
             contentScale = ContentScale.Crop

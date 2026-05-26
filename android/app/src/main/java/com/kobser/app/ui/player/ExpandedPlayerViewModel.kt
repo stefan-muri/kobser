@@ -14,20 +14,16 @@ class ExpandedPlayerViewModel @Inject constructor(
     private val libraryRepo: LibraryRepository,
 ) : ViewModel() {
 
-    suspend fun getCoverUrl(coverArt: String, size: Int = 1024): String =
+    fun getCoverUrl(coverArt: String, size: Int = 1024): String =
         libraryRepo.getCoverArtUrl(coverArt, size)
 
-    /**
-     * Deletes the currently playing track from the library. Closes the player
-     * UI on success so the user isn't left looking at a track that no longer
-     * exists.
-     */
     fun deleteCurrentTrack(onResult: (Result<Unit>) -> Unit) {
         val song = musicPlayer.currentSong.value ?: return
         viewModelScope.launch {
             val result = libraryRepo.deleteTrack(song.id)
             if (result.isSuccess) {
                 musicPlayer.closePlayer()
+                libraryRepo.notifyLibraryChanged()
             }
             onResult(result)
         }

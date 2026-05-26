@@ -86,10 +86,11 @@ class AlbumDetailViewModel @Inject constructor(
             val result = repository.deleteTrack(song.id)
             if (result.isSuccess) {
                 album = album?.copy(song = album!!.song.filter { it.id != song.id })
+                repository.notifyLibraryChanged()
             }
         }
     }
 
-    suspend fun getCoverUrl(id: String, size: Int = 512): String =
+    fun getCoverUrl(id: String, size: Int = 512): String =
         repository.getCoverArtUrl(id, size)
 }

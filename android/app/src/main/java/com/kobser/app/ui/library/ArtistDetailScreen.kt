@@ -9,6 +9,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +39,7 @@ fun ArtistDetailScreen(
                     Text(
                         text = artist?.name ?: "Artist",
                         color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.headlineSmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -55,9 +58,15 @@ fun ArtistDetailScreen(
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+        val pullState = rememberPullToRefreshState()
+        PullToRefreshBox(
+            isRefreshing = viewModel.isLoading,
+            onRefresh = { viewModel.load() },
+            state = pullState,
+            modifier = Modifier.padding(padding).fillMaxSize(),
+        ) {
             when {
-                viewModel.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                viewModel.isLoading && artist == null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 viewModel.error != null -> Text(
                     text = viewModel.error!!,
                     color = MaterialTheme.colorScheme.error,
@@ -73,7 +82,7 @@ fun ArtistDetailScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.align(Alignment.Center),
                 )
-                else -> LazyColumn {
+                else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(artist.album, key = { it.id }) { album ->
                         AlbumRow(
                             album = album,
@@ -90,12 +99,10 @@ fun ArtistDetailScreen(
 @Composable
 private fun AlbumRow(
     album: Album,
-    getCoverUrl: suspend (String) -> String,
+    getCoverUrl: (String) -> String,
     onClick: () -> Unit,
 ) {
-    val coverUrl by produceState<String?>(initialValue = null, album.coverArt) {
-        value = album.coverArt?.let { getCoverUrl(it) }
-    }
+    val coverUrl = remember(album.coverArt) { album.coverArt?.let { getCoverUrl(it) } }
 
     Row(
         modifier = Modifier

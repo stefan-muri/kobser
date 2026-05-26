@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kobser.app.data.api.DownloadRecord
 import com.kobser.app.data.api.KobserApi
+import com.kobser.app.data.repository.LibraryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -15,6 +16,7 @@ import javax.inject.Inject
 @HiltViewModel
 class DownloadsViewModel @Inject constructor(
     private val api: KobserApi,
+    private val libraryRepository: LibraryRepository,
 ) : ViewModel() {
 
     var downloads by mutableStateOf<List<DownloadRecord>>(emptyList())
@@ -26,19 +28,25 @@ class DownloadsViewModel @Inject constructor(
     fun load() {
         viewModelScope.launch {
             isLoading = downloads.isEmpty()
-            error = null
-            try {
-                val response = api.listDownloads()
-                if (response.isSuccessful) {
-                    downloads = response.body()?.downloads ?: emptyList()
-                } else {
-                    error = "Failed to load downloads"
-                }
-            } catch (e: Exception) {
-                error = e.message
-            } finally {
-                isLoading = false
+            doLoad()
+            isLoading = false
+        }
+    }
+
+    private suspend fun doLoad(): Boolean {
+        error = null
+        return try {
+            val response = api.listDownloads()
+            if (response.isSuccessful) {
+                downloads = response.body()?.downloads ?: emptyList()
+                true
+            } else {
+                error = "Failed to load downloads"
+                false
             }
+        } catch (e: Exception) {
+            error = e.message
+            false
         }
     }
 
@@ -62,7 +70,12 @@ class DownloadsViewModel @Inject constructor(
         if (!hasPending) return
         viewModelScope.launch {
             delay(3000)
-            load()
+            val prevDoneIds = downloads.filter { it.status == "done" }.map { it.id }.toSet()
+            doLoad()
+            val newDoneIds = downloads.filter { it.status == "done" }.map { it.id }.toSet()
+            if ((newDoneIds - prevDoneIds).isNotEmpty()) {
+                libraryRepository.notifyLibraryChanged()
+            }
             pollUntilDone()
         }
     }

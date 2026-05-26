@@ -16,6 +16,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,7 +42,13 @@ fun PlaylistsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Playlists", color = MaterialTheme.colorScheme.primary) },
+                title = { 
+                    Text(
+                        "Playlists", 
+                        color = MaterialTheme.colorScheme.primary, 
+                        style = MaterialTheme.typography.headlineMedium
+                    ) 
+                },
                 actions = {
                     IconButton(onClick = { createOpen = true }) {
                         Icon(Icons.Default.Add, contentDescription = "New playlist")
@@ -62,9 +70,15 @@ fun PlaylistsScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             )
 
-            Box(modifier = Modifier.fillMaxSize()) {
+            val pullState = rememberPullToRefreshState()
+            PullToRefreshBox(
+                isRefreshing = viewModel.isLoading,
+                onRefresh = { viewModel.load() },
+                state = pullState,
+                modifier = Modifier.fillMaxSize(),
+            ) {
                 when {
-                    viewModel.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    viewModel.isLoading && viewModel.filtered.isEmpty() -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                     viewModel.error != null -> Text(
                         text = viewModel.error!!,
                         color = MaterialTheme.colorScheme.error,
@@ -75,7 +89,7 @@ fun PlaylistsScreen(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         modifier = Modifier.align(Alignment.Center),
                     )
-                    else -> LazyColumn {
+                    else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(viewModel.filtered, key = { it.id }) { p ->
                             PlaylistRow(
                                 playlist = p,

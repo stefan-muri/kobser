@@ -6,14 +6,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
@@ -24,30 +30,51 @@ import com.kobser.app.data.api.SearchResult
 fun SearchScreen(
     viewModel: SearchViewModel = hiltViewModel()
 ) {
+    var downloadTarget by remember { mutableStateOf<SearchResult?>(null) }
+    val focusManager = LocalFocusManager.current
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    TextField(
-                        value = viewModel.query,
-                        onValueChange = { viewModel.query = it },
-                        placeholder = { Text("Search YouTube...") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { viewModel.search() }),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = androidx.compose.ui.graphics.Color.Transparent,
-                            unfocusedContainerColor = androidx.compose.ui.graphics.Color.Transparent
+            Surface(
+                color = MaterialTheme.colorScheme.background,
+                modifier = Modifier.statusBarsPadding()
+            ) {
+                OutlinedTextField(
+                    value = viewModel.query,
+                    onValueChange = { viewModel.query = it },
+                    placeholder = { Text("Search YouTube...") },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = CircleShape,
+                    singleLine = true,
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Search,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
                         )
+                    },
+                    trailingIcon = {
+                        if (viewModel.query.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.query = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "Clear")
+                            }
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = {
+                        viewModel.search()
+                        focusManager.clearFocus()
+                    }),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
                     )
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.search() }) {
-                        Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    }
-                }
-            )
+                )
+            }
         }
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
@@ -61,46 +88,130 @@ fun SearchScreen(
                 )
             } else {
                 LazyColumn {
-                    items(viewModel.results) { result ->
-                        SearchResultItem(
+                    items(viewModel.results, key = { it.videoId }) { result ->
+                        val onDownload = remember(result.videoId) { { downloadTarget = result } }
+                        SearchResultRow(
                             result = result,
-                            onDownload = { viewModel.download(result) }
+                            state = viewModel.downloadStates[result.videoId],
+                            onDownload = onDownload,
                         )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
                     }
                 }
             }
         }
     }
+
+    downloadTarget?.let { result ->
+        DownloadDialog(
+            result = result,
+            onConfirm = { artist, title ->
+                viewModel.download(result, artist, title)
+                downloadTarget = null
+            },
+            onDismiss = { downloadTarget = null },
+        )
+    }
 }
 
 @Composable
-fun SearchResultItem(
+private fun DownloadDialog(
     result: SearchResult,
-    onDownload: () -> Unit
+    onConfirm: (artist: String, title: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var artist by remember { mutableStateOf(result.channel) }
+    var title by remember { mutableStateOf(result.title) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Download") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = artist,
+                    onValueChange = { artist = it },
+                    label = { Text("Artist") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(artist.trim(), title.trim()) },
+                enabled = artist.isNotBlank() && title.isNotBlank(),
+            ) { Text("Download") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun SearchResultRow(
+    result: SearchResult,
+    state: DownloadState?,
+    onDownload: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         AsyncImage(
             model = result.thumbnail,
             contentDescription = null,
-            modifier = Modifier.size(100.dp, 60.dp),
-            contentScale = ContentScale.Crop
+            modifier = Modifier.size(96.dp, 54.dp),
+            contentScale = ContentScale.Crop,
         )
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = result.title, style = MaterialTheme.typography.titleSmall, maxLines = 2)
+            Text(
+                text = result.title,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2,
+            )
             Text(
                 text = result.channel,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             )
         }
-        IconButton(onClick = onDownload) {
-            Icon(Icons.Default.Download, contentDescription = "Download", tint = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.width(4.dp))
+        when (state) {
+            DownloadState.LOADING -> CircularProgressIndicator(
+                modifier = Modifier.size(24.dp).padding(2.dp),
+                strokeWidth = 2.dp,
+            )
+            DownloadState.DONE -> Icon(
+                Icons.Default.CheckCircle,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp),
+            )
+            DownloadState.ERROR -> Icon(
+                Icons.Default.Error,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(24.dp),
+            )
+            null -> IconButton(onClick = onDownload) {
+                Icon(
+                    Icons.Default.Download,
+                    contentDescription = "Download",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
         }
     }
 }

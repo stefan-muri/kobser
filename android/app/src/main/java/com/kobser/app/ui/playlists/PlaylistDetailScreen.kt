@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +50,7 @@ fun PlaylistDetailScreen(
                     Text(
                         text = playlist?.name ?: "Playlist",
                         color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.headlineMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -71,9 +74,15 @@ fun PlaylistDetailScreen(
             )
         }
     ) { padding ->
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+        val pullState = rememberPullToRefreshState()
+        PullToRefreshBox(
+            isRefreshing = viewModel.isLoading,
+            onRefresh = { viewModel.load() },
+            state = pullState,
+            modifier = Modifier.padding(padding).fillMaxSize(),
+        ) {
             when {
-                viewModel.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                viewModel.isLoading && playlist == null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 viewModel.error != null -> Text(
                     text = viewModel.error!!,
                     color = MaterialTheme.colorScheme.error,
@@ -84,7 +93,7 @@ fun PlaylistDetailScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     modifier = Modifier.align(Alignment.Center),
                 )
-                playlist.entry.isEmpty() -> Column(
+                playlist.entry.orEmpty().isEmpty() -> Column(
                     modifier = Modifier.align(Alignment.Center),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -102,35 +111,47 @@ fun PlaylistDetailScreen(
                         Text("Add songs")
                     }
                 }
-                else -> LazyColumn {
+                else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                     item {
                         PlaylistHeader(
-                            songCount = playlist.entry.size,
+                            songCount = playlist.entry.orEmpty().size,
                             onPlayAll = { viewModel.playAll() },
                             onShuffle = { viewModel.playShuffled() },
                         )
                     }
                     itemsIndexed(
-                        items = playlist.entry,
+                        items = playlist.entry.orEmpty(),
                         key = { idx, song -> "${idx}_${song.id}" },
                     ) { index, song ->
-                        SongRow(
-                            song = song,
-                            isStarred = viewModel.isStarred(song),
-                            getCoverUrl = { viewModel.getCoverUrl(it) },
-                            onClick = { viewModel.playFromIndex(index) },
-                            onToggleStar = { viewModel.toggleStar(song) },
-                            onAddToQueue = { viewModel.addToQueue(song) },
-                            onPlay = { viewModel.playFromIndex(index) },
-                            onDelete = { deleteTarget = song },
-                            onAddToPlaylist = { playlistTarget = song },
-                            extraMenuItems = listOf(
+                        val isStarred = remember(song.id, viewModel.starredOverrides) {
+                            viewModel.isStarred(song)
+                        }
+                        val onToggleStar = remember(song) { { viewModel.toggleStar(song) } }
+                        val onAddToQueue = remember(song) { { viewModel.addToQueue(song) } }
+                        val onClick = remember(index) { { viewModel.playFromIndex(index) } }
+                        val onDelete = remember(song) { { deleteTarget = song } }
+                        val onAddToPlaylist = remember(song) { { playlistTarget = song } }
+                        val extraItems = remember(index) {
+                            listOf(
                                 MenuAction(
                                     label = "Remove from playlist",
                                     icon = Icons.Default.RemoveCircleOutline,
                                     onClick = { viewModel.removeFromPlaylist(index) },
                                 ),
-                            ),
+                            )
+                        }
+
+                        SongRow(
+                            song = song,
+                            isStarred = isStarred,
+                            getCoverUrl = { viewModel.getCoverUrl(it) },
+                            onClick = onClick,
+                            onToggleStar = onToggleStar,
+                            onAddToQueue = onAddToQueue,
+                            onPlay = onClick,
+                            onDelete = onDelete,
+                            onAddToPlaylist = onAddToPlaylist,
+                            extraMenuItems = extraItems,
                         )
                     }
                 }

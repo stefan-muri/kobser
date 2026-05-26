@@ -22,6 +22,7 @@ class SearchViewModel @Inject constructor(
     var results by mutableStateOf<List<SearchResult>>(emptyList())
     var isLoading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
+    var downloadStates by mutableStateOf<Map<String, DownloadState>>(emptyMap())
 
     fun search() {
         if (query.isBlank()) return
@@ -44,20 +45,22 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    fun download(result: SearchResult) {
+    fun download(result: SearchResult, artist: String, title: String) {
+        downloadStates = downloadStates + (result.videoId to DownloadState.LOADING)
         viewModelScope.launch {
             try {
                 val response = api.download(DownloadRequest(
                     videoId = result.videoId,
-                    title = result.title,
-                    artist = result.channel
+                    title = title,
+                    artist = artist
                 ))
-                if (!response.isSuccessful) {
-                    error = "Download failed: ${response.code()}"
-                }
+                downloadStates = downloadStates + (result.videoId to
+                    if (response.isSuccessful) DownloadState.DONE else DownloadState.ERROR)
             } catch (e: Exception) {
-                error = e.message
+                downloadStates = downloadStates + (result.videoId to DownloadState.ERROR)
             }
         }
     }
 }
+
+enum class DownloadState { LOADING, DONE, ERROR }

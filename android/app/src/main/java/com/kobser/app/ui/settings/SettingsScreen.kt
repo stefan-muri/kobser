@@ -24,7 +24,7 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings", color = MaterialTheme.colorScheme.primary) },
+                title = { Text("Settings", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.headlineSmall) },
                 actions = {
                     IconButton(onClick = { viewModel.loadStats() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")

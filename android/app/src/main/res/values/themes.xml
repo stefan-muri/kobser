@@ -1,5 +1,6 @@
 <resources>
     <style name="Theme.Kobser" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:statusBarColor">@android:color/black</item>
+        <item name="android:windowBackground">@drawable/splash_background</item>
     </style>
 </resources>

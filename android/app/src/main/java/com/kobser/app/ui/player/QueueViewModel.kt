@@ -12,6 +12,6 @@ class QueueViewModel @Inject constructor(
     private val libraryRepo: LibraryRepository,
 ) : ViewModel() {
 
-    suspend fun getCoverUrl(coverArt: String, size: Int = 128): String =
+    fun getCoverUrl(coverArt: String, size: Int = 128): String =
         libraryRepo.getCoverArtUrl(coverArt, size)
 }

@@ -19,10 +19,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastForEach
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
 import com.kobser.app.data.api.Song
 
 /**
@@ -35,7 +37,7 @@ import com.kobser.app.data.api.Song
 fun SongRow(
     song: Song,
     isStarred: Boolean,
-    getCoverUrl: suspend (String) -> String,
+    getCoverUrl: (String) -> String,
     onClick: () -> Unit,
     onToggleStar: () -> Unit,
     onAddToQueue: () -> Unit,
@@ -44,55 +46,63 @@ fun SongRow(
     onAddToPlaylist: (() -> Unit)? = null,
     extraMenuItems: List<MenuAction> = emptyList(),
 ) {
-    val coverUrl by produceState<String?>(initialValue = null, song.coverArt) {
-        value = song.coverArt?.let { getCoverUrl(it) }
-    }
+    val coverUrl = remember(song.coverArt) { song.coverArt?.let { getCoverUrl(it) } }
 
     var menuOpen by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(72.dp) // Fixed height helps LazyColumn measure items
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
-            model = coverUrl,
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(coverUrl)
+                .crossfade(true)
+                .build(),
             contentDescription = null,
             modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
+                .size(52.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
             contentScale = ContentScale.Crop,
         )
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = song.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.titleSmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            Spacer(Modifier.height(2.dp))
             Text(
                 text = song.artist,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        IconButton(onClick = onToggleStar) {
+        IconButton(
+            onClick = onToggleStar,
+            modifier = Modifier.minimumInteractiveComponentSize()
+        ) {
             Icon(
                 imageVector = if (isStarred) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
                 contentDescription = if (isStarred) "Unlike" else "Like",
                 tint = if (isStarred) MaterialTheme.colorScheme.primary
-                       else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                       else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
             )
         }
         Box {
-            IconButton(onClick = { menuOpen = true }) {
+            IconButton(
+                onClick = { menuOpen = true },
+                modifier = Modifier.minimumInteractiveComponentSize()
+            ) {
                 Icon(
                     Icons.Default.MoreVert,
                     contentDescription = "More options",
@@ -103,6 +113,7 @@ fun SongRow(
                 expanded = menuOpen,
                 onDismissRequest = { menuOpen = false },
             ) {
+                // ... (menu items same as before)
                 DropdownMenuItem(
                     text = { Text("Play") },
                     leadingIcon = { Icon(Icons.Default.PlayArrow, null) },
@@ -130,7 +141,7 @@ fun SongRow(
                     },
                     onClick = { menuOpen = false; onToggleStar() },
                 )
-                extraMenuItems.forEach { extra ->
+                extraMenuItems.fastForEach { extra ->
                     DropdownMenuItem(
                         text = { Text(extra.label) },
                         leadingIcon = extra.icon?.let { { Icon(it, null) } },

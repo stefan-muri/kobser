@@ -107,13 +107,11 @@ private fun QueueRow(
     isCurrent: Boolean,
     isPlayingNow: Boolean,
     isUpcoming: Boolean,
-    getCoverUrl: suspend (String) -> String,
+    getCoverUrl: (String) -> String,
     onClick: () -> Unit,
     onRemove: () -> Unit,
 ) {
-    val coverUrl by produceState<String?>(initialValue = null, song.coverArt) {
-        value = song.coverArt?.let { getCoverUrl(it) }
-    }
+    val coverUrl = remember(song.coverArt) { song.coverArt?.let { getCoverUrl(it) } }
 
     // Swipe-to-remove only for upcoming tracks; the currently playing track
     // can't be removed (matches the web's removeFromQueue guard).
