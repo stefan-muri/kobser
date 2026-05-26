@@ -6,8 +6,8 @@ docker-compose.override.yml
 secrets/
 !secrets/cookies.txt.example
 
-# Bind-mounted data
-data/
+# Bind-mounted data (top-level only — Android has its own data/ source package)
+/data/
 
 # Python
 __pycache__/
