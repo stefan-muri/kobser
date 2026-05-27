@@ -45,6 +45,38 @@ async def start_scan(username: str, password: str) -> dict[str, Any]:
         return r.json()
 
 
+async def get_user_libraries(username: str, password: str) -> list[dict[str, Any]]:
+    """Return the libraries the given user has access to, via Navidrome's native API.
+
+    Each entry is `{id, name, path}`. Returns an empty list on failure so callers
+    can fall back to the default MUSIC_DIR.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            login = await client.post(
+                f"{NAVIDROME_URL}/auth/login",
+                json={"username": username, "password": password},
+            )
+            login.raise_for_status()
+            token = login.json().get("token")
+            if not token:
+                return []
+
+            libs = await client.get(
+                f"{NAVIDROME_URL}/api/library",
+                headers={"x-nd-authorization": f"Bearer {token}"},
+            )
+            libs.raise_for_status()
+            data = libs.json() or []
+            return [
+                {"id": l.get("id"), "name": l.get("name") or "", "path": l.get("path") or ""}
+                for l in data
+                if l.get("path")
+            ]
+    except Exception:
+        return []
+
+
 async def trigger_scan_and_wait(username: str, password: str, scan_wait_s: float = 1.5) -> None:
     """Trigger a Navidrome scan and give it long enough to finish.
 

@@ -58,11 +58,18 @@ async def _run_download(
     album: str = "",
 ) -> None:
     try:
+        # Resolve the user's library path from Navidrome; fall back to MUSIC_DIR.
+        libs = await navidrome_client.get_user_libraries(username, password)
+        music_dir = libs[0]["path"] if libs else None
+        if music_dir:
+            log.info("download %s: routing to user '%s' library %s", job_id, username, music_dir)
+
         update_job(job_id, status="downloading")
         file_path = await to_thread.run_sync(
             lambda: ytdlp_service.download(
                 video_id, artist, title, source,
                 cancel_check=lambda: is_cancelled(job_id),
+                music_dir=music_dir,
             )
         )
 

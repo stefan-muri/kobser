@@ -272,9 +272,15 @@ def get_stream_info(video_id: str) -> tuple[str, dict]:
 
 
 def download(video_id: str, artist: str, title: str, source: str = "youtube",
-             cancel_check: Callable[[], bool] | None = None) -> str:
-    """Download bestaudio in its native container. Returns the absolute file path."""
-    artist_dir = Path(MUSIC_DIR) / _sanitize(artist)
+             cancel_check: Callable[[], bool] | None = None,
+             music_dir: str | None = None) -> str:
+    """Download bestaudio in its native container. Returns the absolute file path.
+
+    `music_dir` overrides the default MUSIC_DIR — used to route a user's
+    download into their own Navidrome library path.
+    """
+    base = music_dir or MUSIC_DIR
+    artist_dir = Path(base) / _sanitize(artist)
     artist_dir.mkdir(parents=True, exist_ok=True)
 
     filename_stem = _sanitize(f"{artist} - {title}")
