@@ -46,7 +46,11 @@ async def start_scan(username: str, password: str) -> dict[str, Any]:
 
 
 async def get_user_libraries(username: str, password: str) -> list[dict[str, Any]]:
-    """Return the libraries the given user has access to, via Navidrome's native API.
+    """Return the libraries assigned to the given user, via Navidrome's native API.
+
+    Non-admin users can call /api/user/{their_own_id} — the response embeds the
+    full `libraries` array (with paths) for the libraries that user is assigned
+    to. No admin privileges or /api/library access required.
 
     Each entry is `{id, name, path}`. Returns an empty list on failure so callers
     can fall back to the default MUSIC_DIR.
@@ -58,19 +62,22 @@ async def get_user_libraries(username: str, password: str) -> list[dict[str, Any
                 json={"username": username, "password": password},
             )
             login.raise_for_status()
-            token = login.json().get("token")
-            if not token:
+            login_data = login.json() or {}
+            token = login_data.get("token")
+            user_id = login_data.get("id")
+            if not token or not user_id:
                 return []
 
-            libs = await client.get(
-                f"{NAVIDROME_URL}/api/library",
+            user_resp = await client.get(
+                f"{NAVIDROME_URL}/api/user/{user_id}",
                 headers={"x-nd-authorization": f"Bearer {token}"},
             )
-            libs.raise_for_status()
-            data = libs.json() or []
+            user_resp.raise_for_status()
+            libraries = (user_resp.json() or {}).get("libraries") or []
+
             return [
                 {"id": l.get("id"), "name": l.get("name") or "", "path": l.get("path") or ""}
-                for l in data
+                for l in libraries
                 if l.get("path")
             ]
     except Exception:
