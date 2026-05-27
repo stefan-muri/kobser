@@ -35,7 +35,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun setSearchSource(source: String) {
+    fun updateSearchSource(source: String) {
         viewModelScope.launch { prefs.saveSearchSource(source) }
     }
 

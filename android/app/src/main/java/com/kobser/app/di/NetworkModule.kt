@@ -1,8 +1,11 @@
 package com.kobser.app.di
 
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import com.kobser.app.BuildConfig
 import com.kobser.app.data.api.KobserApi
+import com.kobser.app.data.api.SearchResponse
+import com.kobser.app.data.api.SearchResponseDeserializer
 import com.kobser.app.data.repository.PreferencesRepository
 import dagger.Module
 import dagger.Provides
@@ -25,7 +28,9 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideGson(): Gson = Gson()
+    fun provideGson(): Gson = GsonBuilder()
+        .registerTypeAdapter(SearchResponse::class.java, SearchResponseDeserializer())
+        .create()
 
     @Provides
     @Singleton
@@ -92,14 +97,14 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideKobserApi(okHttpClient: OkHttpClient): KobserApi {
+    fun provideKobserApi(okHttpClient: OkHttpClient, gson: Gson): KobserApi {
         // Use a stable base URL or a placeholder since the interceptor handles the actual routing
-        val initialUrl = "http://placeholder/" 
-        
+        val initialUrl = "http://placeholder/"
+
         return Retrofit.Builder()
             .baseUrl(initialUrl)
             .client(okHttpClient)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(KobserApi::class.java)
     }

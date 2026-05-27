@@ -75,7 +75,7 @@ fun SettingsScreen(
                         sources.forEachIndexed { index, (value, label) ->
                             SegmentedButton(
                                 selected = viewModel.searchSource == value,
-                                onClick = { viewModel.setSearchSource(value) },
+                                onClick = { viewModel.updateSearchSource(value) },
                                 shape = SegmentedButtonDefaults.itemShape(index, sources.size),
                                 label = { Text(label, fontSize = 12.sp) },
                             )
