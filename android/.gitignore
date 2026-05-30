@@ -6,6 +6,9 @@ app/build/
 .gradle/
 gradle/wrapper/gradle-wrapper.jar
 
+# Kotlin compiler scratch/daemon output
+.kotlin/
+
 # Local config (machine-specific)
 local.properties
 

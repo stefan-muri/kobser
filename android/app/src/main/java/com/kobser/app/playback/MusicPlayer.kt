@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
+import androidx.media3.common.Timeline
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
@@ -102,8 +103,12 @@ class MusicPlayer @Inject constructor(
                 if (playing) startProgressLoop() else stopProgressLoop()
             }
 
+            override fun onTimelineChanged(timeline: Timeline, reason: Int) {
+                syncQueueFromController()
+            }
+
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                _currentIndex.value = controller?.currentMediaItemIndex ?: -1
+                syncQueueFromController()
                 saveLastTrack()
             }
 
@@ -119,6 +124,59 @@ class MusicPlayer @Inject constructor(
                 }
             }
         })
+    }
+
+    /**
+     * Mirrors the controller's timeline into [_queue] / [_currentIndex]. When playback is
+     * driven externally — e.g. Android Auto sets a fresh queue directly on the session —
+     * our Song list would otherwise be stale, leaving the phone's mini/expanded player
+     * blank or wrong. We detect divergence by comparing real track ids and rebuild Songs
+     * from each item's metadata + extras only when needed (so phone-initiated playback,
+     * which already populated [_queue], is a no-op).
+     */
+    private fun syncQueueFromController() {
+        val c = controller ?: return
+        val count = c.mediaItemCount
+        if (count == 0) {
+            if (_queue.value.isNotEmpty()) _queue.value = emptyList()
+            _currentIndex.value = -1
+            return
+        }
+        val controllerIds = (0 until count).map { realTrackId(c.getMediaItemAt(it).mediaId) }
+        if (controllerIds != _queue.value.map { it.id }) {
+            _queue.value = (0 until count).map { songFromMediaItem(c.getMediaItemAt(it)) }
+        }
+        _currentIndex.value = c.currentMediaItemIndex
+    }
+
+    private fun realTrackId(mediaId: String): String =
+        if (mediaId.startsWith("track|")) mediaId.substringAfterLast("|") else mediaId
+
+    /** Rebuilds a Song from a session MediaItem (metadata + the extras we attach when browsing). */
+    private fun songFromMediaItem(item: MediaItem): Song {
+        val md = item.mediaMetadata
+        val ex = md.extras
+        return Song(
+            id = realTrackId(item.mediaId),
+            parent = null,
+            title = md.title?.toString() ?: "",
+            album = md.albumTitle?.toString(),
+            artist = md.artist?.toString() ?: "",
+            track = null,
+            year = null,
+            genre = null,
+            coverArt = ex?.getString("coverArt"),
+            duration = ex?.getInt("duration") ?: 0,
+            bitRate = null,
+            contentType = null,
+            suffix = null,
+            size = null,
+            albumId = ex?.getString("albumId"),
+            artistId = ex?.getString("artistId"),
+            type = null,
+            created = null,
+            starred = ex?.getString("starred"),
+        )
     }
 
     private fun startProgressLoop() {
@@ -295,6 +353,9 @@ class MusicPlayer @Inject constructor(
                     reverted[idx] = reverted[idx].copy(starred = song.starred)
                     _queue.value = reverted
                 }
+            } else {
+                // Keep the library/favorites screens in sync.
+                libraryRepo.notifyLibraryChanged()
             }
         }
     }

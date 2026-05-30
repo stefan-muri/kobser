@@ -8,9 +8,16 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kobser.app.data.api.Artist
+import com.kobser.app.data.api.ArtistResult
+import com.kobser.app.data.api.DownloadRequest
+import com.kobser.app.data.api.KobserApi
+import com.kobser.app.data.api.SearchRequest
+import com.kobser.app.data.api.SearchResult
 import com.kobser.app.data.api.Song
 import com.kobser.app.data.repository.LibraryRepository
+import com.kobser.app.data.repository.PreferencesRepository
 import com.kobser.app.playback.MusicPlayer
+import com.kobser.app.ui.ytmusic.YtDownloadState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -20,7 +27,9 @@ import javax.inject.Inject
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
     private val repository: LibraryRepository,
-    private val musicPlayer: MusicPlayer
+    private val musicPlayer: MusicPlayer,
+    private val api: KobserApi,
+    private val prefs: PreferencesRepository,
 ) : ViewModel() {
 
     var artists by mutableStateOf<List<Artist>>(emptyList())
@@ -29,6 +38,23 @@ class LibraryViewModel @Inject constructor(
     var isLoading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
     var filterQuery by mutableStateOf("")
+
+    // ── Online (YouTube / YT Music) search ───────────────────────────────────
+    // Fired on submit; results are shown below the local library matches.
+    var searchSource by mutableStateOf("youtube_music")
+        private set
+    var onlineSongs by mutableStateOf<List<SearchResult>>(emptyList())
+        private set
+    var onlineArtists by mutableStateOf<List<ArtistResult>>(emptyList())
+        private set
+    var onlineLoading by mutableStateOf(false)
+        private set
+    var onlineError by mutableStateOf<String?>(null)
+        private set
+    var onlineSearched by mutableStateOf(false)
+        private set
+    var downloadStates by mutableStateOf<Map<String, YtDownloadState>>(emptyMap())
+        private set
 
     val filteredSongs by derivedStateOf {
         if (filterQuery.isBlank()) songs
@@ -56,12 +82,73 @@ class LibraryViewModel @Inject constructor(
             loadAll()
         }
         viewModelScope.launch {
-            repository.libraryChanged.collect { loadAll() }
+            // Reload silently (no spinner) when something elsewhere changes the library,
+            // e.g. liking a song from the player or another tab.
+            repository.libraryChanged.collect { loadAll(showLoading = false) }
+        }
+        viewModelScope.launch {
+            prefs.searchSource.collect { searchSource = it }
         }
     }
 
-    fun loadAll() {
-        isLoading = true
+    /** Runs the online search for the current [filterQuery] (called on submit). */
+    fun runOnlineSearch() {
+        val q = filterQuery.trim()
+        if (q.isBlank()) return
+        onlineLoading = true
+        onlineError = null
+        onlineSearched = true
+        onlineSongs = emptyList()
+        onlineArtists = emptyList()
+        viewModelScope.launch {
+            try {
+                val resp = api.search(SearchRequest(query = q, source = searchSource))
+                if (resp.isSuccessful) {
+                    onlineSongs = resp.body()?.songs ?: emptyList()
+                    onlineArtists = resp.body()?.artists ?: emptyList()
+                } else {
+                    onlineError = "Search failed: ${resp.code()}"
+                }
+            } catch (e: Exception) {
+                onlineError = e.message
+            } finally {
+                onlineLoading = false
+            }
+        }
+    }
+
+    /** Clears online results — used when the query changes or search is dismissed. */
+    fun clearOnline() {
+        onlineSongs = emptyList()
+        onlineArtists = emptyList()
+        onlineError = null
+        onlineLoading = false
+        onlineSearched = false
+    }
+
+    fun downloadOnline(result: SearchResult, artist: String, title: String, album: String?) {
+        downloadStates = downloadStates + (result.videoId to YtDownloadState.LOADING)
+        viewModelScope.launch {
+            try {
+                val resp = api.download(
+                    DownloadRequest(
+                        videoId = result.videoId,
+                        title = title,
+                        artist = artist,
+                        source = searchSource,
+                        album = album?.takeIf { it.isNotBlank() },
+                    )
+                )
+                downloadStates = downloadStates + (result.videoId to
+                    if (resp.isSuccessful) YtDownloadState.DONE else YtDownloadState.ERROR)
+            } catch (e: Exception) {
+                downloadStates = downloadStates + (result.videoId to YtDownloadState.ERROR)
+            }
+        }
+    }
+
+    fun loadAll(showLoading: Boolean = true) {
+        if (showLoading) isLoading = true
         error = null
         viewModelScope.launch {
             awaitAll(
@@ -69,7 +156,7 @@ class LibraryViewModel @Inject constructor(
                 async { loadSongs() },
                 async { loadFavorites() },
             )
-            isLoading = false
+            if (showLoading) isLoading = false
         }
     }
 
@@ -113,7 +200,16 @@ class LibraryViewModel @Inject constructor(
         starredOverrides[song.id] = !was
         viewModelScope.launch {
             val result = if (was) repository.unstar(song.id) else repository.star(song.id)
-            if (result.isFailure) {
+            if (result.isSuccess) {
+                // Reflect the change in the favorites list immediately…
+                favorites = when {
+                    was -> favorites.filter { it.id != song.id }
+                    favorites.none { it.id == song.id } -> favorites + song
+                    else -> favorites
+                }
+                // …then let other screens (e.g. the Favorites tab) reload too.
+                repository.notifyLibraryChanged()
+            } else {
                 // Revert on failure
                 starredOverrides[song.id] = was
             }

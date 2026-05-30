@@ -32,8 +32,9 @@ import com.kobser.app.ui.player.MiniPlayer
 import com.kobser.app.ui.playlists.PlaylistDetailScreen
 import com.kobser.app.ui.playlists.PlaylistsScreen
 import com.kobser.app.ui.downloads.DownloadsScreen
-import com.kobser.app.ui.search.SearchScreen
 import com.kobser.app.ui.settings.SettingsScreen
+import com.kobser.app.ui.ytmusic.YtAlbumScreen
+import com.kobser.app.ui.ytmusic.YtArtistScreen
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -45,7 +46,6 @@ import androidx.navigation.navArgument
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Library : Screen("library", "Library", Icons.Default.LibraryMusic)
-    object Search : Screen("search", "Search", Icons.Default.Search)
     object Downloads : Screen("downloads", "Downloads", Icons.Default.Download)
     object Playlists : Screen("playlists", "Playlists", Icons.AutoMirrored.Filled.PlaylistPlay)
     object Favorites : Screen("favorites", "Favorites", Icons.Default.Favorite)
@@ -62,7 +62,7 @@ fun MainScreen(
     val navItems = listOf(
         Screen.Library,
         Screen.Favorites,
-        Screen.Search,
+        Screen.Artists,
         Screen.Playlists,
     )
 
@@ -113,7 +113,6 @@ fun MainScreen(
                             label = { Text("More", fontSize = 10.sp) },
                             selected = currentDestination?.hierarchy?.any {
                                 it.route == Screen.Downloads.route ||
-                                it.route == Screen.Artists.route ||
                                 it.route == Screen.Settings.route
                             } == true,
                             onClick = { moreSheetOpen = true },
@@ -138,6 +137,7 @@ fun MainScreen(
                     LibraryScreen(
                         onSongClick = { expandedPlayerOpen = true },
                         onOpenSettings = { navController.navigate(Screen.Settings.route) },
+                        onArtistClick = { channelId -> navController.navigate("ytartist/$channelId") },
                     )
                 }
                 composable(Screen.Favorites.route) {
@@ -147,9 +147,6 @@ fun MainScreen(
                     ArtistsScreen(
                         onArtistClick = { artist -> navController.navigate("artist/${artist.id}") },
                     )
-                }
-                composable(Screen.Search.route) {
-                    SearchScreen()
                 }
                 composable(Screen.Downloads.route) {
                     DownloadsScreen()
@@ -185,6 +182,24 @@ fun MainScreen(
                     arguments = listOf(navArgument("id") { type = NavType.StringType }),
                 ) {
                     PlaylistDetailScreen(
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                // YT Music exploration (distinct prefixes from local-library artist/album)
+                composable(
+                    route = "ytartist/{channelId}",
+                    arguments = listOf(navArgument("channelId") { type = NavType.StringType }),
+                ) {
+                    YtArtistScreen(
+                        onBack = { navController.popBackStack() },
+                        onAlbumClick = { browseId -> navController.navigate("ytalbum/$browseId") },
+                    )
+                }
+                composable(
+                    route = "ytalbum/{browseId}",
+                    arguments = listOf(navArgument("browseId") { type = NavType.StringType }),
+                ) {
+                    YtAlbumScreen(
                         onBack = { navController.popBackStack() },
                     )
                 }
@@ -230,7 +245,6 @@ private fun MoreSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val items = listOf(
         Triple(Screen.Downloads.route, "Downloads", Icons.Default.Download),
-        Triple(Screen.Artists.route, "Artists", Icons.Default.Person),
         Triple(Screen.Settings.route, "Settings", Icons.Default.Settings),
     )
 

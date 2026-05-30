@@ -19,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEach
 import coil.compose.AsyncImage
@@ -72,19 +71,15 @@ fun SongRow(
         )
         Spacer(Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(
+            MarqueeText(
                 text = song.title,
                 style = MaterialTheme.typography.titleSmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
             Spacer(Modifier.height(2.dp))
-            Text(
+            MarqueeText(
                 text = song.artist,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
             )
         }
         IconButton(

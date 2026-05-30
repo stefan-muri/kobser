@@ -16,8 +16,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import com.kobser.app.ui.components.MarqueeText
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -152,20 +152,16 @@ fun ExpandedPlayerScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(
+                    MarqueeText(
                         text = currentSong.title,
                         color = Color.White,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
-                    Text(
+                    MarqueeText(
                         text = currentSong.artist,
                         color = Color.White.copy(alpha = 0.7f),
                         fontSize = 15.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                 }
                 IconButton(onClick = { player.toggleLike() }) {

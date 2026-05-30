@@ -1,6 +1,8 @@
 package com.kobser.app.playback
 
 import android.net.Uri
+import android.os.Bundle
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.session.LibraryResult
@@ -9,6 +11,7 @@ import androidx.media3.session.MediaSession
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import com.kobser.app.data.api.Song
 import com.kobser.app.data.repository.LibraryRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,10 +57,16 @@ class LibrarySessionCallback @Inject constructor(
             val items = when (parentId) {
                 "root" -> {
                     listOf(
+                        createBrowsableItem("songs", "Songs"),
                         createBrowsableItem("artists", "Artists"),
                         createBrowsableItem("playlists", "Playlists"),
                         createBrowsableItem("favorites", "Favorites")
                     )
+                }
+                "songs" -> {
+                    repository.getSongs().getOrNull()?.map { song ->
+                        createPlayableItem(song, contextType = "songs", contextId = "")
+                    } ?: emptyList()
                 }
                 "artists" -> {
                     repository.getArtists().getOrNull()?.artists?.index?.flatMap { it.artist }?.map { artist ->
@@ -92,13 +101,7 @@ class LibrarySessionCallback @Inject constructor(
                 }
                 "favorites" -> {
                     repository.getFavorites().getOrNull()?.starred?.song?.map { song ->
-                        createPlayableItem(
-                            id = song.id,
-                            title = song.title,
-                            artist = song.artist,
-                            album = song.album ?: "",
-                            coverArt = song.coverArt ?: ""
-                        )
+                        createPlayableItem(song, contextType = "favorites", contextId = "")
                     } ?: emptyList()
                 }
                 else -> {
@@ -121,24 +124,12 @@ class LibrarySessionCallback @Inject constructor(
                     } else if (parentId.startsWith("album_id_")) {
                         val albumId = parentId.removePrefix("album_id_")
                         repository.getAlbum(albumId).getOrNull()?.album?.song?.map { song ->
-                            createPlayableItem(
-                                id = song.id,
-                                title = song.title,
-                                artist = song.artist,
-                                album = song.album ?: "",
-                                coverArt = song.coverArt ?: ""
-                            )
+                            createPlayableItem(song, contextType = "album", contextId = albumId)
                         } ?: emptyList()
                     } else if (parentId.startsWith("playlist_id_")) {
                         val playlistId = parentId.removePrefix("playlist_id_")
                         repository.getPlaylist(playlistId).getOrNull()?.playlist?.entry?.map { song ->
-                            createPlayableItem(
-                                id = song.id,
-                                title = song.title,
-                                artist = song.artist,
-                                album = song.album ?: "",
-                                coverArt = song.coverArt ?: ""
-                            )
+                            createPlayableItem(song, contextType = "playlist", contextId = playlistId)
                         } ?: emptyList()
                     } else {
                         emptyList()
@@ -162,21 +153,64 @@ class LibrarySessionCallback @Inject constructor(
             .build()
     }
 
-    private fun createPlayableItem(id: String, title: String, artist: String, album: String, coverArt: String): MediaItem {
+    /**
+     * Builds a playable item. When [contextType] is non-null the mediaId encodes the
+     * surrounding list (e.g. "track|album|<albumId>|<trackId>") so that tapping it in
+     * Android Auto can be expanded into the whole list — see [onSetMediaItems].
+     * A null context yields a bare trackId mediaId, which plays standalone.
+     */
+    private fun createPlayableItem(
+        song: Song,
+        contextType: String?,
+        contextId: String,
+    ): MediaItem {
+        val mediaId = if (contextType != null) "track|$contextType|$contextId|${song.id}" else song.id
+        // Carry the fields the phone UI needs so it can rebuild a Song when playback
+        // is driven externally (Android Auto). See MusicPlayer.songFromMediaItem.
+        val extras = Bundle().apply {
+            putString("coverArt", song.coverArt)
+            putInt("duration", song.duration)
+            putString("starred", song.starred)
+            putString("albumId", song.albumId)
+            putString("artistId", song.artistId)
+        }
         return MediaItem.Builder()
-            .setMediaId(id)
+            .setMediaId(mediaId)
             .setMediaMetadata(
                 MediaMetadata.Builder()
                     .setIsBrowsable(false)
                     .setIsPlayable(true)
-                    .setTitle(title)
-                    .setArtist(artist)
-                    .setAlbumTitle(album)
-                    .setArtworkUri(Uri.parse(repository.getCoverArtUrl(coverArt)))
+                    .setTitle(song.title)
+                    .setArtist(song.artist)
+                    .setAlbumTitle(song.album ?: "")
+                    .setArtworkUri(Uri.parse(repository.getCoverArtUrl(song.coverArt ?: "")))
+                    .setExtras(extras)
                     .build()
             )
             .build()
     }
+
+    /** Extracts the real Subsonic track id from a (possibly context-encoded) mediaId. */
+    private fun realTrackId(mediaId: String): String =
+        if (mediaId.startsWith("track|")) mediaId.substringAfterLast("|") else mediaId
+
+    /** Loads the full song list backing a context, for queue expansion. */
+    private suspend fun loadContextSongs(contextType: String, contextId: String): List<Song> =
+        when (contextType) {
+            "songs" -> repository.getSongs().getOrNull() ?: emptyList()
+            "favorites" -> repository.getFavorites().getOrNull()?.starred?.song ?: emptyList()
+            "album" -> repository.getAlbum(contextId).getOrNull()?.album?.song ?: emptyList()
+            "playlist" -> repository.getPlaylist(contextId).getOrNull()?.playlist?.entry ?: emptyList()
+            else -> emptyList()
+        }
+
+    /** Attaches resolved stream URIs to a list of playable items. */
+    private fun resolveUris(items: List<MediaItem>): List<MediaItem> =
+        items.map { item ->
+            item.buildUpon()
+                .setUri(repository.getStreamUrl(realTrackId(item.mediaId)))
+                .build()
+        }
 
     override fun onSearch(
         session: MediaLibraryService.MediaLibrarySession,
@@ -203,13 +237,8 @@ class LibrarySessionCallback @Inject constructor(
                     it.artist.contains(q, ignoreCase = true) ||
                     (it.album?.contains(q, ignoreCase = true) == true)
             }.map { song ->
-                createPlayableItem(
-                    id = song.id,
-                    title = song.title,
-                    artist = song.artist,
-                    album = song.album ?: "",
-                    coverArt = song.coverArt ?: "",
-                )
+                // Search results play standalone (no surrounding list to expand into).
+                createPlayableItem(song, contextType = null, contextId = "")
             }
             LibraryResult.ofItemList(ImmutableList.copyOf(filtered), params)
         }
@@ -221,13 +250,44 @@ class LibrarySessionCallback @Inject constructor(
         mediaItems: MutableList<MediaItem>
     ): ListenableFuture<MutableList<MediaItem>> {
         return scope.future {
-            mediaItems.map { item ->
-                val trackId = item.mediaId
-                val streamUrl = repository.getStreamUrl(trackId)
-                item.buildUpon()
-                    .setUri(streamUrl)
-                    .build()
-            }.toMutableList()
+            resolveUris(mediaItems).toMutableList()
         }
+    }
+
+    /**
+     * When Android Auto plays a browsed song, it sets a single media item. We expand
+     * that into the full list it belongs to (album / playlist / favorites / all songs)
+     * and start playback at the tapped track, so the rest of the list queues up.
+     *
+     * Multi-item sets (the phone app already supplies a full queue) and standalone
+     * items (search results) fall through to the default behaviour.
+     */
+    override fun onSetMediaItems(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        mediaItems: MutableList<MediaItem>,
+        startIndex: Int,
+        startPositionMs: Long,
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+        val single = mediaItems.singleOrNull()
+        if (single != null && single.mediaId.startsWith("track|")) {
+            val parts = single.mediaId.removePrefix("track|").split("|")
+            val contextType = parts.getOrElse(0) { "" }
+            val contextId = parts.getOrElse(1) { "" }
+            val tappedTrackId = parts.last()
+            return scope.future {
+                val songs = loadContextSongs(contextType, contextId)
+                if (songs.isEmpty()) {
+                    val resolved = resolveUris(mediaItems)
+                    MediaSession.MediaItemsWithStartPosition(ImmutableList.copyOf(resolved), 0, startPositionMs)
+                } else {
+                    val items = songs.map { createPlayableItem(it, contextType, contextId) }
+                    val index = songs.indexOfFirst { it.id == tappedTrackId }.coerceAtLeast(0)
+                    val resolved = resolveUris(items)
+                    MediaSession.MediaItemsWithStartPosition(ImmutableList.copyOf(resolved), index, C.TIME_UNSET)
+                }
+            }
+        }
+        return super.onSetMediaItems(mediaSession, controller, mediaItems, startIndex, startPositionMs)
     }
 }

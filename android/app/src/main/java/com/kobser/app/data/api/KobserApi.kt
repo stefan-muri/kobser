@@ -48,6 +48,53 @@ data class ArtistResult(
     val subscribers: String,
 )
 
+// ── YT Music exploration (artist / album pages) ──────────────────────────────
+
+data class YtSong(
+    val videoId: String,
+    val title: String,
+    val artist: String,
+    val album: String,
+    val duration: Int,
+    val thumbnail: String?,
+)
+
+data class YtRelease(
+    val browseId: String,
+    val title: String,
+    val year: String,
+    val type: String,
+    val thumbnail: String?,
+)
+
+data class YtArtist(
+    val channelId: String,
+    val name: String,
+    val description: String,
+    val thumbnail: String?,
+    val topSongs: List<YtSong>,
+    val albums: List<YtRelease>,
+    val singles: List<YtRelease>,
+)
+
+data class YtAlbumTrack(
+    val videoId: String,
+    val title: String,
+    val artist: String,
+    val trackNumber: Int,
+    val duration: Int,
+)
+
+data class YtAlbum(
+    val browseId: String,
+    val title: String,
+    val artist: String,
+    val year: String,
+    val type: String,
+    val thumbnail: String?,
+    val tracks: List<YtAlbumTrack>,
+)
+
 data class DownloadRequest(
     val videoId: String,
     val title: String,
@@ -119,6 +166,16 @@ interface KobserApi {
 
     @POST("/api/download")
     suspend fun download(@Body request: DownloadRequest): Response<DownloadStartResponse>
+
+    // YT Music exploration
+    @GET("/api/artist/{channelId}")
+    suspend fun getYtArtist(@Path("channelId") channelId: String): Response<YtArtist>
+
+    @GET("/api/artist/{channelId}/songs")
+    suspend fun getYtArtistSongs(@Path("channelId") channelId: String): Response<List<YtSong>>
+
+    @GET("/api/album/{browseId}")
+    suspend fun getYtAlbum(@Path("browseId") browseId: String): Response<YtAlbum>
 
     @GET("/api/status/{jobId}")
     suspend fun jobStatus(@Path("jobId") jobId: String): Response<JobStatusResponse>
