@@ -8,6 +8,31 @@ Built on [Navidrome](https://www.navidrome.org/) (music server + Subsonic API) w
 
 ---
 
+## Screenshots
+
+### Web app
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/webapp_library.png" alt="Web library"/></td>
+    <td><img src="docs/screenshots/webapp_search.png" alt="Web search"/></td>
+    <td><img src="docs/screenshots/webapp_player.png" alt="Web player"/></td>
+  </tr>
+</table>
+
+### Android app
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/android_library.jpeg" alt="Android library"/></td>
+    <td><img src="docs/screenshots/android_artists.jpeg" alt="Android artists"/></td>
+    <td><img src="docs/screenshots/android_player.jpeg" alt="Android player"/></td>
+    <td><img src="docs/screenshots/android_settings.jpeg" alt="Android settings"/></td>
+  </tr>
+</table>
+
+---
+
 ## Features
 
 - **Search YouTube & YouTube Music** — songs, artists, and full albums (via `yt-dlp` + `ytmusicapi`).
