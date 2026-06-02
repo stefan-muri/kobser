@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kobser.app.playback.RepeatMode
+import com.kobser.app.playback.isPreview
 
 private fun fmtTime(ms: Long): String {
     if (ms <= 0L) return "0:00"
@@ -50,6 +51,7 @@ fun ExpandedPlayerScreen(
     // Auto-close if the queue empties (e.g., user deletes the current track).
     LaunchedEffect(song) { if (song == null) onClose() }
     val currentSong = song ?: return
+    val isPreview = currentSong.isPreview()
 
     val coverUrl = remember(currentSong.coverArt) { currentSong.coverArt?.let { viewModel.getCoverUrl(it, 1024) } }
 
@@ -120,14 +122,16 @@ fun ExpandedPlayerScreen(
                                 queueSheetOpen = true
                             },
                         )
-                        DropdownMenuItem(
-                            text = { Text("Delete from library") },
-                            leadingIcon = { Icon(Icons.Default.Delete, null) },
-                            onClick = {
-                                menuOpen = false
-                                deleteConfirmOpen = true
-                            },
-                        )
+                        if (!isPreview) {
+                            DropdownMenuItem(
+                                text = { Text("Delete from library") },
+                                leadingIcon = { Icon(Icons.Default.Delete, null) },
+                                onClick = {
+                                    menuOpen = false
+                                    deleteConfirmOpen = true
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -164,12 +168,14 @@ fun ExpandedPlayerScreen(
                         fontSize = 15.sp,
                     )
                 }
-                IconButton(onClick = { player.toggleLike() }) {
-                    Icon(
-                        imageVector = if (isLiked) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = "Like",
-                        tint = if (isLiked) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.7f),
-                    )
+                if (!isPreview) {
+                    IconButton(onClick = { player.toggleLike() }) {
+                        Icon(
+                            imageVector = if (isLiked) Icons.Default.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = "Like",
+                            tint = if (isLiked) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.7f),
+                        )
+                    }
                 }
             }
 

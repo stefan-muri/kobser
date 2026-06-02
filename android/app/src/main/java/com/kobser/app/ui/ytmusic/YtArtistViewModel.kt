@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.kobser.app.data.api.YtArtist
 import com.kobser.app.data.api.YtSong
 import com.kobser.app.data.repository.YtMusicRepository
+import com.kobser.app.playback.MusicPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -18,6 +19,7 @@ enum class YtDownloadState { LOADING, DONE, ERROR }
 @HiltViewModel
 class YtArtistViewModel @Inject constructor(
     private val repo: YtMusicRepository,
+    private val musicPlayer: MusicPlayer,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -63,6 +65,16 @@ class YtArtistViewModel @Inject constructor(
                 .onFailure { error = it.message }
             loadingMore = false
         }
+    }
+
+    fun playPreview(song: YtSong) {
+        musicPlayer.playPreview(
+            videoId = song.videoId,
+            title = song.title,
+            artist = song.artist,
+            thumbnailUrl = song.thumbnail,
+            durationSeconds = song.duration,
+        )
     }
 
     fun download(videoId: String, artist: String, title: String, album: String?) {

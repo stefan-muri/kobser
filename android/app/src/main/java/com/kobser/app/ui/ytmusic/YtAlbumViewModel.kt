@@ -7,7 +7,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kobser.app.data.api.YtAlbum
+import com.kobser.app.data.api.YtAlbumTrack
 import com.kobser.app.data.repository.YtMusicRepository
+import com.kobser.app.playback.MusicPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -15,6 +17,7 @@ import javax.inject.Inject
 @HiltViewModel
 class YtAlbumViewModel @Inject constructor(
     private val repo: YtMusicRepository,
+    private val musicPlayer: MusicPlayer,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -45,6 +48,16 @@ class YtAlbumViewModel @Inject constructor(
                 .onFailure { error = it.message }
             isLoading = false
         }
+    }
+
+    fun playPreview(track: YtAlbumTrack) {
+        musicPlayer.playPreview(
+            videoId = track.videoId,
+            title = track.title,
+            artist = track.artist,
+            thumbnailUrl = album?.thumbnail,
+            durationSeconds = track.duration,
+        )
     }
 
     fun download(videoId: String, artist: String, title: String, album: String?) {

@@ -226,19 +226,27 @@ class MusicPlayer @Inject constructor(
             playQueue(listOf(song), 0)
             return
         }
-        _queue.value = _queue.value + song
+        // Store a distinct copy so queue entries always have unique object identity
+        // (used as the stable reorder key, even when the same song is queued twice).
+        _queue.value = _queue.value + song.copy()
         c.addMediaItem(song.toMediaItem())
     }
 
     fun removeFromQueue(index: Int) {
         val c = controller ?: return
-        if (index == _currentIndex.value) return
         val list = _queue.value.toMutableList()
         if (index !in list.indices) return
         list.removeAt(index)
         _queue.value = list
+        // Removing the current item makes ExoPlayer advance to the next; syncQueueFromController
+        // then reconciles _currentIndex from the controller.
         c.removeMediaItem(index)
-        if (index < _currentIndex.value) _currentIndex.value -= 1
+        _currentIndex.value = when {
+            list.isEmpty() -> -1
+            index < _currentIndex.value -> _currentIndex.value - 1
+            index == _currentIndex.value -> _currentIndex.value.coerceAtMost(list.size - 1)
+            else -> _currentIndex.value
+        }
     }
 
     fun moveInQueue(from: Int, to: Int) {
@@ -337,6 +345,7 @@ class MusicPlayer @Inject constructor(
         val idx = _currentIndex.value
         val list = _queue.value
         val song = list.getOrNull(idx) ?: return
+        if (song.isPreview()) return  // previews aren't in the library
         val wasLiked = !song.starred.isNullOrEmpty()
         val newStarred = if (wasLiked) null else java.time.Instant.now().toString()
 
@@ -433,4 +442,43 @@ class MusicPlayer @Inject constructor(
     // Existing call site: LibraryViewModel.play(song) → keep working as a
     // single-track queue while the UI migrates to playQueue.
     fun play(song: Song) = playQueue(listOf(song), 0)
+
+    /**
+     * Streams a YouTube/YT Music track without downloading it. Represented as a
+     * synthetic Song whose id (`preview|<videoId>`) resolves to /api/preview, and
+     * whose coverArt is the YT thumbnail URL (passed through by getCoverArtUrl).
+     */
+    fun playPreview(
+        videoId: String,
+        title: String,
+        artist: String,
+        thumbnailUrl: String?,
+        durationSeconds: Int,
+    ) {
+        val preview = Song(
+            id = "preview|$videoId",
+            parent = null,
+            title = title,
+            album = null,
+            artist = artist,
+            track = null,
+            year = null,
+            genre = null,
+            coverArt = thumbnailUrl,
+            duration = durationSeconds,
+            bitRate = null,
+            contentType = null,
+            suffix = null,
+            size = null,
+            albumId = null,
+            artistId = null,
+            type = null,
+            created = null,
+            starred = null,
+        )
+        playQueue(listOf(preview), 0)
+    }
 }
+
+/** A preview (un-downloaded) track isn't in the library, so it can't be liked or deleted. */
+fun Song.isPreview(): Boolean = id.startsWith("preview|")

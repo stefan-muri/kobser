@@ -15,11 +15,13 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -97,6 +99,7 @@ fun YtArtistScreen(
                                 YtSongRow(
                                     song = song,
                                     state = viewModel.downloadStates[song.videoId],
+                                    onPlay = { viewModel.playPreview(song) },
                                     onDownload = { dlSong = song },
                                 )
                             }
@@ -208,23 +211,35 @@ private fun ReleaseShelf(releases: List<YtRelease>, onClick: (String) -> Unit) {
 private fun YtSongRow(
     song: YtSong,
     state: YtDownloadState?,
+    onPlay: () -> Unit,
     onDownload: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onPlay)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AsyncImage(
-            model = song.thumbnail,
-            contentDescription = null,
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-            contentScale = ContentScale.Crop,
-        )
+        Box(contentAlignment = Alignment.Center) {
+            AsyncImage(
+                model = song.thumbnail,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                contentScale = ContentScale.Crop,
+            )
+            Icon(
+                Icons.Default.PlayArrow,
+                contentDescription = "Preview",
+                tint = Color.White,
+                modifier = Modifier
+                    .size(22.dp)
+                    .background(Color.Black.copy(alpha = 0.35f), CircleShape),
+            )
+        }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(song.title, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)

@@ -121,6 +121,7 @@ fun YtAlbumScreen(
                                 track = track,
                                 index = album.tracks.indexOf(track) + 1,
                                 state = viewModel.downloadStates[track.videoId],
+                                onPlay = { viewModel.playPreview(track) },
                                 onDownload = { dlTrack = track },
                             )
                         }
@@ -149,11 +150,13 @@ private fun TrackRow(
     track: YtAlbumTrack,
     index: Int,
     state: YtDownloadState?,
+    onPlay: () -> Unit,
     onDownload: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onPlay)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
