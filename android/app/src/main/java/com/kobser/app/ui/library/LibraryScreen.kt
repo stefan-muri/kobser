@@ -14,9 +14,11 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.UnfoldMore
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -57,13 +59,14 @@ fun LibraryScreen(
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
     val items by remember(isFavorites) {
-        derivedStateOf { if (isFavorites) viewModel.filteredFavorites else viewModel.filteredSongs }
+        derivedStateOf { if (isFavorites) viewModel.sortedFavorites else viewModel.sortedSongs }
     }
 
     var deleteTarget by remember { mutableStateOf<Song?>(null) }
     var playlistTarget by remember { mutableStateOf<Song?>(null) }
     var dlTarget by remember { mutableStateOf<SearchResult?>(null) }
     var searchOpen by remember { mutableStateOf(false) }
+    var sortSheetOpen by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
 
@@ -91,6 +94,7 @@ fun LibraryScreen(
     BackHandler(enabled = inSearch) { closeSearch() }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             if (inSearch) {
                 TopAppBar(
@@ -189,6 +193,12 @@ fun LibraryScreen(
                                 )
                             }
                         }
+                        item {
+                            SortButton(
+                                sortKey = viewModel.sortKey,
+                                onOpen = { sortSheetOpen = true },
+                            )
+                        }
                         librarySongs(items, viewModel, isFavorites, playingSong?.id, isPlaying, onSongClick,
                             onDelete = { deleteTarget = it }, onAddToPlaylist = { playlistTarget = it })
                     } else {
@@ -269,6 +279,14 @@ fun LibraryScreen(
 
     LaunchedEffect(searchOpen) {
         if (searchOpen) focusRequester.requestFocus()
+    }
+
+    if (sortSheetOpen) {
+        SortBottomSheet(
+            sortKey = viewModel.sortKey,
+            onSelect = { viewModel.sortKey = it; sortSheetOpen = false },
+            onDismiss = { sortSheetOpen = false },
+        )
     }
 
     playlistTarget?.let { song ->
@@ -511,5 +529,87 @@ private fun PlayAllHeader(
             Spacer(Modifier.width(8.dp))
             Text("Shuffle")
         }
+    }
+}
+
+private val SORT_OPTIONS = listOf(
+    SortKey.ADDED_DESC    to "Recently added",
+    SortKey.ARTIST_ASC    to "Artist A → Z",
+    SortKey.ARTIST_DESC   to "Artist Z → A",
+    SortKey.TITLE_ASC     to "Title A → Z",
+    SortKey.TITLE_DESC    to "Title Z → A",
+    SortKey.DURATION_ASC  to "Shortest first",
+    SortKey.DURATION_DESC to "Longest first",
+)
+
+private fun sortLabel(key: SortKey) = SORT_OPTIONS.first { it.first == key }.second
+
+@Composable
+private fun SortButton(sortKey: SortKey, onOpen: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.End,
+    ) {
+        TextButton(onClick = onOpen) {
+            Text(
+                text = "Sort: ${sortLabel(sortKey)}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            )
+            Spacer(Modifier.width(4.dp))
+            Icon(
+                imageVector = Icons.Default.UnfoldMore,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SortBottomSheet(
+    sortKey: SortKey,
+    onSelect: (SortKey) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Text(
+            text = "Sort by",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+        )
+        HorizontalDivider()
+        SORT_OPTIONS.forEach { (key, label) ->
+            val selected = key == sortKey
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSelect(key) }
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                )
+                if (selected) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.height(16.dp))
     }
 }

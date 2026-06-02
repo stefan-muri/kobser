@@ -24,6 +24,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class SortKey { ADDED_DESC, ARTIST_ASC, ARTIST_DESC, TITLE_ASC, TITLE_DESC, DURATION_ASC, DURATION_DESC }
+
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
     private val repository: LibraryRepository,
@@ -70,6 +72,21 @@ class LibraryViewModel @Inject constructor(
             it.title.contains(filterQuery, ignoreCase = true) ||
             it.artist.contains(filterQuery, ignoreCase = true)
         }
+    }
+
+    var sortKey by mutableStateOf(SortKey.ADDED_DESC)
+
+    val sortedSongs by derivedStateOf { applySorting(filteredSongs, sortKey) }
+    val sortedFavorites by derivedStateOf { applySorting(filteredFavorites, sortKey) }
+
+    private fun applySorting(songs: List<Song>, key: SortKey): List<Song> = when (key) {
+        SortKey.ADDED_DESC    -> songs.sortedByDescending { it.created ?: "" }
+        SortKey.ARTIST_ASC    -> songs.sortedWith(compareBy({ it.artist.lowercase() }, { it.title.lowercase() }))
+        SortKey.ARTIST_DESC   -> songs.sortedWith(compareByDescending<Song> { it.artist.lowercase() }.thenByDescending { it.title.lowercase() })
+        SortKey.TITLE_ASC     -> songs.sortedBy { it.title.lowercase() }
+        SortKey.TITLE_DESC    -> songs.sortedByDescending { it.title.lowercase() }
+        SortKey.DURATION_ASC  -> songs.sortedBy { it.duration }
+        SortKey.DURATION_DESC -> songs.sortedByDescending { it.duration }
     }
 
     // Playback state, surfaced so list rows can show a "now playing" indicator.
@@ -196,9 +213,9 @@ class LibraryViewModel @Inject constructor(
             }
     }
 
-    /** Sets the player queue to `list` and starts playing at `index`. */
+    /** Plays from `list` at `index`, or jumps to the song if it's already in the queue. */
     fun playFromList(list: List<Song>, index: Int) {
-        musicPlayer.playQueue(list, index)
+        musicPlayer.playOrJumpTo(list, index)
     }
 
     fun addToQueue(song: Song) {
