@@ -2,9 +2,9 @@
 
 ## Reporting a vulnerability
 
-Please **do not** open a public issue for security problems. Instead, report
-privately via GitHub's [security advisories](https://github.com/PhaneSchema/kobser/security/advisories/new),
-or email the maintainer. You'll get a response as soon as possible.
+Please **do not** open a public issue for security problems. Instead, contact
+the maintainer by email.
+You'll get a response as soon as possible.
 
 ## Threat model & known considerations
 

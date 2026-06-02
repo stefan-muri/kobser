@@ -1,6 +1,6 @@
 # kobser
 
-**Self-hosted music for your home lab.** Search YouTube / YouTube Music, download tracks straight into your own library, and stream everything from a clean web app or a native Android app — with Android Auto support.
+**Self-hosted music for your home lab.** Search YouTube / YouTube Music, download tracks straight into your own library, and stream everything from a clean web app or a native Android app **with Android Auto support.**
 
 Built on [Navidrome](https://www.navidrome.org/) (music server + Subsonic API) with a FastAPI middleware, a Svelte web app, and a Kotlin/Compose Android app.
 
