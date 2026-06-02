@@ -36,7 +36,12 @@ enum class RepeatMode { OFF, ONE, ALL }
 
 data class PlaybackProgress(val positionMs: Long, val durationMs: Long)
 
-private data class LastTrackPayload(val song: Song, val positionMs: Long)
+private data class LastTrackPayload(
+    val song: Song? = null,          // legacy single-track field
+    val songs: List<Song>? = null,   // full queue
+    val currentIndex: Int = 0,
+    val positionMs: Long = 0,
+)
 
 @Singleton
 class MusicPlayer @Inject constructor(
@@ -382,14 +387,15 @@ class MusicPlayer @Inject constructor(
     // ── Last-track persistence ──────────────────────────────────────────────
 
     private fun saveLastTrack() {
-        val song = currentSong.value
         val c = controller
-        if (song == null || c == null) {
+        val songs = _queue.value
+        if (songs.isEmpty() || c == null) {
             scope.launch { prefs.clearLastTrack() }
             return
         }
         val payload = LastTrackPayload(
-            song = song,
+            songs = songs,
+            currentIndex = _currentIndex.value.coerceAtLeast(0),
             positionMs = c.currentPosition.coerceAtLeast(0L),
         )
         scope.launch { prefs.saveLastTrack(gson.toJson(payload)) }
@@ -405,18 +411,20 @@ class MusicPlayer @Inject constructor(
                 return@launch
             }
             val c = controller ?: return@launch
-            _queue.value = listOf(payload.song)
-            _currentIndex.value = 0
+            // Support old single-track saves and new full-queue saves
+            val songs = payload.songs ?: payload.song?.let { listOf(it) } ?: return@launch
+            val index = payload.currentIndex.coerceIn(0, (songs.size - 1).coerceAtLeast(0))
+            _queue.value = songs
+            _currentIndex.value = index
             c.setMediaItems(
-                listOf(payload.song.toMediaItem()),
-                0,
+                songs.map { it.toMediaItem() },
+                index,
                 payload.positionMs.coerceAtLeast(0L),
             )
             c.prepare()
-            // Don't autoplay — mirror the web behavior of restoring but staying paused.
             _progress.value = PlaybackProgress(
                 positionMs = payload.positionMs,
-                durationMs = payload.song.duration * 1000L,
+                durationMs = songs.getOrNull(index)?.duration?.times(1000L) ?: 0L,
             )
         }
     }
@@ -436,6 +444,20 @@ class MusicPlayer @Inject constructor(
                     .build()
             )
             .build()
+    }
+
+    /**
+     * Plays [songs] starting at [index], but if the song at [index] is already
+     * in the current queue, just jumps to it instead of replacing the queue.
+     */
+    fun playOrJumpTo(songs: List<Song>, index: Int) {
+        val songId = songs.getOrNull(index)?.id ?: return
+        val queueIndex = _queue.value.indexOfFirst { it.id == songId }
+        if (queueIndex >= 0) {
+            jumpTo(queueIndex)
+        } else {
+            playQueue(songs, index)
+        }
     }
 
     // ── Legacy shim ──────────────────────────────────────────────────────────
