@@ -183,10 +183,17 @@ class LibraryRepository @Inject constructor(
     }
 
     fun getCoverArtUrl(id: String, size: Int = 300): String =
-        "${cachedServerUrl.trimEnd('/')}/api/library/getCoverArt?id=$id&size=$size&session=$cachedSessionId"
+        // Pass full URLs through unchanged (e.g. a YouTube thumbnail on a preview
+        // track); only wrap bare Subsonic cover-art ids.
+        if (id.startsWith("http")) id
+        else "${cachedServerUrl.trimEnd('/')}/api/library/getCoverArt?id=$id&size=$size&session=$cachedSessionId"
 
     fun getStreamUrl(trackId: String): String =
         "${cachedServerUrl.trimEnd('/')}/api/stream/$trackId?session=$cachedSessionId"
+
+    /** Synchronous preview-stream URL for a YouTube videoId (mirrors getStreamUrl). */
+    fun previewUrl(videoId: String): String =
+        "${cachedServerUrl.trimEnd('/')}/api/preview/$videoId?session=$cachedSessionId"
 
     suspend fun getPreviewUrl(videoId: String): String {
         val baseUrl = prefs.serverUrl.first() ?: ""
