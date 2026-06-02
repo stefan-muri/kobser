@@ -1,5 +1,6 @@
 services:
   navidrome:
+    profiles: [full]
     image: deluan/navidrome:latest
     container_name: kobser-navidrome
     restart: unless-stopped
@@ -17,7 +18,7 @@ services:
       - kobser
 
   middleware:
-    build: ./middleware
+    image: ghcr.io/phaneschema/kobser:latest
     container_name: kobser-middleware
     restart: unless-stopped
     ports:
@@ -27,7 +28,7 @@ services:
       - ./secrets:/app/secrets:ro
       - ./data/kobser:/app/data
     environment:
-      NAVIDROME_URL: http://navidrome:4533
+      NAVIDROME_URL: ${NAVIDROME_URL:-http://navidrome:4533}
       MUSIC_DIR: /music
       YTDLP_COOKIES_FILE: ${YTDLP_COOKIES_FILE:-}
     networks:

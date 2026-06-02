@@ -30,6 +30,10 @@ That's all you need to run the server. (Building the Android app additionally ne
 
 ## Quick start
 
+### Full stack (Navidrome + kobser)
+
+No existing Navidrome? This starts everything.
+
 ```bash
 # 1. Clone
 git clone https://github.com/PhaneSchema/kobser.git
@@ -40,7 +44,7 @@ cp .env.example .env
 #   Edit .env — at minimum set MUSIC_DIR to where you want music stored.
 
 # 3. Start
-docker compose up -d
+docker compose --profile full up -d
 
 # 4. Create your account (one-time)
 #   Open http://localhost:4533  → create a Navidrome admin account.
@@ -48,6 +52,22 @@ docker compose up -d
 ```
 
 The Navidrome admin page (`:4533`) is only needed once, to create accounts and (optionally) assign per-user library paths.
+
+### Middleware only (existing Navidrome)
+
+Already running Navidrome? Just add kobser on top — no second Navidrome starts.
+
+```bash
+git clone https://github.com/PhaneSchema/kobser.git
+cd kobser
+
+cp .env.example .env
+# Set NAVIDROME_URL to your existing Navidrome, e.g.:
+#   NAVIDROME_URL=http://192.168.1.50:4533
+# Set MUSIC_DIR to the same music path your Navidrome uses.
+
+docker compose up -d
+```
 
 ---
 
@@ -59,7 +79,8 @@ All configuration lives in `.env` (copied from `.env.example`).
 |---|---|---|
 | `MUSIC_DIR` | `./data/music` | Where music files are stored on the host |
 | `KOBSER_PORT` | `8000` | Port for the kobser web UI / API |
-| `NAVIDROME_PORT` | `4533` | Port for the Navidrome admin UI (first-run / account management) |
+| `NAVIDROME_PORT` | `4533` | Port for the Navidrome admin UI (full-stack mode only) |
+| `NAVIDROME_URL` | `http://navidrome:4533` | URL of your Navidrome instance (set this in middleware-only mode) |
 | `YTDLP_COOKIES_FILE` | _(unset)_ | Path to a `cookies.txt` for age-restricted videos |
 
 Apply changes with `docker compose up -d`.
@@ -129,9 +150,8 @@ All bind-mounted from the host; they survive container rebuilds. (`data/` is git
 ## Updating
 
 ```bash
-git pull
-docker compose build --pull
-docker compose up -d
+docker compose pull
+docker compose up -d        # or: docker compose --profile full up -d
 ```
 
 ---
