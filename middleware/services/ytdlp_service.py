@@ -32,6 +32,9 @@ _INVALID_FS_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 def _sanitize(s: str) -> str:
     s = _INVALID_FS_CHARS.sub(" ", s)
     s = re.sub(r"\s+", " ", s).strip()
+    # Strip leading/trailing dots so a value like ".." can't become a path
+    # component that escapes the target directory (path traversal).
+    s = s.strip(".")
     return s or "Unknown"
 
 

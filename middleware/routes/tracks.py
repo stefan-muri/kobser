@@ -37,32 +37,6 @@ async def preview_track(video_id: str, sess: dict = Depends(get_current_session)
     return StreamingResponse(stream(), media_type="audio/mp4")
 
 
-@router.get("/api/track/{track_id}/debug")
-async def debug_track(track_id: str, sess: dict = Depends(get_current_session)):
-    """Return path info for a track without deleting — remove once the delete bug is fixed."""
-    async with httpx.AsyncClient(timeout=10) as client:
-        r = await client.get(
-            f"{NAVIDROME_URL}/rest/getSong",
-            params={"id": track_id, **auth_params(sess["username"], sess["password"])},
-        )
-        r.raise_for_status()
-        body = r.json().get("subsonic-response", {})
-
-    song = body.get("song", {})
-    rel_path = song.get("path", "")
-    music_root = Path(MUSIC_DIR).resolve()
-    p = Path(rel_path) if rel_path else None
-    file_path = (p if (p and p.is_absolute()) else music_root / rel_path) if rel_path else None
-    return {
-        "MUSIC_DIR_config": MUSIC_DIR,
-        "music_root_resolved": str(music_root),
-        "navidrome_path": rel_path,
-        "is_absolute": p.is_absolute() if p else None,
-        "resolved_file_path": str(file_path.resolve()) if file_path else None,
-        "file_exists": file_path.resolve().exists() if file_path else None,
-    }
-
-
 @router.delete("/api/track/{track_id}")
 async def delete_track(track_id: str, sess: dict = Depends(get_current_session)):
     """Delete a track from disk and trigger a Navidrome rescan."""
