@@ -27,6 +27,7 @@ fun SettingsScreen(
     var showLogoutDialog by remember { mutableStateOf(false) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = {

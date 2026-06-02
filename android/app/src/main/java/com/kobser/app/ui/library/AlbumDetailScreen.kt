@@ -37,6 +37,7 @@ fun AlbumDetailScreen(
     var playlistTarget by remember { mutableStateOf<Song?>(null) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = {

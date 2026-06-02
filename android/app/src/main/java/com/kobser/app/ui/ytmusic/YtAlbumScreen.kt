@@ -32,6 +32,7 @@ fun YtAlbumScreen(
     var dlTrack by remember { mutableStateOf<YtAlbumTrack?>(null) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { Text(viewModel.album?.title ?: "Album", maxLines = 1, overflow = TextOverflow.Ellipsis) },

@@ -42,6 +42,7 @@ fun YtArtistScreen(
     var dlSong by remember { mutableStateOf<YtSong?>(null) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = { Text(viewModel.artist?.name ?: "Artist", maxLines = 1, overflow = TextOverflow.Ellipsis) },

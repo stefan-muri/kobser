@@ -28,6 +28,7 @@ fun ArtistsScreen(
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = {

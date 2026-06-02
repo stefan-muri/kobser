@@ -33,6 +33,7 @@ fun ArtistDetailScreen(
     val artist = viewModel.artist
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = {

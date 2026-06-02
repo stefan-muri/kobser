@@ -43,6 +43,7 @@ fun PlaylistsScreen(
     var deleteTarget by remember { mutableStateOf<Playlist?>(null) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0),
         topBar = {
             TopAppBar(
                 title = {
