@@ -9,15 +9,19 @@ COPY frontend/ ./frontend/
 RUN cd frontend && npm run build
 
 # Stage 2: Python runtime
-FROM python:3.12-alpine
+#
+# Debian slim (glibc) rather than Alpine (musl): yt-dlp now needs an external
+# JavaScript runtime to solve YouTube's player-signature ("nsig") challenge, and
+# the Deno binary is glibc-only. slim also ships manylinux wheels for psutil /
+# uvicorn[standard], so no compiler is needed.
+FROM python:3.12-slim
 
-# ffmpeg from Alpine is statically-linked and much leaner than the Debian version.
-# gcc + musl-dev are needed to compile uvloop (uvicorn[standard]) and psutil;
-# they're removed in the same layer so they don't bloat the final image.
-RUN apk add --no-cache ffmpeg \
-    && apk add --no-cache --virtual .build-deps gcc musl-dev linux-headers \
-    && pip install --no-cache-dir uvicorn[standard] psutil \
-    && apk del .build-deps
+# Deno — the JS runtime yt-dlp auto-detects on PATH for YouTube extraction.
+COPY --from=denoland/deno:bin /deno /usr/local/bin/deno
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

@@ -2,6 +2,12 @@ import re
 from pathlib import Path
 from typing import Any, Callable
 
+# YouTube extraction (search previews + downloads) needs a JavaScript runtime to
+# solve the player-signature / "nsig" challenge. The Docker image ships the Deno
+# binary on PATH, which yt-dlp auto-detects and uses — no per-call option needed.
+# If a future yt-dlp requires explicit selection, set it via the shared opts, e.g.
+#   "extractor_args": {"youtube": {"jsi": ["Deno"]}}
+
 
 class DownloadCancelled(Exception):
     pass
