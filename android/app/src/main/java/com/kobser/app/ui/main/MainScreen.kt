@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -29,6 +30,7 @@ import com.kobser.app.ui.library.ArtistsScreen
 import com.kobser.app.ui.library.LibraryScreen
 import com.kobser.app.ui.player.ExpandedPlayerScreen
 import com.kobser.app.ui.player.MiniPlayer
+import com.kobser.app.ui.player.QueueSheet
 import com.kobser.app.ui.playlists.PlaylistDetailScreen
 import com.kobser.app.ui.playlists.PlaylistsScreen
 import com.kobser.app.ui.downloads.DownloadsScreen
@@ -68,6 +70,7 @@ fun MainScreen(
 
     var expandedPlayerOpen by rememberSaveable { mutableStateOf(false) }
     var moreSheetOpen by remember { mutableStateOf(false) }
+    var queueSheetOpen by remember { mutableStateOf(false) }
 
     val currentSong by viewModel.musicPlayer.currentSong.collectAsState()
     if (currentSong == null && expandedPlayerOpen) {
@@ -135,13 +138,15 @@ fun MainScreen(
             ) {
                 composable(Screen.Library.route) {
                     LibraryScreen(
-                        onSongClick = { expandedPlayerOpen = true },
+                        // Tapping a song just plays it (mini player); don't auto-open the
+                        // expanded player — the user can tap the mini player to expand.
+                        onSongClick = {},
                         onOpenSettings = { navController.navigate(Screen.Settings.route) },
                         onArtistClick = { channelId -> navController.navigate("ytartist/$channelId") },
                     )
                 }
                 composable(Screen.Favorites.route) {
-                    LibraryScreen(isFavorites = true, onSongClick = { expandedPlayerOpen = true })
+                    LibraryScreen(isFavorites = true, onSongClick = {})
                 }
                 composable(Screen.Artists.route) {
                     ArtistsScreen(
@@ -224,6 +229,10 @@ fun MainScreen(
     if (moreSheetOpen) {
         MoreSheet(
             onDismiss = { moreSheetOpen = false },
+            onOpenQueue = {
+                moreSheetOpen = false
+                queueSheetOpen = true
+            },
             onNavigate = { route ->
                 moreSheetOpen = false
                 navController.navigate(route) {
@@ -234,12 +243,17 @@ fun MainScreen(
             },
         )
     }
+
+    if (queueSheetOpen) {
+        QueueSheet(onDismiss = { queueSheetOpen = false })
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MoreSheet(
     onDismiss: () -> Unit,
+    onOpenQueue: () -> Unit,
     onNavigate: (String) -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -260,25 +274,35 @@ private fun MoreSheet(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             )
             HorizontalDivider()
+            MoreRow(label = "Queue", icon = Icons.AutoMirrored.Filled.QueueMusic, onClick = onOpenQueue)
             items.forEach { (route, label, icon) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onNavigate(route) }
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    )
-                    Spacer(Modifier.width(16.dp))
-                    Text(text = label, style = MaterialTheme.typography.bodyLarge)
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+                MoreRow(label = label, icon = icon, onClick = { onNavigate(route) })
             }
         }
     }
+}
+
+@Composable
+private fun MoreRow(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+        )
+        Spacer(Modifier.width(16.dp))
+        Text(text = label, style = MaterialTheme.typography.bodyLarge)
+    }
+    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f))
 }
 
