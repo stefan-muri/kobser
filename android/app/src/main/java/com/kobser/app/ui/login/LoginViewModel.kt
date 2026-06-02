@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kobser.app.data.api.LoginRequest
+import kotlinx.coroutines.flow.first
 import com.kobser.app.data.api.KobserApi
 import com.kobser.app.data.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,6 +25,13 @@ class LoginViewModel @Inject constructor(
     var password by mutableStateOf("")
     var isLoading by mutableStateOf(false)
     var error by mutableStateOf<String?>(null)
+
+    init {
+        viewModelScope.launch {
+            prefs.serverUrl.first()?.let { if (it.isNotEmpty()) serverUrl = it }
+            prefs.lastUsername.first()?.let { if (it.isNotEmpty()) username = it }
+        }
+    }
 
     fun login(onSuccess: () -> Unit) {
         val url = serverUrl.trim()
@@ -50,6 +58,7 @@ class LoginViewModel @Inject constructor(
                 if (response.isSuccessful) {
                     response.body()?.sessionId?.let {
                         prefs.saveSessionId(it)
+                        prefs.saveLastUsername(username)
                         onSuccess()
                     } ?: run {
                         error = "Login failed: No session ID"

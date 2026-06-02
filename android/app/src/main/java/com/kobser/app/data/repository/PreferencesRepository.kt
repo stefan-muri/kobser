@@ -27,12 +27,14 @@ class PreferencesRepository @Inject constructor(
         val SESSION_ID = stringPreferencesKey("session_id")
         val LAST_TRACK_JSON = stringPreferencesKey("last_track_json")
         val SEARCH_SOURCE = stringPreferencesKey("search_source")
+        val LAST_USERNAME = stringPreferencesKey("last_username")
     }
 
     val serverUrl: Flow<String?> = context.dataStore.data.map { it[Keys.SERVER_URL] }
     val sessionId: Flow<String?> = context.dataStore.data.map { it[Keys.SESSION_ID] }
     val lastTrackJson: Flow<String?> = context.dataStore.data.map { it[Keys.LAST_TRACK_JSON] }
     val searchSource: Flow<String> = context.dataStore.data.map { it[Keys.SEARCH_SOURCE] ?: "youtube_music" }
+    val lastUsername: Flow<String?> = context.dataStore.data.map { it[Keys.LAST_USERNAME] }
 
     @Volatile var cachedServerUrl: String = ""
         private set
@@ -66,6 +68,10 @@ class PreferencesRepository @Inject constructor(
 
     suspend fun saveSearchSource(source: String) {
         context.dataStore.edit { it[Keys.SEARCH_SOURCE] = source }
+    }
+
+    suspend fun saveLastUsername(username: String) {
+        context.dataStore.edit { it[Keys.LAST_USERNAME] = username }
     }
 
     suspend fun clearLastTrack() {
