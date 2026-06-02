@@ -7,9 +7,11 @@ import androidx.media3.common.C
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import com.kobser.app.MainActivity
+import com.kobser.app.R
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -23,6 +25,11 @@ class PlaybackService : MediaLibraryService() {
 
     override fun onCreate() {
         super.onCreate()
+
+        val notificationProvider = DefaultMediaNotificationProvider(this)
+        notificationProvider.setSmallIcon(R.drawable.ic_notification)
+        setMediaNotificationProvider(notificationProvider)
+
         val player = ExoPlayer.Builder(this)
             .setAudioAttributes(
                 AudioAttributes.Builder()

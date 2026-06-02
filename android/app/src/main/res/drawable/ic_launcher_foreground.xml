@@ -1,11 +1,9 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="100"
-    android:viewportHeight="100">
-    <path
-        android:fillColor="#FF9F1C"
-        android:pathData="M35,30 L45,30 L45,70 L35,70 Z
-                  M45,50 L65,30 L78,30 L55,53 Z
-                  M52,50 L78,70 L65,70 L45,55 Z" />
-</vector>
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:drawable="@drawable/ic_app_logo"
+        android:top="5dp"
+        android:bottom="5dp"
+        android:left="5dp"
+        android:right="5dp" />
+</layer-list>

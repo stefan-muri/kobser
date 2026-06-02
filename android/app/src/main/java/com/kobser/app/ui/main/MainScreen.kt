@@ -90,7 +90,7 @@ fun MainScreen(
                         val currentDestination = navBackStackEntry?.destination
                         navItems.forEach { screen ->
                             NavigationBarItem(
-                                icon = { Icon(screen.icon, contentDescription = null) },
+                                icon = { Icon(screen.icon, contentDescription = null, modifier = Modifier.size(28.dp)) },
                                 label = { Text(screen.label, fontSize = 10.sp) },
                                 selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                                 onClick = {

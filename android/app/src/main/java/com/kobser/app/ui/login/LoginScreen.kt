@@ -1,15 +1,18 @@
 package com.kobser.app.ui.login
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Image
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.kobser.app.R
 
 @Composable
 fun LoginScreen(
@@ -23,13 +26,12 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = "kobser",
-            style = MaterialTheme.typography.headlineLarge,
-            fontSize = 56.sp,
-            color = MaterialTheme.colorScheme.primary,
+        Image(
+            painter = painterResource(id = R.drawable.ic_app_logo),
+            contentDescription = null,
+            modifier = Modifier.size(120.dp)
         )
-        
+
         Spacer(modifier = Modifier.height(48.dp))
 
         OutlinedTextField(

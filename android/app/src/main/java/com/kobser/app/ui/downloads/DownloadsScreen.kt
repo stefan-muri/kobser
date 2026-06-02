@@ -15,10 +15,13 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.kobser.app.R
 import com.kobser.app.data.api.DownloadRecord
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,12 +38,21 @@ fun DownloadsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
-                    Text(
-                        "Downloads", 
-                        color = MaterialTheme.colorScheme.primary, 
-                        style = MaterialTheme.typography.headlineMedium
-                    ) 
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_app_logo),
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            tint = Color.Unspecified
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "Downloads",
+                            color = Color.White,
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,

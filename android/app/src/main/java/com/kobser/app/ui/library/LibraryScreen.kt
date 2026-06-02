@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -36,6 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.kobser.app.R
 import com.kobser.app.data.api.ArtistResult
 import com.kobser.app.data.api.SearchResult
 import com.kobser.app.data.api.Song
@@ -127,11 +129,20 @@ fun LibraryScreen(
             } else {
                 TopAppBar(
                     title = {
-                        Text(
-                            if (isFavorites) "Favorites" else "Library",
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.headlineMedium,
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_app_logo),
+                                contentDescription = null,
+                                modifier = Modifier.size(40.dp),
+                                tint = Color.Unspecified
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                if (isFavorites) "Favorites" else "Library",
+                                color = Color.White,
+                                style = MaterialTheme.typography.headlineMedium,
+                            )
+                        }
                     },
                     actions = {
                         IconButton(onClick = { searchOpen = true }) {
