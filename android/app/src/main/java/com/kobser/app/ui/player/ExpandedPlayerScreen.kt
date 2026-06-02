@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import com.kobser.app.ui.components.MarqueeText
+import com.kobser.app.ui.components.YtDownloadDialog
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,6 +59,7 @@ fun ExpandedPlayerScreen(
     var menuOpen by remember { mutableStateOf(false) }
     var deleteConfirmOpen by remember { mutableStateOf(false) }
     var queueSheetOpen by remember { mutableStateOf(false) }
+    var downloadDialogOpen by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
@@ -122,6 +124,16 @@ fun ExpandedPlayerScreen(
                                 queueSheetOpen = true
                             },
                         )
+                        if (isPreview) {
+                            DropdownMenuItem(
+                                text = { Text("Download") },
+                                leadingIcon = { Icon(Icons.Default.Download, null) },
+                                onClick = {
+                                    menuOpen = false
+                                    downloadDialogOpen = true
+                                },
+                            )
+                        }
                         if (!isPreview) {
                             DropdownMenuItem(
                                 text = { Text("Delete from library") },
@@ -279,6 +291,20 @@ fun ExpandedPlayerScreen(
     // ── Queue sheet ───────────────────────────────────────────────────────
     if (queueSheetOpen) {
         QueueSheet(onDismiss = { queueSheetOpen = false })
+    }
+
+    // ── Download dialog (preview tracks only) ─────────────────────────────
+    if (downloadDialogOpen) {
+        YtDownloadDialog(
+            initialArtist = currentSong.artist,
+            initialTitle = currentSong.title,
+            initialAlbum = currentSong.album.orEmpty(),
+            onConfirm = { artist, title, album ->
+                viewModel.downloadPreview(artist, title, album)
+                downloadDialogOpen = false
+            },
+            onDismiss = { downloadDialogOpen = false },
+        )
     }
 
     // ── Delete confirmation ───────────────────────────────────────────────
