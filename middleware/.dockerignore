@@ -7,3 +7,10 @@ venv
 .git
 node_modules
 package-lock.json
+
+# Local runtime/build artifacts — never bake these into the image
+data
+static
+frontend/dist
+.env
+secrets

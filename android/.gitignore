@@ -12,6 +12,13 @@ gradle/wrapper/gradle-wrapper.jar
 # Local config (machine-specific)
 local.properties
 
+# Signing material & build artifacts — never commit these
+*.apk
+*.aab
+*.keystore
+*.jks
+keystore.properties
+
 # IDE
 .idea/
 *.iml
