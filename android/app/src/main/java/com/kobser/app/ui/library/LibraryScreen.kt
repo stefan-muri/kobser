@@ -65,6 +65,9 @@ fun LibraryScreen(
     val focusRequester = remember { FocusRequester() }
     val keyboard = LocalSoftwareKeyboardController.current
 
+    val playingSong by viewModel.currentSong.collectAsState()
+    val isPlaying by viewModel.isPlaying.collectAsState()
+
     // Online search applies to the main Library only, not Favorites.
     val onlineEnabled = !isFavorites
     val searching by remember { derivedStateOf { viewModel.filterQuery.isNotBlank() } }
@@ -175,13 +178,13 @@ fun LibraryScreen(
                                 )
                             }
                         }
-                        librarySongs(items, viewModel, isFavorites, onSongClick,
+                        librarySongs(items, viewModel, isFavorites, playingSong?.id, isPlaying, onSongClick,
                             onDelete = { deleteTarget = it }, onAddToPlaylist = { playlistTarget = it })
                     } else {
                         // ── Search mode: local matches first ────────────────
                         if (items.isNotEmpty()) {
                             item { SectionHeader("In your library") }
-                            librarySongs(items, viewModel, isFavorites, onSongClick,
+                            librarySongs(items, viewModel, isFavorites, playingSong?.id, isPlaying, onSongClick,
                                 onDelete = { deleteTarget = it }, onAddToPlaylist = { playlistTarget = it })
                         }
 
@@ -223,6 +226,7 @@ fun LibraryScreen(
                                         OnlineSongRow(
                                             result = result,
                                             state = viewModel.downloadStates[result.videoId],
+                                            onPlay = { viewModel.playPreview(result) },
                                             onDownload = { dlTarget = result },
                                         )
                                     }
@@ -303,12 +307,15 @@ private fun androidx.compose.foundation.lazy.LazyListScope.librarySongs(
     items: List<Song>,
     viewModel: LibraryViewModel,
     isFavorites: Boolean,
+    currentSongId: String?,
+    isPlaying: Boolean,
     onSongClick: (Song) -> Unit,
     onDelete: (Song) -> Unit,
     onAddToPlaylist: (Song) -> Unit,
 ) {
     itemsIndexed(items, key = { _, song -> song.id }) { index, song ->
         val isStarred = viewModel.isStarred(song, defaultStarred = isFavorites)
+        val isCurrent = song.id == currentSongId
         SongRow(
             song = song,
             isStarred = isStarred,
@@ -325,6 +332,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.librarySongs(
             },
             onDelete = { onDelete(song) },
             onAddToPlaylist = { onAddToPlaylist(song) },
+            isCurrent = isCurrent,
+            isPlayingNow = isCurrent && isPlaying,
         )
     }
 }
@@ -428,23 +437,35 @@ private fun ArtistCard(artist: ArtistResult, onClick: () -> Unit) {
 private fun OnlineSongRow(
     result: SearchResult,
     state: com.kobser.app.ui.ytmusic.YtDownloadState?,
+    onPlay: () -> Unit,
     onDownload: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onPlay)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        AsyncImage(
-            model = result.thumbnail,
-            contentDescription = null,
-            modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(6.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
-            contentScale = ContentScale.Crop,
-        )
+        Box(contentAlignment = Alignment.Center) {
+            AsyncImage(
+                model = result.thumbnail,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                contentScale = ContentScale.Crop,
+            )
+            Icon(
+                Icons.Default.PlayArrow,
+                contentDescription = "Preview",
+                tint = Color.White,
+                modifier = Modifier
+                    .size(24.dp)
+                    .background(Color.Black.copy(alpha = 0.35f), CircleShape),
+            )
+        }
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             MarqueeText(result.title, style = MaterialTheme.typography.bodyMedium)

@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
@@ -108,6 +109,13 @@ fun MiniPlayer(
                     Icons.Default.SkipNext,
                     contentDescription = "Next",
                     tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                )
+            }
+            IconButton(onClick = { player.closePlayer() }) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Close player",
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 )
             }
         }

@@ -72,6 +72,10 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
+    // Playback state, surfaced so list rows can show a "now playing" indicator.
+    val currentSong = musicPlayer.currentSong
+    val isPlaying = musicPlayer.isPlaying
+
     // Local override of starred state so the heart flips immediately on tap
     // without needing to reload the list. Mirrors web's `starredOverrides`.
     var starredOverrides = mutableStateMapOf<String, Boolean>()
@@ -124,6 +128,17 @@ class LibraryViewModel @Inject constructor(
         onlineError = null
         onlineLoading = false
         onlineSearched = false
+    }
+
+    /** Streams an online search result without downloading it. */
+    fun playPreview(result: SearchResult) {
+        musicPlayer.playPreview(
+            videoId = result.videoId,
+            title = result.title,
+            artist = result.channel,
+            thumbnailUrl = result.thumbnail,
+            durationSeconds = result.duration,
+        )
     }
 
     fun downloadOnline(result: SearchResult, artist: String, title: String, album: String?) {
