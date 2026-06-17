@@ -13,6 +13,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
@@ -275,6 +276,11 @@ internal fun DownloadButton(state: YtDownloadState?, onDownload: () -> Unit) {
         YtDownloadState.DONE -> Icon(
             Icons.Default.CheckCircle, null,
             tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp),
+        )
+        YtDownloadState.DUPLICATE -> Icon(
+            Icons.Default.LibraryMusic, "Already in library",
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+            modifier = Modifier.size(24.dp),
         )
         YtDownloadState.ERROR -> Icon(
             Icons.Default.Error, null,

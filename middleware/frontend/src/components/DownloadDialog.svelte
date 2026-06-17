@@ -40,7 +40,11 @@
       dispatch('download', { jobId, artist: a, title: t });
       showToast(`Downloading '${t}'...`, 'info');
     } catch (e) {
-      showToast(`Download failed: ${e.message}`, 'error');
+      if (e.message?.includes('409') && e.message?.includes('already in library')) {
+        showToast(`'${t}' is already in your library`, 'info');
+      } else {
+        showToast(`Download failed: ${e.message}`, 'error');
+      }
     }
   }
 </script>

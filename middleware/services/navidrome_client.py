@@ -84,6 +84,29 @@ async def get_user_libraries(username: str, password: str) -> list[dict[str, Any
         return []
 
 
+async def search_songs(query: str, username: str, password: str, count: int = 10) -> list[dict]:
+    """Search Navidrome for songs matching `query`. Returns a list of song dicts."""
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(
+                f"{NAVIDROME_URL}/rest/search3",
+                params={
+                    "query": query,
+                    "songCount": count,
+                    "artistCount": 0,
+                    "albumCount": 0,
+                    **auth_params(username, password),
+                },
+            )
+            r.raise_for_status()
+        body = r.json().get("subsonic-response", {})
+        if body.get("status") != "ok":
+            return []
+        return body.get("searchResult3", {}).get("song") or []
+    except Exception:
+        return []
+
+
 async def trigger_scan_and_wait(username: str, password: str, scan_wait_s: float = 1.5) -> None:
     """Trigger a Navidrome scan and give it long enough to finish.
 

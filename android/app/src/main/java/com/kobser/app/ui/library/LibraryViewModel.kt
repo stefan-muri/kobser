@@ -171,8 +171,11 @@ class LibraryViewModel @Inject constructor(
                         album = album?.takeIf { it.isNotBlank() },
                     )
                 )
-                downloadStates = downloadStates + (result.videoId to
-                    if (resp.isSuccessful) YtDownloadState.DONE else YtDownloadState.ERROR)
+                downloadStates = downloadStates + (result.videoId to when {
+                    resp.isSuccessful -> YtDownloadState.DONE
+                    resp.code() == 409 -> YtDownloadState.DUPLICATE
+                    else -> YtDownloadState.ERROR
+                })
             } catch (e: Exception) {
                 downloadStates = downloadStates + (result.videoId to YtDownloadState.ERROR)
             }

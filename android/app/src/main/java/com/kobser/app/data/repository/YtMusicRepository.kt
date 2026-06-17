@@ -5,6 +5,7 @@ import com.kobser.app.data.api.KobserApi
 import com.kobser.app.data.api.YtAlbum
 import com.kobser.app.data.api.YtArtist
 import com.kobser.app.data.api.YtSong
+import com.kobser.app.ui.ytmusic.DuplicateException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -57,8 +58,11 @@ class YtMusicRepository @Inject constructor(
                 album = album?.takeIf { it.isNotBlank() },
             )
         )
-        if (resp.isSuccessful) Result.success(Unit)
-        else Result.failure(Exception("Download failed (${resp.code()})"))
+        when {
+            resp.isSuccessful -> Result.success(Unit)
+            resp.code() == 409 -> Result.failure(DuplicateException())
+            else -> Result.failure(Exception("Download failed (${resp.code()})"))
+        }
     } catch (e: Exception) {
         Result.failure(e)
     }

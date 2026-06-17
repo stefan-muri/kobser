@@ -14,7 +14,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class YtDownloadState { LOADING, DONE, ERROR }
+enum class YtDownloadState { LOADING, DONE, DUPLICATE, ERROR }
+
+class DuplicateException : Exception("already in library")
 
 @HiltViewModel
 class YtArtistViewModel @Inject constructor(
@@ -81,8 +83,11 @@ class YtArtistViewModel @Inject constructor(
         downloadStates = downloadStates + (videoId to YtDownloadState.LOADING)
         viewModelScope.launch {
             val result = repo.download(videoId, artist, title, album)
-            downloadStates = downloadStates + (videoId to
-                if (result.isSuccess) YtDownloadState.DONE else YtDownloadState.ERROR)
+            downloadStates = downloadStates + (videoId to when {
+                result.isSuccess -> YtDownloadState.DONE
+                result.exceptionOrNull() is DuplicateException -> YtDownloadState.DUPLICATE
+                else -> YtDownloadState.ERROR
+            })
         }
     }
 }

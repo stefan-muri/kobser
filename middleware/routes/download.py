@@ -1,4 +1,6 @@
 import logging
+import re
+import unicodedata
 
 from anyio import to_thread
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -9,6 +11,17 @@ from auth import get_current_session
 from jobs import cancel_job, create_job, get_job, is_cancelled, is_video_active, update_job
 from services import navidrome_client, tagger_service, ytdlp_service
 from services.ytdlp_service import DownloadCancelled
+
+
+def _norm(s: str) -> str:
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]", "", s.lower())
+
+
+async def _is_duplicate(artist: str, title: str, username: str, password: str) -> bool:
+    songs = await navidrome_client.search_songs(title, username, password)
+    na, nt = _norm(artist), _norm(title)
+    return any(_norm(s.get("title", "")) == nt and _norm(s.get("artist", "")) == na for s in songs)
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -32,6 +45,8 @@ async def download(
         raise HTTPException(
             status_code=409, detail="download already in progress for this video"
         )
+    if await _is_duplicate(body.artist, body.title, sess["username"], sess["password"]):
+        raise HTTPException(status_code=409, detail="already in library")
     job = create_job(body.videoId, body.artist, body.title)
     bg.add_task(
         _run_download,

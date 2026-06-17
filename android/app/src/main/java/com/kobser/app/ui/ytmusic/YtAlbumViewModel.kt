@@ -9,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.kobser.app.data.api.YtAlbum
 import com.kobser.app.data.api.YtAlbumTrack
 import com.kobser.app.data.repository.YtMusicRepository
+import com.kobser.app.ui.ytmusic.DuplicateException
+import com.kobser.app.ui.ytmusic.YtDownloadState
 import com.kobser.app.playback.MusicPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -64,8 +66,11 @@ class YtAlbumViewModel @Inject constructor(
         downloadStates = downloadStates + (videoId to YtDownloadState.LOADING)
         viewModelScope.launch {
             val result = repo.download(videoId, artist, title, album)
-            downloadStates = downloadStates + (videoId to
-                if (result.isSuccess) YtDownloadState.DONE else YtDownloadState.ERROR)
+            downloadStates = downloadStates + (videoId to when {
+                result.isSuccess -> YtDownloadState.DONE
+                result.exceptionOrNull() is DuplicateException -> YtDownloadState.DUPLICATE
+                else -> YtDownloadState.ERROR
+            })
         }
     }
 
@@ -75,11 +80,15 @@ class YtAlbumViewModel @Inject constructor(
         downloadingAll = true
         viewModelScope.launch {
             for (track in a.tracks) {
-                if (downloadStates[track.videoId] == YtDownloadState.DONE) continue
+                val state = downloadStates[track.videoId]
+                if (state == YtDownloadState.DONE || state == YtDownloadState.DUPLICATE) continue
                 downloadStates = downloadStates + (track.videoId to YtDownloadState.LOADING)
                 val result = repo.download(track.videoId, track.artist, track.title, a.title)
-                downloadStates = downloadStates + (track.videoId to
-                    if (result.isSuccess) YtDownloadState.DONE else YtDownloadState.ERROR)
+                downloadStates = downloadStates + (track.videoId to when {
+                    result.isSuccess -> YtDownloadState.DONE
+                    result.exceptionOrNull() is DuplicateException -> YtDownloadState.DUPLICATE
+                    else -> YtDownloadState.ERROR
+                })
             }
             downloadingAll = false
         }
