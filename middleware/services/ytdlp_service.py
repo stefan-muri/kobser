@@ -17,6 +17,58 @@ from yt_dlp import YoutubeDL
 from config import MUSIC_DIR, YTDLP_COOKIES_FILE
 
 
+def describe_error(exc: Exception) -> str:
+    """Condense a yt-dlp / download exception into one short, human-readable reason.
+
+    Keeps backend logs and the UI free of giant tracebacks while still telling
+    you *why* a track failed.
+    """
+    msg = str(exc)
+    low = msg.lower()
+    if any(s in low for s in ("confirm your age", "verify your age", "inappropriate for some", "sure you're an adult")):
+        return "age-restricted (needs an age-verified account cookie)"
+    if "not a bot" in low:
+        return "bot check (needs cookies)"
+    if "http error 403" in low or "forbidden" in low:
+        return "blocked by YouTube (HTTP 403 — often transient, retry later)"
+    if "private video" in low:
+        return "private video"
+    if any(s in low for s in ("video unavailable", "is not available", "no longer available", "has been removed")):
+        return "video unavailable"
+    if any(s in low for s in ("requested format is not available", "no video formats", "no audio")):
+        return "no downloadable audio format"
+    if "sign in" in low:
+        return "requires sign-in (needs cookies)"
+    if "timed out" in low or "timeout" in low:
+        return "network timeout"
+    # Fall back to the first line, minus yt-dlp's noisy "ERROR:" prefix.
+    first = (msg.replace("ERROR:", "").strip().splitlines() or [""])[0]
+    return first[:200] or exc.__class__.__name__
+
+
+def is_retryable(exc: Exception) -> bool:
+    """True for transient failures worth a second attempt — not permanent blocks.
+
+    Age-restricted / private / unavailable / sign-in won't change on retry, so we
+    skip those; 403s, timeouts and signature blips often succeed the second time.
+    """
+    low = str(exc).lower()
+    permanent = (
+        "confirm your age", "verify your age", "inappropriate for some", "sure you're an adult",
+        "private video", "video unavailable", "is not available", "no longer available",
+        "has been removed", "sign in", "not a bot", "members-only",
+        "requested format is not available",
+    )
+    if any(s in low for s in permanent):
+        return False
+    transient = (
+        "http error 403", "forbidden", "timed out", "timeout", "unable to download video data",
+        "unable to extract", "nsig", "signature", "fragment", "connection", "temporarily",
+        "read timed out", "503", "500",
+    )
+    return any(s in low for s in transient)
+
+
 def _cookies_opts() -> dict[str, Any]:
     if not YTDLP_COOKIES_FILE:
         return {}

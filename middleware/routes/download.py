@@ -12,6 +12,7 @@ from auth import get_current_session
 from jobs import cancel_job, create_job, get_job, is_cancelled, is_video_active, update_job
 from services import navidrome_client, tagger_service, ytdlp_service
 from services.ytdlp_service import DownloadCancelled
+from yt_dlp.utils import DownloadError
 
 
 def _norm(s: str) -> str:
@@ -114,9 +115,14 @@ async def _run_download(
         update_job(job_id, status="done")
     except DownloadCancelled:
         pass  # cancel_job already set status; nothing more to do
+    except DownloadError as e:
+        reason = ytdlp_service.describe_error(e)
+        log.warning("download job %s failed: %s", job_id, reason)
+        update_job(job_id, status="error", error=reason)
     except Exception as e:
-        log.exception("download job %s failed", job_id)
-        update_job(job_id, status="error", error=str(e))
+        # Unexpected (our bug, Navidrome, network) — keep the traceback.
+        log.exception("download job %s crashed", job_id)
+        update_job(job_id, status="error", error=ytdlp_service.describe_error(e))
 
 
 @router.get("/api/status/{job_id}", dependencies=[Depends(get_current_session)])
