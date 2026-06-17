@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -16,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import com.kobser.app.ui.components.AddToPlaylistSheet
 import com.kobser.app.ui.components.MarqueeText
 import com.kobser.app.ui.components.YtDownloadDialog
 import androidx.compose.ui.text.style.TextAlign
@@ -39,6 +41,7 @@ private fun fmtTime(ms: Long): String {
 @Composable
 fun ExpandedPlayerScreen(
     onClose: () -> Unit,
+    onViewArtist: (artistId: String) -> Unit = {},
     viewModel: ExpandedPlayerViewModel = hiltViewModel(),
 ) {
     val player = viewModel.musicPlayer
@@ -60,6 +63,7 @@ fun ExpandedPlayerScreen(
     var deleteConfirmOpen by remember { mutableStateOf(false) }
     var queueSheetOpen by remember { mutableStateOf(false) }
     var downloadDialogOpen by remember { mutableStateOf(false) }
+    var playlistSheetOpen by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
@@ -124,6 +128,27 @@ fun ExpandedPlayerScreen(
                                 queueSheetOpen = true
                             },
                         )
+                        if (!isPreview) {
+                            DropdownMenuItem(
+                                text = { Text("Add to playlist") },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.PlaylistAdd, null) },
+                                onClick = {
+                                    menuOpen = false
+                                    playlistSheetOpen = true
+                                },
+                            )
+                        }
+                        if (!isPreview && currentSong.artistId != null) {
+                            DropdownMenuItem(
+                                text = { Text("View artist") },
+                                leadingIcon = { Icon(Icons.Default.Person, null) },
+                                onClick = {
+                                    menuOpen = false
+                                    onViewArtist(currentSong.artistId)
+                                    onClose()
+                                },
+                            )
+                        }
                         if (isPreview) {
                             DropdownMenuItem(
                                 text = { Text("Download") },
@@ -291,6 +316,11 @@ fun ExpandedPlayerScreen(
     // ── Queue sheet ───────────────────────────────────────────────────────
     if (queueSheetOpen) {
         QueueSheet(onDismiss = { queueSheetOpen = false })
+    }
+
+    // ── Add to playlist sheet ─────────────────────────────────────────────
+    if (playlistSheetOpen) {
+        AddToPlaylistSheet(song = currentSong, onDismiss = { playlistSheetOpen = false })
     }
 
     // ── Download dialog (preview tracks only) ─────────────────────────────

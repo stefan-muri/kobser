@@ -226,7 +226,13 @@ fun MainScreen(
                 animationSpec = tween(durationMillis = 300),
             ),
         ) {
-            ExpandedPlayerScreen(onClose = { expandedPlayerOpen = false })
+            ExpandedPlayerScreen(
+                onClose = { expandedPlayerOpen = false },
+                onViewArtist = { artistId ->
+                    expandedPlayerOpen = false
+                    navController.navigate("artist/$artistId")
+                },
+            )
         }
     }
 
