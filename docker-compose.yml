@@ -25,7 +25,8 @@ services:
       - "${KOBSER_PORT:-8000}:8000"
     volumes:
       - ${MUSIC_DIR:-./data/music}:/music
-      - ./secrets:/app/secrets:ro
+      # Not read-only: yt-dlp rewrites the cookies file to persist refreshed cookies.
+      - ./secrets:/app/secrets
       - ./data/kobser:/app/data
     environment:
       NAVIDROME_URL: ${NAVIDROME_URL:-http://navidrome:4533}
