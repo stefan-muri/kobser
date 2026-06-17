@@ -1,4 +1,8 @@
+import contextlib
+import os
 import re
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Any, Callable
 
@@ -69,13 +73,41 @@ def is_retryable(exc: Exception) -> bool:
     return any(s in low for s in transient)
 
 
-def _cookies_opts() -> dict[str, Any]:
+@contextlib.contextmanager
+def _cookiefile():
+    """Yield a throwaway, writable copy of the cookies file (or None).
+
+    yt-dlp rewrites the cookiefile on close. Handing it a per-call temp copy keeps
+    the real file (often a read-only mount) untouched and stops two concurrent
+    downloads from clobbering the same file. The temp is removed afterwards.
+    """
     if not YTDLP_COOKIES_FILE:
-        return {}
-    p = Path(YTDLP_COOKIES_FILE)
-    if p.is_file() and p.stat().st_size > 0:
-        return {"cookiefile": YTDLP_COOKIES_FILE}
-    return {}
+        yield None
+        return
+    src = Path(YTDLP_COOKIES_FILE)
+    if not (src.is_file() and src.stat().st_size > 0):
+        yield None
+        return
+    fd, tmp = tempfile.mkstemp(prefix="kobser_cookies_", suffix=".txt")
+    os.close(fd)
+    try:
+        shutil.copyfile(src, tmp)
+        yield tmp
+    finally:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+
+
+@contextlib.contextmanager
+def _ytdl(opts: dict):
+    """A YoutubeDL context with a throwaway cookie copy attached (see _cookiefile)."""
+    with _cookiefile() as cf:
+        if cf:
+            opts = {**opts, "cookiefile": cf}
+        with YoutubeDL(opts) as ydl:
+            yield ydl
 
 
 _INVALID_FS_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
@@ -139,9 +171,8 @@ def _search_youtube(query: str, limit: int) -> list[dict[str, Any]]:
         "noconfig": True,
         "extract_flat": True,
         "skip_download": True,
-        **_cookies_opts(),
     }
-    with YoutubeDL(opts) as ydl:
+    with _ytdl(opts) as ydl:
         result = ydl.extract_info(f"ytsearch{limit}:{query}", download=False)
     entries = (result or {}).get("entries") or []
     out = []
@@ -319,10 +350,9 @@ def get_stream_info(video_id: str) -> tuple[str, dict]:
         "noconfig": True,
         "format": "bestaudio[ext=m4a]/bestaudio",
         "noplaylist": True,
-        **_cookies_opts(),
     }
     url = f"https://www.youtube.com/watch?v={video_id}"
-    with YoutubeDL(opts) as ydl:
+    with _ytdl(opts) as ydl:
         info = ydl.extract_info(url, download=False)
     if not info:
         raise RuntimeError("yt-dlp returned no info")
@@ -380,7 +410,6 @@ def download(video_id: str, artist: str, title: str, source: str = "youtube",
         "socket_timeout": 30,
         "retries": 2,
         "fragment_retries": 2,
-        **_cookies_opts(),
     }
 
     if source == "youtube_music":
@@ -388,7 +417,7 @@ def download(video_id: str, artist: str, title: str, source: str = "youtube",
     else:
         url = f"https://www.youtube.com/watch?v={video_id}"
 
-    with YoutubeDL(opts) as ydl:
+    with _ytdl(opts) as ydl:
         info = ydl.extract_info(url, download=True)
         if not info:
             raise RuntimeError("yt-dlp returned no info")
