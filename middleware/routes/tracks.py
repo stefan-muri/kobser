@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 
 from auth import get_current_session
 from config import MUSIC_DIR, NAVIDROME_URL
-from services.navidrome_client import auth_params, trigger_scan_and_wait
+from services.navidrome_client import auth_params, get_user_libraries, trigger_scan_and_wait
 from services.ytdlp_service import _sanitize, get_stream_info
 
 router = APIRouter()
@@ -51,51 +51,70 @@ async def delete_track(track_id: str, sess: dict = Depends(get_current_session))
     if body.get("status") != "ok" or not body.get("song"):
         raise HTTPException(status_code=404, detail="track not found")
 
-    rel_path = body["song"].get("path")
-    if not rel_path:
-        raise HTTPException(status_code=404, detail="track has no path")
+    song = body["song"]
 
-    music_root = Path(MUSIC_DIR).resolve()
-    p = Path(rel_path)
-    file_path = (p if p.is_absolute() else music_root / rel_path).resolve()
-
-    # Ensure the resolved path stays inside the music directory.
+    # Build search roots: global MUSIC_DIR first, then the user's assigned library
+    # (which may differ, e.g. /music/music_stefan). The user library takes priority
+    # because kobser routes downloads there.
+    global_root = Path(MUSIC_DIR).resolve()
+    search_roots: list[Path] = [global_root]
     try:
-        file_path.relative_to(music_root)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="invalid path")
+        libs = await get_user_libraries(sess["username"], sess["password"])
+        for lib in libs:
+            lib_path = Path(lib["path"]).resolve()
+            if lib_path != global_root:
+                search_roots.insert(0, lib_path)
+    except Exception:
+        pass
 
-    if not file_path.exists():
-        # Navidrome's stored path doesn't match what's on disk.
-        # Try to find the file by reconstructing the Kobser download path (artist/artist - title.*).
-        song = body["song"]
-        s_artist = _sanitize(song.get("artist", ""))
+    # ── 1. Try the path Navidrome reports (may be a virtual tag-based path) ──
+    file_path: Path | None = None
+    rel_path = song.get("path")
+    if rel_path:
+        p = Path(rel_path)
+        for root in search_roots:
+            candidate = (p if p.is_absolute() else root / rel_path).resolve()
+            try:
+                candidate.relative_to(root)
+            except ValueError:
+                continue
+            if candidate.exists():
+                file_path = candidate
+                break
+
+    # ── 2. Fall back to kobser naming: root/artist/artist - title.ext ────────
+    if file_path is None:
+        s_artist = _sanitize(song.get("artist", "") or song.get("albumArtist", ""))
         s_title = _sanitize(song.get("title", ""))
-        found = None
         if s_artist and s_title:
             stem = f"{s_artist} - {s_title}"
-            for ext in (".m4a", ".opus", ".ogg", ".mp3", ".flac", ".webm"):
-                candidate = (music_root / s_artist / f"{stem}{ext}").resolve()
-                try:
-                    candidate.relative_to(music_root)
-                except ValueError:
-                    continue
-                if candidate.exists():
-                    found = candidate
+            for root in search_roots:
+                for ext in (".m4a", ".opus", ".ogg", ".mp3", ".flac", ".webm"):
+                    candidate = (root / s_artist / f"{stem}{ext}").resolve()
+                    try:
+                        candidate.relative_to(root)
+                    except ValueError:
+                        continue
+                    if candidate.exists():
+                        file_path = candidate
+                        break
+                if file_path:
                     break
-        if not found:
-            await trigger_scan_and_wait(sess["username"], sess["password"])
-            raise HTTPException(status_code=404, detail=f"file not found: {file_path}")
-        file_path = found
+
+    if file_path is None:
+        # File is already gone from disk — Navidrome has a stale entry.
+        # Rescan so Navidrome removes it from its DB, then report success.
+        await trigger_scan_and_wait(sess["username"], sess["password"])
+        return {"ok": True}
 
     file_path.unlink()
 
-    # Remove now-empty artist/album directories.
+    # Remove now-empty artist/album directories (never remove a library root).
+    protected = set(search_roots)
     for parent in [file_path.parent, file_path.parent.parent]:
-        if parent != music_root and parent.exists() and not any(parent.iterdir()):
-            parent.rmdir()
-        else:
+        if parent in protected or not parent.exists() or any(parent.iterdir()):
             break
+        parent.rmdir()
 
     await trigger_scan_and_wait(sess["username"], sess["password"])
     return {"ok": True}
