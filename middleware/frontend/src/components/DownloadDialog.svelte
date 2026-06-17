@@ -37,16 +37,16 @@
     const a = localArtist.trim();
     const t = localTitle.trim();
     if (!a || !t) return;
-    if (!force) close();
     try {
       const { jobId } = await downloadApi(videoId, a, t, source, localAlbum.trim(), force);
-      if (force) close();
+      close();
       dispatch('download', { jobId, artist: a, title: t });
       showToast(`Downloading '${t}'...`, 'info');
     } catch (e) {
       if (e.message?.includes('409') && e.message?.includes('already in library')) {
         showDuplicateWarning = true;
       } else {
+        close();
         showToast(`Download failed: ${e.message}`, 'error');
       }
     }
