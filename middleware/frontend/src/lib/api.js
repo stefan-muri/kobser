@@ -105,6 +105,9 @@ export const deleteDownload = (jobId) =>
 export const cancelJob = (jobId) =>
   call(`/api/jobs/${encodeURIComponent(jobId)}/cancel`, { method: "POST" });
 
+export const retryDownload = (jobId) =>
+  call(`/api/downloads/${encodeURIComponent(jobId)}/retry`, { method: "POST" });
+
 export const getStats = () => call("/api/stats");
 
 export function streamUrl(trackId) {

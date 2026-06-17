@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
-  import { activeJobs } from '../lib/jobs.js';
-  import { listDownloads, deleteDownload, cancelJob } from '../lib/api.js';
+  import { activeJobs, trackJob } from '../lib/jobs.js';
+  import { listDownloads, deleteDownload, cancelJob, retryDownload } from '../lib/api.js';
 
   let dbDownloads = [];
   let loading = true;
@@ -40,6 +40,16 @@
       await cancelJob(id);
       activeJobs.update(jobs => jobs.map(j => j.id === id ? { ...j, status: 'cancelled' } : j));
     } catch (err) { alert(`Cancel failed: ${err.message}`); }
+  }
+
+  async function retry(job) {
+    try {
+      const { jobId } = await retryDownload(job.id);
+      // Drop the old failed entry; track the fresh job so it polls live.
+      dbDownloads = dbDownloads.filter(d => d.id !== job.id);
+      activeJobs.update(jobs => jobs.filter(j => j.id !== job.id));
+      trackJob(jobId, job.artist, job.title);
+    } catch (err) { alert(`Retry failed: ${err.message}`); }
   }
 
   const ACTIVE_STATUSES = new Set(['pending','downloading','tagging','scanning']);
@@ -110,6 +120,12 @@
               class="px-3 py-1 rounded-lg text-xs font-medium text-kobser-muted hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
             >Cancel</button>
           {:else}
+            {#if job.status === 'error' || job.status === 'cancelled'}
+              <button
+                on:click={() => retry(job)}
+                class="px-3 py-1 rounded-lg text-xs font-medium text-kobser-muted hover:text-kobser-accent hover:bg-kobser-accent/10 transition-colors flex-shrink-0"
+              >Retry</button>
+            {/if}
             <button
               on:click={() => remove(job.id)}
               class="w-8 h-8 rounded-full flex items-center justify-center text-kobser-muted hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"

@@ -16,6 +16,8 @@ class Job:
     video_id: str
     artist: str
     title: str
+    album: str = ""
+    source: str = "youtube_music"
     status: JobStatus = "pending"
     error: str | None = None
     file: str | None = None
@@ -33,12 +35,21 @@ def is_video_active(video_id: str) -> bool:
         return video_id in _active_video_ids
 
 
-def create_job(video_id: str, artist: str, title: str) -> Job:
-    job = Job(job_id=str(uuid.uuid4()), video_id=video_id, artist=artist, title=title)
+def create_job(
+    video_id: str, artist: str, title: str,
+    album: str = "", source: str = "youtube_music",
+) -> Job:
+    job = Job(
+        job_id=str(uuid.uuid4()), video_id=video_id, artist=artist, title=title,
+        album=album, source=source,
+    )
     with _lock:
         _jobs[job.job_id] = job
         _active_video_ids.add(video_id)
-    _db.upsert_download(job.job_id, video_id, artist, title, "pending", started_at=job.started_at)
+    _db.upsert_download(
+        job.job_id, video_id, artist, title, "pending",
+        album=album, source=source, started_at=job.started_at,
+    )
     return job
 
 

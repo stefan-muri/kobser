@@ -26,6 +26,8 @@ def init_db() -> None:
                 video_id TEXT NOT NULL,
                 artist TEXT NOT NULL,
                 title TEXT NOT NULL,
+                album TEXT,
+                source TEXT,
                 status TEXT NOT NULL DEFAULT 'pending',
                 error TEXT,
                 file_path TEXT,
@@ -34,6 +36,12 @@ def init_db() -> None:
                 completed_at INTEGER
             )
         """)
+        # Migrate older DBs that predate the album/source columns.
+        cols = {r[1] for r in conn.execute("PRAGMA table_info(downloads)").fetchall()}
+        if "album" not in cols:
+            conn.execute("ALTER TABLE downloads ADD COLUMN album TEXT")
+        if "source" not in cols:
+            conn.execute("ALTER TABLE downloads ADD COLUMN source TEXT")
 
 
 @contextmanager
@@ -81,6 +89,8 @@ def upsert_download(
     title: str,
     status: str,
     *,
+    album: str | None = None,
+    source: str | None = None,
     error: str | None = None,
     file_path: str | None = None,
     file_size_bytes: int | None = None,
@@ -91,19 +101,21 @@ def upsert_download(
         c.execute(
             """
             INSERT INTO downloads
-                (id, video_id, artist, title, status, error, file_path,
-                 file_size_bytes, started_at, completed_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (id, video_id, artist, title, album, source, status, error,
+                 file_path, file_size_bytes, started_at, completed_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 status          = excluded.status,
                 error           = excluded.error,
+                album           = COALESCE(excluded.album,           album),
+                source          = COALESCE(excluded.source,          source),
                 file_path       = COALESCE(excluded.file_path,       file_path),
                 file_size_bytes = COALESCE(excluded.file_size_bytes, file_size_bytes),
                 completed_at    = COALESCE(excluded.completed_at,    completed_at)
             """,
             (
-                id_, video_id, artist, title, status, error, file_path,
-                file_size_bytes, started_at or int(time.time()), completed_at,
+                id_, video_id, artist, title, album, source, status, error,
+                file_path, file_size_bytes, started_at or int(time.time()), completed_at,
             ),
         )
 
@@ -114,6 +126,12 @@ def list_downloads() -> list[dict]:
             "SELECT * FROM downloads ORDER BY started_at DESC LIMIT 200"
         ).fetchall()
     return [dict(r) for r in rows]
+
+
+def get_download_record(id_: str) -> dict | None:
+    with _conn() as c:
+        row = c.execute("SELECT * FROM downloads WHERE id = ?", (id_,)).fetchone()
+    return dict(row) if row else None
 
 
 def delete_download_record(id_: str) -> None:

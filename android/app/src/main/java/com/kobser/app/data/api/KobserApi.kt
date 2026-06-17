@@ -190,6 +190,9 @@ interface KobserApi {
     @DELETE("/api/downloads/{jobId}")
     suspend fun deleteDownload(@Path("jobId") jobId: String): Response<OkResponse>
 
+    @POST("/api/downloads/{jobId}/retry")
+    suspend fun retryDownload(@Path("jobId") jobId: String): Response<DownloadStartResponse>
+
     // Library (Subsonic proxy)
     @GET("/api/library/{subpath}")
     suspend fun getLibrary(

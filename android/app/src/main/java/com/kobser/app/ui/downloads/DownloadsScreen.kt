@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.HourglassEmpty
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -84,10 +85,12 @@ fun DownloadsScreen(
                     items(viewModel.downloads, key = { it.id }) { record ->
                         val onCancel = remember(record.id) { { viewModel.cancel(record.id) } }
                         val onDelete = remember(record.id) { { deleteTarget = record } }
+                        val onRetry = remember(record.id) { { viewModel.retry(record.id) } }
                         DownloadRow(
                             record = record,
                             onCancel = onCancel,
                             onDelete = onDelete,
+                            onRetry = onRetry,
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
                     }
@@ -119,6 +122,7 @@ private fun DownloadRow(
     record: DownloadRecord,
     onCancel: () -> Unit,
     onDelete: () -> Unit,
+    onRetry: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -142,7 +146,7 @@ private fun DownloadRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (record.status == "running" || record.status == "pending") {
+            if (record.status in ACTIVE_DOWNLOAD_STATUSES) {
                 Spacer(Modifier.height(4.dp))
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth(),
@@ -168,7 +172,7 @@ private fun DownloadRow(
             }
         }
         Spacer(Modifier.width(8.dp))
-        if (record.status == "pending" || record.status == "running") {
+        if (record.status in ACTIVE_DOWNLOAD_STATUSES) {
             IconButton(onClick = onCancel) {
                 Icon(
                     Icons.Default.Cancel,
@@ -177,6 +181,15 @@ private fun DownloadRow(
                 )
             }
         } else {
+            if (record.status == "error" || record.status == "cancelled") {
+                IconButton(onClick = onRetry) {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = "Retry",
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
             IconButton(onClick = onDelete) {
                 Icon(
                     Icons.Default.Delete,
@@ -203,7 +216,7 @@ private fun StatusIcon(status: String) {
             tint = MaterialTheme.colorScheme.error,
             modifier = Modifier.size(24.dp),
         )
-        "running" -> CircularProgressIndicator(
+        "downloading", "tagging", "scanning" -> CircularProgressIndicator(
             modifier = Modifier.size(24.dp),
             strokeWidth = 2.dp,
             color = MaterialTheme.colorScheme.primary,

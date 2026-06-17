@@ -13,6 +13,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/** Backend job stages that mean a download is still in flight. */
+internal val ACTIVE_DOWNLOAD_STATUSES = setOf("pending", "downloading", "tagging", "scanning")
+
 @HiltViewModel
 class DownloadsViewModel @Inject constructor(
     private val api: KobserApi,
@@ -65,8 +68,15 @@ class DownloadsViewModel @Inject constructor(
         }
     }
 
+    fun retry(jobId: String) {
+        viewModelScope.launch {
+            val result = api.retryDownload(jobId)
+            if (result.isSuccessful) load() else error = "Retry failed"
+        }
+    }
+
     fun pollUntilDone() {
-        val hasPending = downloads.any { it.status == "pending" || it.status == "running" }
+        val hasPending = downloads.any { it.status in ACTIVE_DOWNLOAD_STATUSES }
         if (!hasPending) return
         viewModelScope.launch {
             delay(3000)

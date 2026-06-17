@@ -49,7 +49,7 @@ async def download(
         )
     if not body.force and await _is_duplicate(body.artist, body.title, sess["username"], sess["password"]):
         raise HTTPException(status_code=409, detail="already in library")
-    job = create_job(body.videoId, body.artist, body.title)
+    job = create_job(body.videoId, body.artist, body.title, body.album, body.source)
     bg.add_task(
         _run_download,
         job.job_id,
@@ -154,3 +154,35 @@ def list_downloads():
 def delete_download(job_id: str):
     _db.delete_download_record(job_id)
     return {"ok": True}
+
+
+@router.post("/api/downloads/{job_id}/retry")
+async def retry_download(
+    job_id: str,
+    bg: BackgroundTasks,
+    sess: dict = Depends(get_current_session),
+):
+    rec = _db.get_download_record(job_id)
+    if rec is None:
+        raise HTTPException(status_code=404, detail="download not found")
+    if is_video_active(rec["video_id"]):
+        raise HTTPException(status_code=409, detail="download already in progress for this video")
+
+    source = rec.get("source") or "youtube_music"
+    album = rec.get("album") or ""
+    # Re-run as a fresh job, then drop the old failed record so the list shows
+    # a single entry that's downloading again.
+    job = create_job(rec["video_id"], rec["artist"], rec["title"], album, source)
+    _db.delete_download_record(job_id)
+    bg.add_task(
+        _run_download,
+        job.job_id,
+        rec["video_id"],
+        rec["artist"],
+        rec["title"],
+        sess["username"],
+        sess["password"],
+        source,
+        album,
+    )
+    return {"jobId": job.job_id, "status": job.status}
