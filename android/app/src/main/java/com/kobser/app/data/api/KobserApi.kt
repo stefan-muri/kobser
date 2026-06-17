@@ -133,6 +133,30 @@ data class DownloadRecord(
     @SerializedName("completed_at") val completedAt: Long?
 )
 
+// ── Playlist import ───────────────────────────────────────────────────────────
+
+data class ImportRequest(val url: String)
+
+data class ImportStartResponse(
+    val importId: String,
+    val name: String,
+    val total: Int,
+)
+
+data class ImportStatusResponse(
+    val importId: String,
+    val name: String,
+    val status: String,
+    val total: Int,
+    val current: Int,
+    val downloaded: Int,
+    val existing: Int,
+    val failed: Int,
+    val playlistId: String?,
+    val error: String?,
+    val failures: List<String> = emptyList(),
+)
+
 // ── Stats ────────────────────────────────────────────────────────────────────
 
 data class StatsResponse(
@@ -224,6 +248,13 @@ interface KobserApi {
     // Track management
     @DELETE("/api/track/{trackId}")
     suspend fun deleteTrack(@Path("trackId") trackId: String): Response<OkResponse>
+
+    // Playlist import
+    @POST("/api/import/spotify")
+    suspend fun importSpotify(@Body request: ImportRequest): Response<ImportStartResponse>
+
+    @GET("/api/import/{importId}")
+    suspend fun importStatus(@Path("importId") importId: String): Response<ImportStatusResponse>
 
     // Server ops
     @POST("/api/rescan")
