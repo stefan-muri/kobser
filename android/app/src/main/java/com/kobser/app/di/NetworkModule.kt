@@ -13,6 +13,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -65,11 +66,11 @@ object NetworkModule {
             if (serverUrl.isNotBlank()) {
                 try {
                     val normalized = if (serverUrl.contains("://")) serverUrl else "http://$serverUrl"
-                    val base = okhttp3.HttpUrl.get(normalized)
+                    val base = normalized.toHttpUrl()
                     val newUrl = request.url.newBuilder()
-                        .scheme(base.scheme())
-                        .host(base.host())
-                        .port(base.port())
+                        .scheme(base.scheme)
+                        .host(base.host)
+                        .port(base.port)
                         .build()
                     request = request.newBuilder().url(newUrl).build()
                 } catch (e: Exception) {
