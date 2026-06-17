@@ -64,10 +64,12 @@ object NetworkModule {
             val serverUrl = prefs.cachedServerUrl
             if (serverUrl.isNotBlank()) {
                 try {
+                    val normalized = if (serverUrl.contains("://")) serverUrl else "http://$serverUrl"
+                    val base = okhttp3.HttpUrl.get(normalized)
                     val newUrl = request.url.newBuilder()
-                        .scheme(if (serverUrl.startsWith("https")) "https" else "http")
-                        .host(serverUrl.substringAfter("://").substringBefore(":").substringBefore("/"))
-                        .port(if (serverUrl.contains(":")) serverUrl.substringAfterLast(":").substringBefore("/").toInt() else request.url.port)
+                        .scheme(base.scheme())
+                        .host(base.host())
+                        .port(base.port())
                         .build()
                     request = request.newBuilder().url(newUrl).build()
                 } catch (e: Exception) {
