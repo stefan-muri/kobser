@@ -1,7 +1,8 @@
 <script>
-  import { library as libApi } from '../lib/api.js';
+  import { library as libApi, importSpotify } from '../lib/api.js';
   import TrackList from '../components/TrackList.svelte';
   import { showContextMenu } from '../lib/stores/contextMenuStore.js';
+  import { activeImport, startImport as startImportTracking, clearImport } from '../lib/stores/importStore.js';
 
   let stack = [{ type: 'playlists', label: 'Playlists' }];
   let playlists = [];
@@ -27,6 +28,21 @@
   let spSelected = new Set();
   let spDialogEl;
   let spLoading = false;
+
+  // Import playlist
+  let importOpen = false;
+  let importDialogEl;
+  let importStep = 'source';   // 'source' | 'url' | 'progress'
+  let importSource = '';
+  let importUrl = '';
+  let importError = '';
+  let reloadedFor = null;      // import id we've already refreshed playlists for
+
+  // When the tracked import finishes, refresh the playlist list once.
+  $: if ($activeImport?.status === 'done' && reloadedFor !== $activeImport.importId) {
+    reloadedFor = $activeImport.importId;
+    loadPlaylists();
+  }
 
   $: top = stack[stack.length - 1];
   $: filteredPlaylists = playlistFilter
@@ -137,6 +153,54 @@
       if (top.type === 'playlist' && top.id === songPickerPlaylistId) await loadPlaylist(top.id);
     } catch (e) { alert(`Failed to add songs: ${e.message}`); }
   }
+
+  function openImport() {
+    // If an import is already running, jump straight to its progress.
+    importStep = $activeImport ? 'progress' : 'source';
+    importSource = '';
+    importUrl = '';
+    importError = '';
+    importOpen = true;
+    importDialogEl?.showModal();
+  }
+
+  // Just hide the dialog; the import keeps running and stays tracked in the store.
+  function hideImport() {
+    importDialogEl?.close();
+    importOpen = false;
+  }
+
+  // Done/dismiss: stop tracking and close.
+  function finishImport() {
+    clearImport();
+    reloadedFor = null;
+    hideImport();
+  }
+
+  function reopenImport() {
+    importStep = 'progress';
+    importError = '';
+    importOpen = true;
+    importDialogEl?.showModal();
+  }
+
+  function pickSource(src) {
+    importSource = src;
+    importStep = 'url';
+  }
+
+  async function startImport() {
+    const url = importUrl.trim();
+    if (!url) return;
+    importError = '';
+    try {
+      const res = await importSpotify(url);
+      startImportTracking(res.importId, res.name, res.total);
+      importStep = 'progress';
+    } catch (e) {
+      importError = e.message;
+    }
+  }
 </script>
 
 <div class="w-full max-w-5xl mx-auto p-4 md:p-8">
@@ -172,6 +236,10 @@
         <input type="text" bind:value={playlistFilter} placeholder="Search playlists…"
           class="w-full bg-kobser-surface text-kobser-text placeholder-kobser-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 border border-white/10 text-sm">
       </div>
+      <button on:click={openImport}
+        class="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-sm font-semibold rounded-xl transition-colors flex-shrink-0">
+        <i class="ph ph-download-simple"></i> Import
+      </button>
       <button on:click={() => { createName = ''; createOpen = true; createDialogEl?.showModal(); }}
         class="flex items-center gap-2 px-4 py-2 bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg text-sm font-semibold rounded-xl transition-colors flex-shrink-0">
         <i class="ph-bold ph-plus"></i> New playlist
@@ -290,3 +358,94 @@
   </div>
   </div>
 </dialog>
+
+<!-- Import playlist dialog -->
+<dialog bind:this={importDialogEl} on:close={() => { importOpen = false; }}
+  class="bg-kobser-surface text-kobser-text border border-white/10 rounded-2xl p-6 w-[90vw] max-w-md shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm">
+  <h3 class="text-lg font-semibold mb-5 flex items-center gap-2">
+    <i class="ph ph-download-simple text-kobser-accent"></i> Import playlist
+  </h3>
+
+  {#if importStep === 'source'}
+    <p class="text-sm text-kobser-muted mb-4">Import from</p>
+    <button on:click={() => pickSource('spotify')}
+      class="w-full flex items-center gap-3 p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors mb-3">
+      <i class="ph-fill ph-spotify-logo text-2xl text-[#1DB954]"></i>
+      <span class="font-medium">Spotify</span>
+      <i class="ph ph-caret-right ml-auto text-kobser-muted"></i>
+    </button>
+    <div class="flex justify-end mt-4">
+      <button on:click={hideImport} class="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors">Cancel</button>
+    </div>
+  {:else if importStep === 'url'}
+    <p class="text-sm text-kobser-muted mb-2">Paste a public Spotify playlist link</p>
+    <input type="text" bind:value={importUrl} placeholder="https://open.spotify.com/playlist/…" autofocus
+      on:keydown={e => { if (e.key === 'Enter') startImport(); }}
+      class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 mb-2 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 border border-white/10">
+    {#if importError}
+      <p class="text-sm text-red-400 mb-2"><i class="ph ph-warning mr-1"></i>{importError}</p>
+    {/if}
+    <div class="flex gap-3 justify-between mt-4">
+      <button on:click={() => { importStep = 'source'; importError = ''; }} class="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors">Back</button>
+      <button on:click={startImport} disabled={!importUrl.trim()}
+        class="px-5 py-2.5 bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg rounded-xl text-sm font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Import</button>
+    </div>
+  {:else if importStep === 'progress'}
+    <p class="font-medium truncate mb-1">{$activeImport?.name}</p>
+    {#if $activeImport?.status === 'running'}
+      <p class="text-sm text-kobser-muted mb-3">Importing {$activeImport.current} / {$activeImport.total}…</p>
+      <div class="w-full h-2 bg-white/10 rounded-full mb-4 overflow-hidden">
+        <div class="h-full bg-kobser-accent rounded-full transition-all" style:width="{$activeImport.total ? ($activeImport.current / $activeImport.total) * 100 : 0}%"></div>
+      </div>
+      <div class="flex gap-4 text-sm text-kobser-muted">
+        <span><i class="ph ph-download-simple mr-1"></i>{$activeImport.downloaded} new</span>
+        <span><i class="ph ph-check mr-1"></i>{$activeImport.existing} existing</span>
+        {#if $activeImport.failed}<span class="text-red-400"><i class="ph ph-x mr-1"></i>{$activeImport.failed} failed</span>{/if}
+      </div>
+    {:else if $activeImport?.status === 'done'}
+      <p class="text-sm text-kobser-muted mb-3">
+        Imported {$activeImport.downloaded + $activeImport.existing} of {$activeImport.total} tracks
+        {#if $activeImport.playlistId}— playlist created.{/if}
+      </p>
+      <div class="flex gap-4 text-sm text-kobser-muted mb-2">
+        <span><i class="ph ph-download-simple mr-1"></i>{$activeImport.downloaded} downloaded</span>
+        <span><i class="ph ph-check mr-1"></i>{$activeImport.existing} already there</span>
+        {#if $activeImport.failed}<span class="text-red-400"><i class="ph ph-x mr-1"></i>{$activeImport.failed} not found</span>{/if}
+      </div>
+      {#if $activeImport.failures?.length}
+        <details class="text-xs text-kobser-muted mb-2">
+          <summary class="cursor-pointer">Couldn't find {$activeImport.failures.length} track{$activeImport.failures.length !== 1 ? 's' : ''}</summary>
+          <ul class="mt-2 max-h-32 overflow-y-auto list-disc pl-5">
+            {#each $activeImport.failures as f}<li>{f}</li>{/each}
+          </ul>
+        </details>
+      {/if}
+    {:else}
+      <p class="text-sm text-red-400 mb-3"><i class="ph ph-warning mr-1"></i>{$activeImport?.error || 'Import failed'}</p>
+    {/if}
+    <div class="flex justify-end mt-4">
+      {#if $activeImport?.status === 'running'}
+        <button on:click={hideImport} class="px-5 py-2.5 bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg rounded-xl text-sm font-semibold transition-colors">Run in background</button>
+      {:else}
+        <button on:click={finishImport} class="px-5 py-2.5 bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg rounded-xl text-sm font-semibold transition-colors">Done</button>
+      {/if}
+    </div>
+  {/if}
+</dialog>
+
+<!-- Re-entry pill: shows while an import is tracked but the dialog is closed -->
+{#if $activeImport && !importOpen}
+  <button on:click={reopenImport}
+    class="fixed bottom-24 right-6 z-40 flex items-center gap-2 px-4 py-3 rounded-full bg-kobser-surface border border-white/10 shadow-2xl hover:bg-white/10 transition-colors">
+    {#if $activeImport.status === 'running'}
+      <i class="ph ph-circle-notch text-kobser-accent animate-spin-slow"></i>
+      <span class="text-sm font-medium">Importing {$activeImport.current}/{$activeImport.total}</span>
+    {:else if $activeImport.status === 'done'}
+      <i class="ph-fill ph-check-circle text-kobser-success"></i>
+      <span class="text-sm font-medium">Import complete</span>
+    {:else}
+      <i class="ph-fill ph-warning-circle text-red-400"></i>
+      <span class="text-sm font-medium">Import failed</span>
+    {/if}
+  </button>
+{/if}

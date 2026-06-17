@@ -1,11 +1,18 @@
 import asyncio
 import hashlib
+import re
 import secrets
+import unicodedata
 from typing import Any
 
 import httpx
 
 from config import NAVIDROME_URL
+
+
+def _norm(s: str) -> str:
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]", "", s.lower())
 
 CLIENT_ID = "kobser-middleware"
 API_VERSION = "1.16.1"
@@ -105,6 +112,39 @@ async def search_songs(query: str, username: str, password: str, count: int = 10
         return body.get("searchResult3", {}).get("song") or []
     except Exception:
         return []
+
+
+async def find_song_id(artist: str, title: str, username: str, password: str) -> str | None:
+    """Return the Navidrome song id whose artist+title match (normalised), or None."""
+    songs = await search_songs(title, username, password)
+    na, nt = _norm(artist), _norm(title)
+    for s in songs:
+        if _norm(s.get("title", "")) == nt and _norm(s.get("artist", "")) == na:
+            return s.get("id")
+    # Looser fallback: title match alone (handles "feat." artist mismatches).
+    for s in songs:
+        if _norm(s.get("title", "")) == nt:
+            return s.get("id")
+    return None
+
+
+async def create_playlist(name: str, song_ids: list[str], username: str, password: str) -> str | None:
+    """Create a playlist with the given songs. Returns the new playlist id, or None."""
+    try:
+        params = [("name", name)]
+        params += [("songId", sid) for sid in song_ids]
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.get(
+                f"{NAVIDROME_URL}/rest/createPlaylist",
+                params=params + list(auth_params(username, password).items()),
+            )
+            r.raise_for_status()
+        body = r.json().get("subsonic-response", {})
+        if body.get("status") != "ok":
+            return None
+        return (body.get("playlist") or {}).get("id")
+    except Exception:
+        return None
 
 
 async def trigger_scan_and_wait(username: str, password: str, scan_wait_s: float = 1.5) -> None:

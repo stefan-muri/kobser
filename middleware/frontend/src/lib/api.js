@@ -110,6 +110,15 @@ export const retryDownload = (jobId) =>
 
 export const getStats = () => call("/api/stats");
 
+export const importSpotify = (url) =>
+  call("/api/import/spotify", {
+    method: "POST",
+    body: JSON.stringify({ url }),
+  });
+
+export const importStatus = (importId) =>
+  call(`/api/import/${encodeURIComponent(importId)}`);
+
 export function streamUrl(trackId) {
   return `/api/stream/${encodeURIComponent(trackId)}?session=${encodeURIComponent(sessionId())}`;
 }

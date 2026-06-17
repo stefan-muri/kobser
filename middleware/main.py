@@ -7,7 +7,7 @@ from starlette.requests import Request
 
 from db import init_db
 from routes import auth as auth_routes
-from routes import artist, download, library, search, stats, stream, tracks
+from routes import artist, download, import_playlist, library, search, stats, stream, tracks
 
 
 @asynccontextmanager
@@ -38,6 +38,7 @@ app.include_router(library.router)
 app.include_router(stream.router)
 app.include_router(tracks.router)
 app.include_router(stats.router)
+app.include_router(import_playlist.router)
 
 
 @app.get("/health")
