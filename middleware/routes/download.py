@@ -1,6 +1,7 @@
 import logging
 import re
 import unicodedata
+from pathlib import Path
 
 from anyio import to_thread
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -77,6 +78,14 @@ async def _run_download(
         # Resolve the user's library path from Navidrome; fall back to MUSIC_DIR.
         libs = await navidrome_client.get_user_libraries(username, password)
         music_dir = libs[0]["path"] if libs else None
+        # Navidrome reports its library path as seen *inside its own container*
+        # (e.g. /music). When the middleware runs in the same container that path
+        # exists and is writable. In local dev the middleware runs on the host,
+        # where that path doesn't exist — fall back to MUSIC_DIR so writes land
+        # somewhere writable. In prod the path exists, so behaviour is unchanged.
+        if music_dir and not Path(music_dir).exists():
+            log.info("download %s: reported library %s missing on host, falling back to MUSIC_DIR", job_id, music_dir)
+            music_dir = None
         if music_dir:
             log.info("download %s: routing to user '%s' library %s", job_id, username, music_dir)
 
