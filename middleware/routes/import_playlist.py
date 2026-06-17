@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import uuid
 from dataclasses import dataclass, field
@@ -7,6 +8,7 @@ from threading import Lock
 from anyio import to_thread
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
+from yt_dlp.utils import DownloadError
 
 from auth import get_current_session
 from config import MUSIC_DIR
@@ -15,6 +17,13 @@ from services.spotify_client import SpotifyError
 
 router = APIRouter()
 log = logging.getLogger(__name__)
+
+# How many tracks to download at once during an import. Kept modest: too high
+# trips YouTube rate-limiting (403s) and spikes CPU.
+IMPORT_CONCURRENCY = 2
+# Transient failures (403/timeout/signature blips) often succeed on a second try.
+IMPORT_DOWNLOAD_RETRIES = 1
+IMPORT_RETRY_BACKOFF_S = 3.0
 
 
 @dataclass
@@ -94,50 +103,89 @@ async def _resolve_music_dir(username: str, password: str) -> str | None:
     return music_dir
 
 
+async def _download_with_retry(video_id: str, artist: str, title: str, music_dir: str | None) -> str:
+    """Download a track, retrying once (with backoff) on transient failures."""
+    for attempt in range(IMPORT_DOWNLOAD_RETRIES + 1):
+        try:
+            return await to_thread.run_sync(
+                lambda: ytdlp_service.download(video_id, artist, title, "youtube_music", music_dir=music_dir)
+            )
+        except DownloadError as e:
+            if attempt >= IMPORT_DOWNLOAD_RETRIES or not ytdlp_service.is_retryable(e):
+                raise
+            log.info(
+                "import: retry %d/%d for %s - %s (%s)",
+                attempt + 1, IMPORT_DOWNLOAD_RETRIES, artist, title, ytdlp_service.describe_error(e),
+            )
+            await asyncio.sleep(IMPORT_RETRY_BACKOFF_S)
+    raise RuntimeError("unreachable")  # loop either returns or raises
+
+
 async def _run_import(import_id: str, tracks: list[dict], username: str, password: str) -> None:
     job = _imports[import_id]
     music_dir = await _resolve_music_dir(username, password)
-    song_ids: list[str] = []
-    downloaded_tracks: list[dict] = []
+    sem = asyncio.Semaphore(IMPORT_CONCURRENCY)
+    # Per-track outcome, kept index-aligned so the playlist preserves Spotify order.
+    # ("existing", song_id) | ("downloaded", artist, title) | ("failed", label) | None
+    outcomes: list[tuple | None] = [None] * len(tracks)
+
+    def fail(i: int, label: str, reason: str) -> None:
+        outcomes[i] = ("failed", f"{label} — {reason}")
+        job.failed += 1
+        job.failures.append(f"{label} — {reason}")
+
+    async def handle(i: int, track: dict) -> None:
+        artist, title, album = track["artist"], track["title"], track.get("album", "")
+        label = f"{artist} - {title}"
+        async with sem:
+            try:
+                # Already in library? Skip download, reuse it for the playlist.
+                existing_id = await navidrome_client.find_song_id(artist, title, username, password)
+                if existing_id:
+                    outcomes[i] = ("existing", existing_id)
+                    job.existing += 1
+                    return
+
+                results = await to_thread.run_sync(
+                    lambda: ytdlp_service.search(f"{artist} {title}", limit=1, source="youtube_music")
+                )
+                if not results:
+                    log.info("import %s: no YouTube match for %s", import_id, label)
+                    fail(i, label, "no match on YouTube")
+                    return
+
+                top = results[0]
+                file_path = await _download_with_retry(top["videoId"], artist, title, music_dir)
+                await to_thread.run_sync(tagger_service.tag, file_path, artist, title, album or "Singles")
+                outcomes[i] = ("downloaded", artist, title)
+                job.downloaded += 1
+            except DownloadError as e:
+                reason = ytdlp_service.describe_error(e)
+                log.warning("import %s: skipped %s — %s", import_id, label, reason)
+                fail(i, label, reason)
+            except Exception as e:
+                # Unexpected (our bug, Navidrome, network) — keep the traceback.
+                log.exception("import %s: unexpected error on %s", import_id, label)
+                fail(i, label, ytdlp_service.describe_error(e))
+            finally:
+                job.current += 1
 
     try:
-        for track in tracks:
-            job.current += 1
-            artist, title, album = track["artist"], track["title"], track.get("album", "")
+        await asyncio.gather(*(handle(i, t) for i, t in enumerate(tracks)))
 
-            # Already in library? Skip download, reuse it for the playlist.
-            existing_id = await navidrome_client.find_song_id(artist, title, username, password)
-            if existing_id:
-                song_ids.append(existing_id)
-                job.existing += 1
-                continue
-
-            results = await to_thread.run_sync(
-                lambda: ytdlp_service.search(f"{artist} {title}", limit=1, source="youtube_music")
-            )
-            if not results:
-                job.failed += 1
-                job.failures.append(f"{artist} - {title}")
-                continue
-
-            top = results[0]
-            try:
-                file_path = await to_thread.run_sync(
-                    lambda: ytdlp_service.download(top["videoId"], artist, title, "youtube_music", music_dir=music_dir)
-                )
-                await to_thread.run_sync(tagger_service.tag, file_path, artist, title, album or "Singles")
-                job.downloaded += 1
-                downloaded_tracks.append({"artist": artist, "title": title})
-            except Exception:
-                log.exception("import %s: download failed for %s - %s", import_id, artist, title)
-                job.failed += 1
-                job.failures.append(f"{artist} - {title}")
-
-        # Make freshly downloaded files visible, then resolve their ids.
-        if downloaded_tracks:
+        # Make freshly downloaded files visible before resolving their ids.
+        if any(o and o[0] == "downloaded" for o in outcomes):
             await navidrome_client.trigger_scan_and_wait(username, password)
-            for t in downloaded_tracks:
-                sid = await navidrome_client.find_song_id(t["artist"], t["title"], username, password)
+
+        # Build the playlist in original track order.
+        song_ids: list[str] = []
+        for o in outcomes:
+            if o is None:
+                continue
+            if o[0] == "existing":
+                song_ids.append(o[1])
+            elif o[0] == "downloaded":
+                sid = await navidrome_client.find_song_id(o[1], o[2], username, password)
                 if sid:
                     song_ids.append(sid)
 
