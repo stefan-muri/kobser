@@ -18,7 +18,7 @@ services:
       - kobser
 
   middleware:
-    image: ghcr.io/phaneschema/kobser:latest
+    image: ghcr.io/stefan-muri/kobser:latest
     container_name: kobser-middleware
     restart: unless-stopped
     ports:

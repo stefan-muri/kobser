@@ -49,7 +49,7 @@ Built on [Navidrome](https://www.navidrome.org/) (music server + Subsonic API) w
 
 - [Docker](https://docs.docker.com/get-docker/) + [Docker Compose](https://docs.docker.com/compose/)
 
-No build step — the server image is pulled automatically from [ghcr.io](https://github.com/PhaneSchema/kobser/pkgs/container/kobser).
+No build step — the server image is pulled automatically from [ghcr.io](https://github.com/stefan-muri/kobser/pkgs/container/kobser).
 
 ---
 
@@ -62,8 +62,8 @@ No existing Navidrome? This starts everything.
 ```bash
 # 1. Download the compose file and env template
 mkdir kobser && cd kobser
-curl -O https://raw.githubusercontent.com/PhaneSchema/kobser/master/docker-compose.yml
-curl -O https://raw.githubusercontent.com/PhaneSchema/kobser/master/.env.example
+curl -O https://raw.githubusercontent.com/stefan-muri/kobser/master/docker-compose.yml
+curl -O https://raw.githubusercontent.com/stefan-muri/kobser/master/.env.example
 mv .env.example .env
 
 # 2. Edit .env — at minimum set MUSIC_DIR to where you want music stored
@@ -84,8 +84,8 @@ Already running Navidrome? Just add kobser on top — no second Navidrome starts
 
 ```bash
 mkdir kobser && cd kobser
-curl -O https://raw.githubusercontent.com/PhaneSchema/kobser/master/docker-compose.yml
-curl -O https://raw.githubusercontent.com/PhaneSchema/kobser/master/.env.example
+curl -O https://raw.githubusercontent.com/stefan-muri/kobser/master/docker-compose.yml
+curl -O https://raw.githubusercontent.com/stefan-muri/kobser/master/.env.example
 mv .env.example .env
 
 # Set NAVIDROME_URL to your existing Navidrome, e.g.:
@@ -133,7 +133,7 @@ User accounts are Navidrome accounts — kobser stores no separate user database
 
 ## Android app
 
-Download the latest APK from the [Releases](https://github.com/PhaneSchema/kobser/releases) page, enable **Install from unknown sources** on your device, and open the file to install.
+Download the latest APK from the [Releases](https://github.com/stefan-muri/kobser/releases) page, enable **Install from unknown sources** on your device, and open the file to install.
 
 - **Connect:** on first launch, enter your server URL (e.g. `http://192.168.1.50:8000`) and log in with your Navidrome credentials.
 - **Android Auto:** browse Songs / Artists / Playlists / Favorites, search (local + YouTube Music), shuffle/repeat, and queue from the car.
