@@ -375,6 +375,11 @@ def download(video_id: str, artist: str, title: str, source: str = "youtube",
         ],
         "writethumbnail": True,
         "progress_hooks": [_progress_hook],
+        # Fail a stalled connection instead of hanging forever (which would wedge
+        # an import slot). yt-dlp also retries fragments a few times on its own.
+        "socket_timeout": 30,
+        "retries": 2,
+        "fragment_retries": 2,
         **_cookies_opts(),
     }
 
