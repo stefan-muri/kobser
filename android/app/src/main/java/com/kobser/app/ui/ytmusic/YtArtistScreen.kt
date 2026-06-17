@@ -155,6 +155,20 @@ fun YtArtistScreen(
             onDismiss = { dlSong = null },
         )
     }
+
+    viewModel.duplicateWarning?.let { w ->
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissDuplicateWarning() },
+            title = { Text("Already in library") },
+            text = { Text("\"${w.title}\" by ${w.artist} might already be in your library. Download anyway?") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.forceDownload() }) { Text("Download anyway") }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissDuplicateWarning() }) { Text("Cancel") }
+            },
+        )
+    }
 }
 
 @Composable

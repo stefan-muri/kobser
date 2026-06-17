@@ -17,6 +17,7 @@ import com.kobser.app.data.api.Song
 import com.kobser.app.data.repository.LibraryRepository
 import com.kobser.app.data.repository.PreferencesRepository
 import com.kobser.app.playback.MusicPlayer
+import com.kobser.app.ui.ytmusic.DuplicateWarning
 import com.kobser.app.ui.ytmusic.YtDownloadState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -56,6 +57,8 @@ class LibraryViewModel @Inject constructor(
     var onlineSearched by mutableStateOf(false)
         private set
     var downloadStates by mutableStateOf<Map<String, YtDownloadState>>(emptyMap())
+        private set
+    var duplicateWarning by mutableStateOf<DuplicateWarning?>(null)
         private set
 
     val filteredSongs by derivedStateOf {
@@ -158,7 +161,7 @@ class LibraryViewModel @Inject constructor(
         )
     }
 
-    fun downloadOnline(result: SearchResult, artist: String, title: String, album: String?) {
+    fun downloadOnline(result: SearchResult, artist: String, title: String, album: String?, force: Boolean = false) {
         downloadStates = downloadStates + (result.videoId to YtDownloadState.LOADING)
         viewModelScope.launch {
             try {
@@ -169,18 +172,31 @@ class LibraryViewModel @Inject constructor(
                         artist = artist,
                         source = searchSource,
                         album = album?.takeIf { it.isNotBlank() },
+                        force = force,
                     )
                 )
-                downloadStates = downloadStates + (result.videoId to when {
-                    resp.isSuccessful -> YtDownloadState.DONE
-                    resp.code() == 409 -> YtDownloadState.DUPLICATE
-                    else -> YtDownloadState.ERROR
-                })
+                when {
+                    resp.isSuccessful -> downloadStates = downloadStates + (result.videoId to YtDownloadState.DONE)
+                    resp.code() == 409 -> {
+                        downloadStates = downloadStates + (result.videoId to YtDownloadState.DUPLICATE)
+                        duplicateWarning = DuplicateWarning(result.videoId, artist, title, album)
+                    }
+                    else -> downloadStates = downloadStates + (result.videoId to YtDownloadState.ERROR)
+                }
             } catch (e: Exception) {
                 downloadStates = downloadStates + (result.videoId to YtDownloadState.ERROR)
             }
         }
     }
+
+    fun forceDownloadOnline() {
+        val w = duplicateWarning ?: return
+        val result = onlineSongs.find { it.videoId == w.videoId } ?: return
+        duplicateWarning = null
+        downloadOnline(result, w.artist, w.title, w.album, force = true)
+    }
+
+    fun dismissDuplicateWarning() { duplicateWarning = null }
 
     fun loadAll(showLoading: Boolean = true) {
         if (showLoading) isLoading = true

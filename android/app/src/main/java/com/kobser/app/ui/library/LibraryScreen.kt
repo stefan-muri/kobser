@@ -307,6 +307,20 @@ fun LibraryScreen(
         )
     }
 
+    viewModel.duplicateWarning?.let { w ->
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissDuplicateWarning() },
+            title = { Text("Already in library") },
+            text = { Text("\"${w.title}\" by ${w.artist} might already be in your library. Download anyway?") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.forceDownloadOnline() }) { Text("Download anyway") }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissDuplicateWarning() }) { Text("Cancel") }
+            },
+        )
+    }
+
     val target = deleteTarget
     if (target != null) {
         AlertDialog(

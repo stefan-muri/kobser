@@ -57,10 +57,10 @@ export const search = (query, limit = 10, source = "youtube_music") =>
     body: JSON.stringify({ query, limit, source }),
   });
 
-export const download = (videoId, artist, title, source = "youtube_music", album = "") =>
+export const download = (videoId, artist, title, source = "youtube_music", album = "", force = false) =>
   call("/api/download", {
     method: "POST",
-    body: JSON.stringify({ videoId, artist, title, source, album }),
+    body: JSON.stringify({ videoId, artist, title, source, album, force }),
   });
 
 export const searchArtists = (query, limit = 10) =>

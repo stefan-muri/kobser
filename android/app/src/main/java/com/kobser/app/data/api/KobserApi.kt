@@ -101,6 +101,7 @@ data class DownloadRequest(
     val artist: String,
     val source: String = "youtube_music",
     val album: String? = null,
+    val force: Boolean = false,
 )
 
 data class DownloadStartResponse(

@@ -48,6 +48,7 @@ class YtMusicRepository @Inject constructor(
         artist: String,
         title: String,
         album: String?,
+        force: Boolean = false,
     ): Result<Unit> = try {
         val resp = api.download(
             DownloadRequest(
@@ -56,6 +57,7 @@ class YtMusicRepository @Inject constructor(
                 artist = artist,
                 source = "youtube_music",
                 album = album?.takeIf { it.isNotBlank() },
+                force = force,
             )
         )
         when {

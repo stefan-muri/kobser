@@ -33,6 +33,7 @@ class DownloadRequest(BaseModel):
     title: str = Field(min_length=1)
     source: str = Field(default="youtube_music", pattern="^(youtube|youtube_music)$")
     album: str = Field(default="")
+    force: bool = Field(default=False)
 
 
 @router.post("/api/download")
@@ -45,7 +46,7 @@ async def download(
         raise HTTPException(
             status_code=409, detail="download already in progress for this video"
         )
-    if await _is_duplicate(body.artist, body.title, sess["username"], sess["password"]):
+    if not body.force and await _is_duplicate(body.artist, body.title, sess["username"], sess["password"]):
         raise HTTPException(status_code=409, detail="already in library")
     job = create_job(body.videoId, body.artist, body.title)
     bg.add_task(

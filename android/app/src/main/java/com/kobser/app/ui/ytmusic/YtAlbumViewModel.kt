@@ -10,6 +10,7 @@ import com.kobser.app.data.api.YtAlbum
 import com.kobser.app.data.api.YtAlbumTrack
 import com.kobser.app.data.repository.YtMusicRepository
 import com.kobser.app.ui.ytmusic.DuplicateException
+import com.kobser.app.ui.ytmusic.DuplicateWarning
 import com.kobser.app.ui.ytmusic.YtDownloadState
 import com.kobser.app.playback.MusicPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,6 +33,8 @@ class YtAlbumViewModel @Inject constructor(
         private set
 
     var downloadStates by mutableStateOf<Map<String, YtDownloadState>>(emptyMap())
+        private set
+    var duplicateWarning by mutableStateOf<DuplicateWarning?>(null)
         private set
 
     init { load() }
@@ -62,17 +65,28 @@ class YtAlbumViewModel @Inject constructor(
         )
     }
 
-    fun download(videoId: String, artist: String, title: String, album: String?) {
+    fun download(videoId: String, artist: String, title: String, album: String?, force: Boolean = false) {
         downloadStates = downloadStates + (videoId to YtDownloadState.LOADING)
         viewModelScope.launch {
-            val result = repo.download(videoId, artist, title, album)
-            downloadStates = downloadStates + (videoId to when {
-                result.isSuccess -> YtDownloadState.DONE
-                result.exceptionOrNull() is DuplicateException -> YtDownloadState.DUPLICATE
-                else -> YtDownloadState.ERROR
-            })
+            val result = repo.download(videoId, artist, title, album, force)
+            when {
+                result.isSuccess -> downloadStates = downloadStates + (videoId to YtDownloadState.DONE)
+                result.exceptionOrNull() is DuplicateException -> {
+                    downloadStates = downloadStates + (videoId to YtDownloadState.DUPLICATE)
+                    duplicateWarning = DuplicateWarning(videoId, artist, title, album)
+                }
+                else -> downloadStates = downloadStates + (videoId to YtDownloadState.ERROR)
+            }
         }
     }
+
+    fun forceDownload() {
+        val w = duplicateWarning ?: return
+        duplicateWarning = null
+        download(w.videoId, w.artist, w.title, w.album, force = true)
+    }
+
+    fun dismissDuplicateWarning() { duplicateWarning = null }
 
     fun downloadAlbum() {
         val a = album ?: return

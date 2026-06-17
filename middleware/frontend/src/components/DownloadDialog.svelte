@@ -16,32 +16,36 @@
   let localArtist = '';
   let localTitle = '';
   let localAlbum = '';
+  let showDuplicateWarning = false;
 
   $: if (open) {
     localArtist = artist;
     localTitle = title;
     localAlbum = album;
+    showDuplicateWarning = false;
     if (dialogEl) dialogEl.showModal();
   }
 
   function close() {
     open = false;
+    showDuplicateWarning = false;
     dialogEl?.close();
     dispatch('close');
   }
 
-  async function confirm() {
+  async function confirm(force = false) {
     const a = localArtist.trim();
     const t = localTitle.trim();
     if (!a || !t) return;
-    close();
+    if (!force) close();
     try {
-      const { jobId } = await downloadApi(videoId, a, t, source, localAlbum.trim());
+      const { jobId } = await downloadApi(videoId, a, t, source, localAlbum.trim(), force);
+      if (force) close();
       dispatch('download', { jobId, artist: a, title: t });
       showToast(`Downloading '${t}'...`, 'info');
     } catch (e) {
       if (e.message?.includes('409') && e.message?.includes('already in library')) {
-        showToast(`'${t}' is already in your library`, 'info');
+        showDuplicateWarning = true;
       } else {
         showToast(`Download failed: ${e.message}`, 'error');
       }
@@ -87,8 +91,18 @@
       class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 transition-all border border-white/10"
     >
   </label>
-  <div class="flex gap-3 justify-end mt-6">
-    <button on:click={close} class="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors">Cancel</button>
-    <button on:click={confirm} class="px-5 py-2.5 bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg rounded-xl text-sm font-semibold transition-colors">Download</button>
-  </div>
+  {#if showDuplicateWarning}
+    <div class="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-sm text-yellow-300">
+      <strong>Already in library.</strong> This song might already exist in your library. Download anyway?
+    </div>
+    <div class="flex gap-3 justify-end mt-4">
+      <button on:click={close} class="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors">Cancel</button>
+      <button on:click={() => confirm(true)} class="px-5 py-2.5 bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg rounded-xl text-sm font-semibold transition-colors">Download anyway</button>
+    </div>
+  {:else}
+    <div class="flex gap-3 justify-end mt-6">
+      <button on:click={close} class="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors">Cancel</button>
+      <button on:click={() => confirm()} class="px-5 py-2.5 bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg rounded-xl text-sm font-semibold transition-colors">Download</button>
+    </div>
+  {/if}
 </dialog>

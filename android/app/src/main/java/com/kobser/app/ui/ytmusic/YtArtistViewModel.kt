@@ -18,6 +18,8 @@ enum class YtDownloadState { LOADING, DONE, DUPLICATE, ERROR }
 
 class DuplicateException : Exception("already in library")
 
+data class DuplicateWarning(val videoId: String, val artist: String, val title: String, val album: String?)
+
 @HiltViewModel
 class YtArtistViewModel @Inject constructor(
     private val repo: YtMusicRepository,
@@ -38,6 +40,8 @@ class YtArtistViewModel @Inject constructor(
         private set
 
     var downloadStates by mutableStateOf<Map<String, YtDownloadState>>(emptyMap())
+        private set
+    var duplicateWarning by mutableStateOf<DuplicateWarning?>(null)
         private set
 
     init { load() }
@@ -79,15 +83,26 @@ class YtArtistViewModel @Inject constructor(
         )
     }
 
-    fun download(videoId: String, artist: String, title: String, album: String?) {
+    fun download(videoId: String, artist: String, title: String, album: String?, force: Boolean = false) {
         downloadStates = downloadStates + (videoId to YtDownloadState.LOADING)
         viewModelScope.launch {
-            val result = repo.download(videoId, artist, title, album)
-            downloadStates = downloadStates + (videoId to when {
-                result.isSuccess -> YtDownloadState.DONE
-                result.exceptionOrNull() is DuplicateException -> YtDownloadState.DUPLICATE
-                else -> YtDownloadState.ERROR
-            })
+            val result = repo.download(videoId, artist, title, album, force)
+            when {
+                result.isSuccess -> downloadStates = downloadStates + (videoId to YtDownloadState.DONE)
+                result.exceptionOrNull() is DuplicateException -> {
+                    downloadStates = downloadStates + (videoId to YtDownloadState.DUPLICATE)
+                    duplicateWarning = DuplicateWarning(videoId, artist, title, album)
+                }
+                else -> downloadStates = downloadStates + (videoId to YtDownloadState.ERROR)
+            }
         }
     }
+
+    fun forceDownload() {
+        val w = duplicateWarning ?: return
+        duplicateWarning = null
+        download(w.videoId, w.artist, w.title, w.album, force = true)
+    }
+
+    fun dismissDuplicateWarning() { duplicateWarning = null }
 }
