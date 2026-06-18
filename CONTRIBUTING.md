@@ -35,6 +35,15 @@ npm run dev               # Vite dev server, proxies /api to the running middlew
 **Android:** open `android/` in Android Studio. Requires **JDK 17** (Studio's
 bundled JBR works). Don't commit a machine-specific `org.gradle.java.home`.
 
+**Backend tests & lint:**
+```bash
+cd middleware
+pip install -r requirements-dev.txt
+ruff check .
+pytest
+```
+CI runs both on any change under `middleware/`.
+
 ## Guidelines
 
 - **Match the surrounding style.** Python is plain FastAPI + stdlib-ish; the web

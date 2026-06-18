@@ -6,8 +6,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 
 from db import init_db
-from routes import auth as auth_routes
 from routes import artist, download, import_playlist, library, search, stats, stream, tracks
+from routes import auth as auth_routes
 
 
 @asynccontextmanager

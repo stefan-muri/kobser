@@ -22,7 +22,9 @@ async def login(body: LoginRequest):
     except HTTPException:
         raise
     except Exception:
-        raise HTTPException(status_code=401, detail="invalid credentials")
+        # Deliberately don't chain the underlying error — a failed ping is always
+        # surfaced to the client as a generic auth failure.
+        raise HTTPException(status_code=401, detail="invalid credentials") from None
     sid = create_session(body.username, body.password)
     return {"sessionId": sid, "username": body.username}
 

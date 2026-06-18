@@ -26,7 +26,7 @@ async def preview_track(video_id: str, sess: dict = Depends(get_current_session)
             None, get_stream_info, video_id
         )
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=str(exc))
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
     async def stream():
         async with httpx.AsyncClient(timeout=None, follow_redirects=True) as client:

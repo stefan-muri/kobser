@@ -3,8 +3,9 @@ import os
 import re
 import shutil
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 # YouTube extraction (search previews + downloads) needs a JavaScript runtime to
 # solve the player-signature / "nsig" challenge. The Docker image ships the Deno
@@ -37,10 +38,12 @@ def describe_error(exc: Exception) -> str:
         return "blocked by YouTube (HTTP 403 — often transient, retry later)"
     if "private video" in low:
         return "private video"
-    if any(s in low for s in ("video unavailable", "is not available", "no longer available", "has been removed")):
-        return "video unavailable"
+    # Check the format-specific phrasing before the generic "is not available"
+    # below, since "requested format is not available" contains that substring.
     if any(s in low for s in ("requested format is not available", "no video formats", "no audio")):
         return "no downloadable audio format"
+    if any(s in low for s in ("video unavailable", "is not available", "no longer available", "has been removed")):
+        return "video unavailable"
     if "sign in" in low:
         return "requires sign-in (needs cookies)"
     if "timed out" in low or "timeout" in low:

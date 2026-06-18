@@ -6,13 +6,13 @@ from pathlib import Path
 from anyio import to_thread
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
+from yt_dlp.utils import DownloadError
 
 import db as _db
 from auth import get_current_session
 from jobs import cancel_job, create_job, get_job, is_cancelled, is_video_active, update_job
 from services import navidrome_client, tagger_service, ytdlp_service
 from services.ytdlp_service import DownloadCancelled
-from yt_dlp.utils import DownloadError
 
 
 def _norm(s: str) -> str:

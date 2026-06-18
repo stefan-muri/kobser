@@ -67,9 +67,9 @@ async def fetch_playlist(url: str) -> dict:
 
     try:
         entity = data["props"]["pageProps"]["state"]["data"]["entity"]
-    except (KeyError, TypeError):
+    except (KeyError, TypeError) as e:
         log.warning("spotify embed: unexpected JSON shape for playlist %s", playlist_id)
-        raise SpotifyError("Couldn't find the tracks — make sure the playlist is public")
+        raise SpotifyError("Couldn't find the tracks — make sure the playlist is public") from e
 
     name = entity.get("name") or entity.get("title") or "Imported playlist"
     track_list = entity.get("trackList") or []

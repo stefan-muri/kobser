@@ -1,0 +1,32 @@
+[tool.pytest.ini_options]
+# Tests import backend modules by their top-level name (e.g. `import db`,
+# `from services import ...`), matching how the app runs with /app on the path.
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+# Pyflakes (F), a pragmatic slice of pycodestyle (E), import sorting (I),
+# pyupgrade (UP), and a few bugbear checks (B). Kept lint-only — no auto-format
+# opinions imposed on the existing style.
+select = ["E", "F", "I", "UP", "B"]
+ignore = [
+    "E402",  # ytdlp_service intentionally imports yt_dlp after a small shim.
+    "E501",  # line length handled by line-length above, not hard-enforced here.
+]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI/pydantic put callables in argument defaults by design
+# (Depends/Query/Header/Path/Field). These are not the mutable-default trap B008
+# targets, so treat them as immutable.
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Header",
+    "fastapi.Path",
+    "fastapi.Body",
+    "pydantic.Field",
+]

@@ -11,7 +11,6 @@ from pydantic import BaseModel, Field
 from yt_dlp.utils import DownloadError
 
 from auth import get_current_session
-from config import MUSIC_DIR
 from services import navidrome_client, spotify_client, tagger_service, ytdlp_service
 from services.spotify_client import SpotifyError
 
@@ -59,7 +58,7 @@ async def import_spotify(
         playlist = await spotify_client.fetch_playlist(body.url)
     except SpotifyError as e:
         log.warning("spotify import failed for %r: %s", body.url, e)
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     job = ImportJob(
         import_id=str(uuid.uuid4()),

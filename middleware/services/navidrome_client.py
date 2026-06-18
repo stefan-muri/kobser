@@ -83,9 +83,9 @@ async def get_user_libraries(username: str, password: str) -> list[dict[str, Any
             libraries = (user_resp.json() or {}).get("libraries") or []
 
             return [
-                {"id": l.get("id"), "name": l.get("name") or "", "path": l.get("path") or ""}
-                for l in libraries
-                if l.get("path")
+                {"id": lib.get("id"), "name": lib.get("name") or "", "path": lib.get("path") or ""}
+                for lib in libraries
+                if lib.get("path")
             ]
     except Exception:
         return []
