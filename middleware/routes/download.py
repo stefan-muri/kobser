@@ -91,12 +91,10 @@ async def _run_download(
             log.info("download %s: routing to user '%s' library %s", job_id, username, music_dir)
 
         update_job(job_id, status="downloading")
-        file_path = await to_thread.run_sync(
-            lambda: ytdlp_service.download(
-                video_id, artist, title, source,
-                cancel_check=lambda: is_cancelled(job_id),
-                music_dir=music_dir,
-            )
+        file_path = await ytdlp_service.download_limited(
+            video_id, artist, title, source,
+            cancel_check=lambda: is_cancelled(job_id),
+            music_dir=music_dir,
         )
 
         if is_cancelled(job_id):

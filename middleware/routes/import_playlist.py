@@ -106,8 +106,8 @@ async def _download_with_retry(video_id: str, artist: str, title: str, music_dir
     """Download a track, retrying once (with backoff) on transient failures."""
     for attempt in range(IMPORT_DOWNLOAD_RETRIES + 1):
         try:
-            return await to_thread.run_sync(
-                lambda: ytdlp_service.download(video_id, artist, title, "youtube_music", music_dir=music_dir)
+            return await ytdlp_service.download_limited(
+                video_id, artist, title, "youtube_music", music_dir=music_dir
             )
         except DownloadError as e:
             if attempt >= IMPORT_DOWNLOAD_RETRIES or not ytdlp_service.is_retryable(e):

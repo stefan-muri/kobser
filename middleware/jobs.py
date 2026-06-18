@@ -29,6 +29,24 @@ _active_video_ids: set[str] = set()
 _cancelled: set[str] = set()
 _lock = Lock()
 
+# Cap on finished jobs retained in memory. The DB holds the full history and the
+# status endpoint falls back to it, so evicting old terminal jobs is safe and
+# just keeps _jobs/_cancelled from growing without bound over a long uptime.
+_MAX_TERMINAL_JOBS = 200
+_TERMINAL = ("done", "error", "cancelled")
+
+
+def _prune_locked() -> None:
+    """Drop the oldest terminal jobs beyond the cap. Caller must hold _lock."""
+    terminal = [j for j in _jobs.values() if j.status in _TERMINAL]
+    excess = len(terminal) - _MAX_TERMINAL_JOBS
+    if excess <= 0:
+        return
+    terminal.sort(key=lambda j: j.started_at)
+    for j in terminal[:excess]:
+        _jobs.pop(j.job_id, None)
+        _cancelled.discard(j.job_id)
+
 
 def is_video_active(video_id: str) -> bool:
     with _lock:
@@ -46,6 +64,7 @@ def create_job(
     with _lock:
         _jobs[job.job_id] = job
         _active_video_ids.add(video_id)
+        _prune_locked()
     _db.upsert_download(
         job.job_id, video_id, artist, title, "pending",
         album=album, source=source, started_at=job.started_at,

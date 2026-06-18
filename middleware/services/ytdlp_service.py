@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 import os
 import re
@@ -6,6 +7,8 @@ import tempfile
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
+
+from anyio import to_thread
 
 # YouTube extraction (search previews + downloads) needs a JavaScript runtime to
 # solve the player-signature / "nsig" challenge. The Docker image ships the Deno
@@ -429,3 +432,26 @@ def download(video_id: str, artist: str, title: str, source: str = "youtube",
         if requested and requested[0].get("filepath"):
             return requested[0]["filepath"]
         return ydl.prepare_filename(info)
+
+
+# Global ceiling on concurrent track downloads, shared across single downloads
+# and playlist imports. Too many at once trips YouTube rate-limiting (403s) and
+# spikes CPU on remux; this caps the total regardless of how many requests or
+# imports are in flight.
+MAX_CONCURRENT_DOWNLOADS = 3
+_download_sem = asyncio.Semaphore(MAX_CONCURRENT_DOWNLOADS)
+
+
+async def download_limited(
+    video_id: str, artist: str, title: str, source: str = "youtube",
+    *, cancel_check: Callable[[], bool] | None = None, music_dir: str | None = None,
+) -> str:
+    """Async wrapper around download(): runs it in a worker thread, gated by the
+    shared download semaphore so concurrency stays bounded process-wide."""
+    async with _download_sem:
+        return await to_thread.run_sync(
+            lambda: download(
+                video_id, artist, title, source,
+                cancel_check=cancel_check, music_dir=music_dir,
+            )
+        )
