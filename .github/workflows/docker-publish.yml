@@ -3,6 +3,9 @@ name: Build & publish Docker image
 on:
   push:
     branches: [master]
+    paths:
+      - "middleware/**"
+      - ".github/workflows/docker-publish.yml"
 
 permissions:
   contents: read
