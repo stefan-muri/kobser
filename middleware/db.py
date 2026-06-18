@@ -43,6 +43,21 @@ def init_db() -> None:
         if "source" not in cols:
             conn.execute("ALTER TABLE downloads ADD COLUMN source TEXT")
 
+        # Job state lives in memory (see jobs.py) and doesn't survive a restart.
+        # Any row still marked in-flight at startup is therefore orphaned from a
+        # previous process — flip it to error so it doesn't sit "downloading"
+        # forever, and so the UI offers a retry instead of polling a dead job.
+        conn.execute(
+            """
+            UPDATE downloads
+               SET status = 'error',
+                   error = 'interrupted by restart',
+                   completed_at = ?
+             WHERE status IN ('pending', 'downloading', 'tagging', 'scanning')
+            """,
+            (int(time.time()),),
+        )
+
 
 @contextmanager
 def _conn():

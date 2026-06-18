@@ -128,13 +128,23 @@ async def _run_download(
 @router.get("/api/status/{job_id}", dependencies=[Depends(get_current_session)])
 async def status(job_id: str):
     job = get_job(job_id)
-    if job is None:
+    if job is not None:
+        return {
+            "jobId": job.job_id,
+            "status": job.status,
+            "error": job.error,
+            "file": job.file,
+        }
+    # In-memory job is gone (e.g. process restarted). Fall back to the persisted
+    # record so the client sees the final status instead of a spurious 404.
+    rec = _db.get_download_record(job_id)
+    if rec is None:
         raise HTTPException(status_code=404, detail="job not found")
     return {
-        "jobId": job.job_id,
-        "status": job.status,
-        "error": job.error,
-        "file": job.file,
+        "jobId": rec["id"],
+        "status": rec["status"],
+        "error": rec["error"],
+        "file": rec["file_path"],
     }
 
 
