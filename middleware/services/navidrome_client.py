@@ -18,10 +18,22 @@ CLIENT_ID = "kobser-middleware"
 API_VERSION = "1.16.1"
 
 
-def auth_params(username: str, password: str) -> dict[str, str]:
-    """Subsonic auth params with a fresh salt per call."""
-    salt = secrets.token_hex(8)
+def make_credentials(password: str) -> tuple[str, str]:
+    """Derive a reusable Subsonic (salt, token) pair from a password.
+
+    Subsonic auth is token = md5(password + salt) with a client-chosen salt that
+    may be reused across requests. We compute this once at login and persist only
+    the (salt, token) — never the cleartext password. The token is replayable
+    against the Subsonic API but, unlike the password, can't be used for
+    Navidrome's web login or reused on other services.
+    """
+    salt = secrets.token_hex(16)
     token = hashlib.md5((password + salt).encode()).hexdigest()
+    return salt, token
+
+
+def auth_params(username: str, salt: str, token: str) -> dict[str, str]:
+    """Subsonic auth params from a stored (salt, token) pair."""
     return {
         "u": username,
         "t": token,
@@ -32,21 +44,21 @@ def auth_params(username: str, password: str) -> dict[str, str]:
     }
 
 
-async def ping(username: str, password: str) -> dict[str, Any]:
+async def ping(username: str, salt: str, token: str) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=10) as client:
         r = await client.get(
             f"{NAVIDROME_URL}/rest/ping",
-            params=auth_params(username, password),
+            params=auth_params(username, salt, token),
         )
         r.raise_for_status()
         return r.json().get("subsonic-response", {})
 
 
-async def start_scan(username: str, password: str) -> dict[str, Any]:
+async def start_scan(username: str, salt: str, token: str) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.get(
             f"{NAVIDROME_URL}/rest/startScan",
-            params=auth_params(username, password),
+            params=auth_params(username, salt, token),
         )
         r.raise_for_status()
         return r.json()
@@ -91,7 +103,7 @@ async def get_user_libraries(username: str, password: str) -> list[dict[str, Any
         return []
 
 
-async def search_songs(query: str, username: str, password: str, count: int = 10) -> list[dict]:
+async def search_songs(query: str, username: str, salt: str, token: str, count: int = 10) -> list[dict]:
     """Search Navidrome for songs matching `query`. Returns a list of song dicts."""
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -102,7 +114,7 @@ async def search_songs(query: str, username: str, password: str, count: int = 10
                     "songCount": count,
                     "artistCount": 0,
                     "albumCount": 0,
-                    **auth_params(username, password),
+                    **auth_params(username, salt, token),
                 },
             )
             r.raise_for_status()
@@ -114,9 +126,9 @@ async def search_songs(query: str, username: str, password: str, count: int = 10
         return []
 
 
-async def find_song_id(artist: str, title: str, username: str, password: str) -> str | None:
+async def find_song_id(artist: str, title: str, username: str, salt: str, token: str) -> str | None:
     """Return the Navidrome song id whose artist+title match (normalised), or None."""
-    songs = await search_songs(title, username, password)
+    songs = await search_songs(title, username, salt, token)
     na, nt = _norm(artist), _norm(title)
     for s in songs:
         if _norm(s.get("title", "")) == nt and _norm(s.get("artist", "")) == na:
@@ -128,7 +140,7 @@ async def find_song_id(artist: str, title: str, username: str, password: str) ->
     return None
 
 
-async def create_playlist(name: str, song_ids: list[str], username: str, password: str) -> str | None:
+async def create_playlist(name: str, song_ids: list[str], username: str, salt: str, token: str) -> str | None:
     """Create a playlist with the given songs. Returns the new playlist id, or None."""
     try:
         params = [("name", name)]
@@ -136,7 +148,7 @@ async def create_playlist(name: str, song_ids: list[str], username: str, passwor
         async with httpx.AsyncClient(timeout=30) as client:
             r = await client.get(
                 f"{NAVIDROME_URL}/rest/createPlaylist",
-                params=params + list(auth_params(username, password).items()),
+                params=params + list(auth_params(username, salt, token).items()),
             )
             r.raise_for_status()
         body = r.json().get("subsonic-response", {})
@@ -147,7 +159,7 @@ async def create_playlist(name: str, song_ids: list[str], username: str, passwor
         return None
 
 
-async def trigger_scan_and_wait(username: str, password: str, scan_wait_s: float = 1.5) -> None:
+async def trigger_scan_and_wait(username: str, salt: str, token: str, scan_wait_s: float = 1.5) -> None:
     """Trigger a Navidrome scan and give it long enough to finish.
 
     We deliberately don't poll getScanStatus to detect completion: its
@@ -157,7 +169,7 @@ async def trigger_scan_and_wait(username: str, password: str, scan_wait_s: float
     on-demand scan in 99% of cases; if a download is somehow still missing,
     re-entering the Library tab re-fetches `getArtists` anyway."""
     try:
-        await start_scan(username, password)
+        await start_scan(username, salt, token)
     except Exception:
         return
     await asyncio.sleep(scan_wait_s)

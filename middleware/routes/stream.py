@@ -15,7 +15,7 @@ PASSTHROUGH_HEADERS = ("content-type", "content-length", "accept-ranges", "conte
 async def stream(
     track_id: str, request: Request, sess: dict = Depends(get_current_session)
 ):
-    params = {"id": track_id, **auth_params(sess["username"], sess["password"])}
+    params = {"id": track_id, **auth_params(sess["username"], sess["salt"], sess["token"])}
     upstream_headers = {}
     if r := request.headers.get("range"):
         upstream_headers["Range"] = r

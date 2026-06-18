@@ -20,8 +20,8 @@ def _norm(s: str) -> str:
     return re.sub(r"[^a-z0-9]", "", s.lower())
 
 
-async def _is_duplicate(artist: str, title: str, username: str, password: str) -> bool:
-    songs = await navidrome_client.search_songs(title, username, password)
+async def _is_duplicate(artist: str, title: str, username: str, salt: str, token: str) -> bool:
+    songs = await navidrome_client.search_songs(title, username, salt, token)
     na, nt = _norm(artist), _norm(title)
     return any(_norm(s.get("title", "")) == nt and _norm(s.get("artist", "")) == na for s in songs)
 
@@ -48,7 +48,9 @@ async def download(
         raise HTTPException(
             status_code=409, detail="download already in progress for this video"
         )
-    if not body.force and await _is_duplicate(body.artist, body.title, sess["username"], sess["password"]):
+    if not body.force and await _is_duplicate(
+        body.artist, body.title, sess["username"], sess["salt"], sess["token"]
+    ):
         raise HTTPException(status_code=409, detail="already in library")
     job = create_job(body.videoId, body.artist, body.title, body.album, body.source)
     bg.add_task(
@@ -58,7 +60,9 @@ async def download(
         body.artist,
         body.title,
         sess["username"],
-        sess["password"],
+        sess["salt"],
+        sess["token"],
+        sess.get("library_path"),
         body.source,
         body.album,
     )
@@ -71,14 +75,15 @@ async def _run_download(
     artist: str,
     title: str,
     username: str,
-    password: str,
+    salt: str,
+    token: str,
+    library_path: str | None = None,
     source: str = "youtube_music",
     album: str = "",
 ) -> None:
     try:
-        # Resolve the user's library path from Navidrome; fall back to MUSIC_DIR.
-        libs = await navidrome_client.get_user_libraries(username, password)
-        music_dir = libs[0]["path"] if libs else None
+        # Library path was resolved at login; fall back to MUSIC_DIR if unset.
+        music_dir = library_path
         # Navidrome reports its library path as seen *inside its own container*
         # (e.g. /music). When the middleware runs in the same container that path
         # exists and is writable. In local dev the middleware runs on the host,
@@ -108,7 +113,7 @@ async def _run_download(
             return
 
         update_job(job_id, status="scanning")
-        await navidrome_client.trigger_scan_and_wait(username, password)
+        await navidrome_client.trigger_scan_and_wait(username, salt, token)
 
         update_job(job_id, status="done")
     except DownloadCancelled:
@@ -148,7 +153,7 @@ async def status(job_id: str):
 
 @router.post("/api/rescan")
 async def rescan(sess: dict = Depends(get_current_session)):
-    await navidrome_client.trigger_scan_and_wait(sess["username"], sess["password"])
+    await navidrome_client.trigger_scan_and_wait(sess["username"], sess["salt"], sess["token"])
     return {"ok": True}
 
 
@@ -195,7 +200,9 @@ async def retry_download(
         rec["artist"],
         rec["title"],
         sess["username"],
-        sess["password"],
+        sess["salt"],
+        sess["token"],
+        sess.get("library_path"),
         source,
         album,
     )

@@ -18,7 +18,7 @@ async def library_proxy(
         for k, v in request.query_params.items()
         if k not in ("session", "key", "u", "t", "s", "v", "c", "f")
     }
-    params = {**forwarded, **auth_params(sess["username"], sess["password"])}
+    params = {**forwarded, **auth_params(sess["username"], sess["salt"], sess["token"])}
     async with httpx.AsyncClient(timeout=30) as client:
         upstream = await client.get(
             f"{NAVIDROME_URL}/rest/{subpath}",

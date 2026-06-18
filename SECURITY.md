@@ -11,11 +11,13 @@ You'll get a response as soon as possible.
 kobser is built for **trusted, self-hosted use** (a home lab / personal server),
 not for hostile multi-tenant exposure on the public internet. Keep this in mind:
 
-- **Navidrome passwords are stored in the session database.** The Subsonic API
-  authenticates every request with the user's credentials, so the middleware
-  keeps them in its SQLite session store (`./data/kobser/kobser.db`). That file
-  lives on your server and is gitignored — but treat the host as you would any
-  box holding credentials. Do not expose the database.
+- **Sessions store a derived token, not your password.** At login the
+  middleware derives a reusable Subsonic `(salt, token)` pair from the password
+  and persists only that (plus the resolved library path) in its SQLite session
+  store (`./data/kobser/kobser.db`); the cleartext password is never written to
+  disk. The token is replayable against the Subsonic API but, unlike the
+  password, can't be used for Navidrome's web login or reused elsewhere — still,
+  treat the database as sensitive and don't expose it.
 
 - **Run it behind HTTPS.** The API and streaming endpoints pass a session token
   (in a header or query string). Put kobser behind a reverse proxy with TLS

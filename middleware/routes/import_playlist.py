@@ -68,7 +68,10 @@ async def import_spotify(
     with _lock:
         _imports[job.import_id] = job
 
-    bg.add_task(_run_import, job.import_id, playlist["tracks"], sess["username"], sess["password"])
+    bg.add_task(
+        _run_import, job.import_id, playlist["tracks"],
+        sess["username"], sess["salt"], sess["token"], sess.get("library_path"),
+    )
     return {"importId": job.import_id, "name": job.name, "total": job.total}
 
 
@@ -92,14 +95,12 @@ def import_status(import_id: str):
     }
 
 
-async def _resolve_music_dir(username: str, password: str) -> str | None:
-    """User's library path, falling back to MUSIC_DIR when the reported path
-    isn't present on this host (local dev / outside Navidrome's container)."""
-    libs = await navidrome_client.get_user_libraries(username, password)
-    music_dir = libs[0]["path"] if libs else None
-    if music_dir and not Path(music_dir).exists():
-        music_dir = None
-    return music_dir
+def _resolve_music_dir(library_path: str | None) -> str | None:
+    """Library path resolved at login, falling back to MUSIC_DIR when it isn't
+    present on this host (local dev / outside Navidrome's container)."""
+    if library_path and not Path(library_path).exists():
+        return None
+    return library_path
 
 
 async def _download_with_retry(video_id: str, artist: str, title: str, music_dir: str | None) -> str:
@@ -120,9 +121,12 @@ async def _download_with_retry(video_id: str, artist: str, title: str, music_dir
     raise RuntimeError("unreachable")  # loop either returns or raises
 
 
-async def _run_import(import_id: str, tracks: list[dict], username: str, password: str) -> None:
+async def _run_import(
+    import_id: str, tracks: list[dict], username: str, salt: str, token: str,
+    library_path: str | None,
+) -> None:
     job = _imports[import_id]
-    music_dir = await _resolve_music_dir(username, password)
+    music_dir = _resolve_music_dir(library_path)
     sem = asyncio.Semaphore(IMPORT_CONCURRENCY)
     # Per-track outcome, kept index-aligned so the playlist preserves Spotify order.
     # ("existing", song_id) | ("downloaded", artist, title) | ("failed", label) | None
@@ -139,7 +143,7 @@ async def _run_import(import_id: str, tracks: list[dict], username: str, passwor
         async with sem:
             try:
                 # Already in library? Skip download, reuse it for the playlist.
-                existing_id = await navidrome_client.find_song_id(artist, title, username, password)
+                existing_id = await navidrome_client.find_song_id(artist, title, username, salt, token)
                 if existing_id:
                     outcomes[i] = ("existing", existing_id)
                     job.existing += 1
@@ -174,7 +178,7 @@ async def _run_import(import_id: str, tracks: list[dict], username: str, passwor
 
         # Make freshly downloaded files visible before resolving their ids.
         if any(o and o[0] == "downloaded" for o in outcomes):
-            await navidrome_client.trigger_scan_and_wait(username, password)
+            await navidrome_client.trigger_scan_and_wait(username, salt, token)
 
         # Build the playlist in original track order.
         song_ids: list[str] = []
@@ -184,12 +188,12 @@ async def _run_import(import_id: str, tracks: list[dict], username: str, passwor
             if o[0] == "existing":
                 song_ids.append(o[1])
             elif o[0] == "downloaded":
-                sid = await navidrome_client.find_song_id(o[1], o[2], username, password)
+                sid = await navidrome_client.find_song_id(o[1], o[2], username, salt, token)
                 if sid:
                     song_ids.append(sid)
 
         if song_ids:
-            job.playlist_id = await navidrome_client.create_playlist(job.name, song_ids, username, password)
+            job.playlist_id = await navidrome_client.create_playlist(job.name, song_ids, username, salt, token)
 
         job.status = "done"
     except Exception as e:

@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 
 from auth import get_current_session
 from config import MUSIC_DIR, NAVIDROME_URL
-from services.navidrome_client import auth_params, get_user_libraries, trigger_scan_and_wait
+from services.navidrome_client import auth_params, trigger_scan_and_wait
 from services.ytdlp_service import _sanitize, get_stream_info
 
 router = APIRouter()
@@ -43,7 +43,7 @@ async def delete_track(track_id: str, sess: dict = Depends(get_current_session))
     async with httpx.AsyncClient(timeout=10) as client:
         r = await client.get(
             f"{NAVIDROME_URL}/rest/getSong",
-            params={"id": track_id, **auth_params(sess["username"], sess["password"])},
+            params={"id": track_id, **auth_params(sess["username"], sess["salt"], sess["token"])},
         )
         r.raise_for_status()
         body = r.json().get("subsonic-response", {})
@@ -58,14 +58,14 @@ async def delete_track(track_id: str, sess: dict = Depends(get_current_session))
     # because kobser routes downloads there.
     global_root = Path(MUSIC_DIR).resolve()
     search_roots: list[Path] = [global_root]
-    try:
-        libs = await get_user_libraries(sess["username"], sess["password"])
-        for lib in libs:
-            lib_path = Path(lib["path"]).resolve()
+    lib_path_str = sess.get("library_path")
+    if lib_path_str:
+        try:
+            lib_path = Path(lib_path_str).resolve()
             if lib_path != global_root:
                 search_roots.insert(0, lib_path)
-    except Exception:
-        pass
+        except Exception:
+            pass
 
     # ── 1. Try the path Navidrome reports (may be a virtual tag-based path) ──
     file_path: Path | None = None
@@ -104,7 +104,7 @@ async def delete_track(track_id: str, sess: dict = Depends(get_current_session))
     if file_path is None:
         # File is already gone from disk — Navidrome has a stale entry.
         # Rescan so Navidrome removes it from its DB, then report success.
-        await trigger_scan_and_wait(sess["username"], sess["password"])
+        await trigger_scan_and_wait(sess["username"], sess["salt"], sess["token"])
         return {"ok": True}
 
     file_path.unlink()
@@ -116,5 +116,5 @@ async def delete_track(track_id: str, sess: dict = Depends(get_current_session))
             break
         parent.rmdir()
 
-    await trigger_scan_and_wait(sess["username"], sess["password"])
+    await trigger_scan_and_wait(sess["username"], sess["salt"], sess["token"])
     return {"ok": True}

@@ -35,7 +35,11 @@ modules:
 - `jobs.py` — in-memory download job tracker (thread-locked), mirrored to the
   `downloads` table. Background download work goes through here.
 - `auth.py` — `get_current_session` dependency; auth is a per-user Navidrome
-  session (username + password stored in the `sessions` row), not app accounts.
+  session, not app accounts. The `sessions` row stores a derived Subsonic
+  `(salt, token)` pair + the resolved `library_path` — **never** the cleartext
+  password (derived once at login via `make_credentials`). Subsonic calls use
+  the stored `(salt, token)`; `get_user_libraries` is the one password-based
+  call and runs only at login.
 
 ## Running it
 

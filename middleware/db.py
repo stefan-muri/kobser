@@ -12,14 +12,30 @@ DB_PATH = Path(KOBSER_DATA_DIR) / "kobser.db"
 def init_db() -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(DB_PATH) as conn:
+        # Pre-token sessions stored the cleartext Navidrome password. If we find
+        # that old schema, drop the table so no plaintext lingers; users simply
+        # re-login and the new schema persists only a derived Subsonic
+        # (salt, token) pair plus the resolved library path.
+        existing = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='sessions'"
+        ).fetchone()
+        if existing:
+            scols = {r[1] for r in conn.execute("PRAGMA table_info(sessions)").fetchall()}
+            if "token" not in scols:
+                conn.execute("DROP TABLE sessions")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS sessions (
                 id TEXT PRIMARY KEY,
                 username TEXT NOT NULL,
-                password TEXT NOT NULL,
+                salt TEXT NOT NULL,
+                token TEXT NOT NULL,
+                library_path TEXT,
                 expires_at INTEGER NOT NULL
             )
         """)
+        # Hygiene: drop sessions that have already expired (they're filtered on
+        # read anyway, this just stops the table accumulating dead rows).
+        conn.execute("DELETE FROM sessions WHERE expires_at <= ?", (int(time.time()),))
         conn.execute("""
             CREATE TABLE IF NOT EXISTS downloads (
                 id TEXT PRIMARY KEY,
@@ -70,15 +86,26 @@ def _conn():
         conn.close()
 
 
-def create_session(username: str, password: str, ttl_days: int = 30) -> str:
+def create_session(
+    username: str, salt: str, token: str, library_path: str | None = None,
+    ttl_days: int = 30,
+) -> str:
     sid = secrets.token_urlsafe(32)
     expires_at = int(time.time()) + ttl_days * 86400
     with _conn() as c:
         c.execute(
-            "INSERT INTO sessions (id, username, password, expires_at) VALUES (?, ?, ?, ?)",
-            (sid, username, password, expires_at),
+            "INSERT INTO sessions (id, username, salt, token, library_path, expires_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (sid, username, salt, token, library_path, expires_at),
         )
     return sid
+
+
+def delete_expired_sessions() -> int:
+    """Purge sessions past their expiry. Returns the number removed."""
+    with _conn() as c:
+        cur = c.execute("DELETE FROM sessions WHERE expires_at <= ?", (int(time.time()),))
+        return cur.rowcount
 
 
 def get_session(sid: str) -> dict | None:
