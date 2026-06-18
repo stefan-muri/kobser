@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import re
 from pathlib import Path
 
@@ -12,6 +13,7 @@ from services.navidrome_client import auth_params, trigger_scan_and_wait
 from services.ytdlp_service import _sanitize, get_stream_info
 
 router = APIRouter()
+log = logging.getLogger(__name__)
 
 _YT_VIDEO_ID_RE = re.compile(r'^[A-Za-z0-9_-]{11}$')
 
@@ -26,7 +28,10 @@ async def preview_track(video_id: str, sess: dict = Depends(get_current_session)
             None, get_stream_info, video_id
         )
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        # Log the detail server-side; don't leak yt-dlp internals (URLs/paths)
+        # to the client.
+        log.warning("preview failed for %s: %s", video_id, exc)
+        raise HTTPException(status_code=502, detail="couldn't fetch preview") from exc
 
     async def stream():
         async with httpx.AsyncClient(timeout=None, follow_redirects=True) as client:

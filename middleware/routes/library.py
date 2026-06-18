@@ -1,5 +1,7 @@
+import re
+
 import httpx
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 
 from auth import get_current_session
 from config import NAVIDROME_URL
@@ -7,11 +9,18 @@ from services.navidrome_client import auth_params
 
 router = APIRouter()
 
+# Subsonic endpoints are flat verb names (e.g. getArtists, getCoverArt.view).
+# Require a leading letter and at most one dotted suffix so `..`/slashes can't
+# reach other Navidrome paths outside /rest/.
+_SUBSONIC_VERB_RE = re.compile(r"^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z]+)?$")
+
 
 @router.get("/api/library/{subpath:path}")
 async def library_proxy(
     subpath: str, request: Request, sess: dict = Depends(get_current_session)
 ):
+    if not _SUBSONIC_VERB_RE.match(subpath):
+        raise HTTPException(status_code=400, detail="invalid library path")
     # Strip our auth params from forwarded query; auth_params() wins
     forwarded = {
         k: v
