@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 
-def _load_dotenv() -> None:
+def _load_dotenv(env_path: Path | None = None) -> None:
     """Load a repo-root `.env` for local (non-Docker) runs.
 
     Stdlib-only, no dependency. Existing environment variables always win, so
@@ -10,7 +10,8 @@ def _load_dotenv() -> None:
     `KEY=value`; blank lines and `#` comments are ignored, surrounding quotes on
     the value are stripped. Missing file is a no-op.
     """
-    env_path = Path(__file__).resolve().parent.parent / ".env"
+    if env_path is None:
+        env_path = Path(__file__).resolve().parent.parent / ".env"
     try:
         text = env_path.read_text()
     except OSError:
