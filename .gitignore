@@ -26,3 +26,6 @@ venv/
 # Local notes (not committed)
 NOTES*.md
 notes/
+
+# Assistant guidance (kept local, not tracked)
+CLAUDE.md
