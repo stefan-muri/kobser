@@ -37,6 +37,9 @@ Built on [Navidrome](https://www.navidrome.org/) (music server + Subsonic API) w
 
 - **Search YouTube & YouTube Music** — songs, artists, and full albums (via `yt-dlp` + `ytmusicapi`).
 - **Download to your library** — tracked with artist/title/album, embedded cover art, auto-rescanned into Navidrome.
+- **Import Spotify playlists** — paste a playlist link and kobser fetches and downloads each track (web and Android).
+- **Duplicate detection** — warns before re-downloading a song already in your library, with confirm-to-proceed.
+- **Retry downloads** — failed or cancelled downloads can be retried without starting over.
 - **Multi-user** — each Navidrome user downloads into *their own* assigned library path.
 - **Preview before downloading** — stream a result without committing it to disk.
 - **Stream your library** — browse artists/albums/songs, liked songs, and playlists.
@@ -171,6 +174,25 @@ The middleware serves the compiled web app and proxies the Subsonic API; both cl
 
 All bind-mounted from the host; they survive container rebuilds.
 
+### File ownership (non-root container)
+
+The middleware runs as a non-root user (**uid/gid 1000**). On startup its
+entrypoint fixes ownership of the mounted `data` and `secrets` volumes
+automatically, so a normal `docker compose pull && up` just works — no manual
+`chown` needed.
+
+For the music volume it only takes the mount point (not the whole library, which
+may be large), so **downloaded files are owned by uid 1000**. If your music
+folder was previously written by a root container, run a one-time chown so
+ownership is uniform (and deleting old tracks keeps working):
+
+```bash
+sudo chown -R 1000:1000 /path/to/your/music
+```
+
+On a typical single-user host, uid 1000 is your login user, so this reads as
+your own username afterwards.
+
 ---
 
 ## Updating
@@ -195,9 +217,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more.
 ## Security
 
 kobser is meant for **trusted self-hosted use**, not hostile public exposure.
-Run it behind HTTPS (a reverse proxy), and note that the middleware stores
-Navidrome credentials in its session database so it can talk to the Subsonic
-API. See [SECURITY.md](SECURITY.md) for the threat model and how to report
+Run it behind HTTPS (a reverse proxy). The middleware never stores your
+cleartext password — it derives and persists only a reusable Subsonic token so
+it can talk to the Subsonic API. The container runs the app as an unprivileged
+user. See [SECURITY.md](SECURITY.md) for the threat model and how to report
 vulnerabilities.
 
 ---

@@ -31,6 +31,11 @@ not for hostile multi-tenant exposure on the public internet. Keep this in mind:
   prevent path traversal, but the feature inherently writes files to disk — only
   give accounts to people you trust.
 
+- **The container runs as a non-root user.** The entrypoint fixes ownership of
+  the mounted `data`, `secrets`, and `music` volumes on startup and then drops
+  to an unprivileged user, so the application never runs as root. No manual
+  `chown` is required on the host.
+
 ## Supported versions
 
 This is a personal/community project; security fixes land on `master`. Pull the
