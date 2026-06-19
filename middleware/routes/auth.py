@@ -1,3 +1,4 @@
+import logging
 import time
 from collections import deque
 from threading import Lock
@@ -10,6 +11,7 @@ from db import create_session, delete_session
 from services.navidrome_client import get_user_libraries, make_credentials, ping
 
 router = APIRouter()
+log = logging.getLogger(__name__)
 
 # Throttle login attempts per client to blunt credential brute-forcing. We only
 # count genuine credential rejections (not Navidrome-unreachable errors), so a
@@ -68,10 +70,14 @@ async def login(body: LoginRequest, request: Request):
     try:
         r = await ping(body.username, salt, token)
         authed = r.get("status") == "ok"
-    except Exception:
-        # Navidrome unreachable/errored: surface as a generic auth failure but
-        # don't hold it against the rate limit (it isn't a bad-credential attempt).
-        raise HTTPException(status_code=401, detail="invalid credentials") from None
+    except Exception as exc:
+        # Navidrome unreachable/errored. This is NOT a bad-credential attempt, so
+        # don't count it against the rate limit and don't disguise it as a 401 —
+        # log the real cause and tell the client the music server is down.
+        log.warning("login ping to Navidrome failed: %s", exc)
+        raise HTTPException(
+            status_code=502, detail="music server unreachable"
+        ) from exc
 
     if not authed:
         _record_failure(key)

@@ -1,5 +1,6 @@
 # Local config
 .env
+dev.sh
 docker-compose.override.yml
 
 # Secrets (keep the example file, ignore everything else in secrets/)
