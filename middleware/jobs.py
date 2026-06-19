@@ -16,6 +16,7 @@ class Job:
     video_id: str
     artist: str
     title: str
+    username: str = ""
     album: str = ""
     source: str = "youtube_music"
     status: JobStatus = "pending"
@@ -54,12 +55,12 @@ def is_video_active(video_id: str) -> bool:
 
 
 def create_job(
-    video_id: str, artist: str, title: str,
+    video_id: str, artist: str, title: str, username: str,
     album: str = "", source: str = "youtube_music",
 ) -> Job:
     job = Job(
         job_id=str(uuid.uuid4()), video_id=video_id, artist=artist, title=title,
-        album=album, source=source,
+        username=username, album=album, source=source,
     )
     with _lock:
         _jobs[job.job_id] = job
@@ -67,7 +68,7 @@ def create_job(
         _prune_locked()
     _db.upsert_download(
         job.job_id, video_id, artist, title, "pending",
-        album=album, source=source, started_at=job.started_at,
+        username=username, album=album, source=source, started_at=job.started_at,
     )
     return job
 
@@ -89,10 +90,10 @@ def cancel_job(job_id: str) -> bool:
         _cancelled.add(job_id)
         job.status = "cancelled"
         _active_video_ids.discard(job.video_id)
-        snap = (job.job_id, job.video_id, job.artist, job.title, job.started_at)
-    jid, vid, art, tit, sat = snap
+        snap = (job.job_id, job.video_id, job.artist, job.title, job.username, job.started_at)
+    jid, vid, art, tit, usr, sat = snap
     _db.upsert_download(jid, vid, art, tit, "cancelled",
-                        error="Cancelled by user", started_at=sat,
+                        username=usr, error="Cancelled by user", started_at=sat,
                         completed_at=int(time.time()))
     return True
 
@@ -109,10 +110,10 @@ def update_job(job_id: str, **fields) -> None:
             setattr(job, k, v)
         if job.status in ("done", "error", "cancelled"):
             _active_video_ids.discard(job.video_id)
-        snap = (job.job_id, job.video_id, job.artist, job.title,
+        snap = (job.job_id, job.video_id, job.artist, job.title, job.username,
                 job.status, job.error, job.file, job.started_at)
 
-    jid, vid, art, tit, st, err, fpath, sat = snap
+    jid, vid, art, tit, usr, st, err, fpath, sat = snap
     completed_at = int(time.time()) if st in ("done", "error") else None
     file_size = None
     if st == "done" and fpath:
@@ -122,6 +123,6 @@ def update_job(job_id: str, **fields) -> None:
             pass
     _db.upsert_download(
         jid, vid, art, tit, st,
-        error=err, file_path=fpath, file_size_bytes=file_size,
+        username=usr, error=err, file_path=fpath, file_size_bytes=file_size,
         started_at=sat, completed_at=completed_at,
     )

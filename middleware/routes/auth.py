@@ -8,7 +8,14 @@ from pydantic import BaseModel
 
 from auth import get_current_session
 from db import create_session, delete_session
-from services.navidrome_client import get_user_libraries, make_credentials, ping
+from services.navidrome_client import (
+    get_user_libraries,
+    make_credentials,
+    ping,
+)
+from services.navidrome_client import (
+    is_admin as get_is_admin,
+)
 
 router = APIRouter()
 log = logging.getLogger(__name__)
@@ -89,7 +96,10 @@ async def login(body: LoginRequest, request: Request):
     libs = await get_user_libraries(body.username, body.password)
     library_path = libs[0]["path"] if libs else None
 
-    sid = create_session(body.username, salt, token, library_path)
+    # Persist the admin role too — admins can see all users' downloads.
+    admin = await get_is_admin(body.username, salt, token)
+
+    sid = create_session(body.username, salt, token, library_path, is_admin=admin)
     return {"sessionId": sid, "username": body.username}
 
 

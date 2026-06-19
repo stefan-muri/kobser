@@ -54,6 +54,28 @@ async def ping(username: str, salt: str, token: str) -> dict[str, Any]:
         return r.json().get("subsonic-response", {})
 
 
+async def is_admin(username: str, salt: str, token: str) -> bool:
+    """Whether the user has the Navidrome admin role.
+
+    A user may always query their own record via Subsonic `getUser`, which
+    carries `adminRole`. Returns False on any error so a lookup failure never
+    grants elevated visibility.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            r = await client.get(
+                f"{NAVIDROME_URL}/rest/getUser",
+                params={"username": username, **auth_params(username, salt, token)},
+            )
+            r.raise_for_status()
+        body = r.json().get("subsonic-response", {})
+        if body.get("status") != "ok":
+            return False
+        return bool(body.get("user", {}).get("adminRole"))
+    except Exception:
+        return False
+
+
 async def start_scan(username: str, salt: str, token: str) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=30) as client:
         r = await client.get(

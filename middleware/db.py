@@ -30,9 +30,15 @@ def init_db() -> None:
                 salt TEXT NOT NULL,
                 token TEXT NOT NULL,
                 library_path TEXT,
+                is_admin INTEGER NOT NULL DEFAULT 0,
                 expires_at INTEGER NOT NULL
             )
         """)
+        # Migrate token-schema DBs that predate the is_admin column. Existing
+        # sessions default to non-admin until the user logs in again.
+        scols = {r[1] for r in conn.execute("PRAGMA table_info(sessions)").fetchall()}
+        if "is_admin" not in scols:
+            conn.execute("ALTER TABLE sessions ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0")
         # Hygiene: drop sessions that have already expired (they're filtered on
         # read anyway, this just stops the table accumulating dead rows).
         conn.execute("DELETE FROM sessions WHERE expires_at <= ?", (int(time.time()),))
@@ -58,6 +64,12 @@ def init_db() -> None:
             conn.execute("ALTER TABLE downloads ADD COLUMN album TEXT")
         if "source" not in cols:
             conn.execute("ALTER TABLE downloads ADD COLUMN source TEXT")
+        # Downloads are now owned per-user. The very first run with this column
+        # absent is the migration point: pre-existing rows have no owner, so we
+        # drop the old (globally-visible) history rather than orphan it.
+        if "username" not in cols:
+            conn.execute("ALTER TABLE downloads ADD COLUMN username TEXT")
+            conn.execute("DELETE FROM downloads")
 
         # Job state lives in memory (see jobs.py) and doesn't survive a restart.
         # Any row still marked in-flight at startup is therefore orphaned from a
@@ -88,15 +100,15 @@ def _conn():
 
 def create_session(
     username: str, salt: str, token: str, library_path: str | None = None,
-    ttl_days: int = 30,
+    is_admin: bool = False, ttl_days: int = 30,
 ) -> str:
     sid = secrets.token_urlsafe(32)
     expires_at = int(time.time()) + ttl_days * 86400
     with _conn() as c:
         c.execute(
-            "INSERT INTO sessions (id, username, salt, token, library_path, expires_at) "
-            "VALUES (?, ?, ?, ?, ?, ?)",
-            (sid, username, salt, token, library_path, expires_at),
+            "INSERT INTO sessions (id, username, salt, token, library_path, is_admin, expires_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (sid, username, salt, token, library_path, int(is_admin), expires_at),
         )
     return sid
 
@@ -131,6 +143,7 @@ def upsert_download(
     title: str,
     status: str,
     *,
+    username: str | None = None,
     album: str | None = None,
     source: str | None = None,
     error: str | None = None,
@@ -143,12 +156,13 @@ def upsert_download(
         c.execute(
             """
             INSERT INTO downloads
-                (id, video_id, artist, title, album, source, status, error,
+                (id, video_id, artist, title, username, album, source, status, error,
                  file_path, file_size_bytes, started_at, completed_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 status          = excluded.status,
                 error           = excluded.error,
+                username        = COALESCE(excluded.username,        username),
                 album           = COALESCE(excluded.album,           album),
                 source          = COALESCE(excluded.source,          source),
                 file_path       = COALESCE(excluded.file_path,       file_path),
@@ -156,17 +170,24 @@ def upsert_download(
                 completed_at    = COALESCE(excluded.completed_at,    completed_at)
             """,
             (
-                id_, video_id, artist, title, album, source, status, error,
+                id_, video_id, artist, title, username, album, source, status, error,
                 file_path, file_size_bytes, started_at or int(time.time()), completed_at,
             ),
         )
 
 
-def list_downloads() -> list[dict]:
+def list_downloads(username: str | None = None, is_admin: bool = False) -> list[dict]:
+    """List downloads for a user. Admins (or username=None) see everything."""
     with _conn() as c:
-        rows = c.execute(
-            "SELECT * FROM downloads ORDER BY started_at DESC LIMIT 200"
-        ).fetchall()
+        if is_admin or username is None:
+            rows = c.execute(
+                "SELECT * FROM downloads ORDER BY started_at DESC LIMIT 200"
+            ).fetchall()
+        else:
+            rows = c.execute(
+                "SELECT * FROM downloads WHERE username = ? ORDER BY started_at DESC LIMIT 200",
+                (username,),
+            ).fetchall()
     return [dict(r) for r in rows]
 
 

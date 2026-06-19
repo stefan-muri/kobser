@@ -29,6 +29,11 @@ router = APIRouter()
 log = logging.getLogger(__name__)
 
 
+def _can_access(owner: str | None, sess: dict) -> bool:
+    """A download is accessible to its owner, or to any admin."""
+    return bool(sess.get("is_admin")) or owner == sess["username"]
+
+
 class DownloadRequest(BaseModel):
     videoId: str = Field(min_length=1)
     artist: str = Field(min_length=1)
@@ -52,7 +57,7 @@ async def download(
         body.artist, body.title, sess["username"], sess["salt"], sess["token"]
     ):
         raise HTTPException(status_code=409, detail="already in library")
-    job = create_job(body.videoId, body.artist, body.title, body.album, body.source)
+    job = create_job(body.videoId, body.artist, body.title, sess["username"], body.album, body.source)
     bg.add_task(
         _run_download,
         job.job_id,
@@ -128,10 +133,12 @@ async def _run_download(
         update_job(job_id, status="error", error=ytdlp_service.describe_error(e))
 
 
-@router.get("/api/status/{job_id}", dependencies=[Depends(get_current_session)])
-async def status(job_id: str):
+@router.get("/api/status/{job_id}")
+async def status(job_id: str, sess: dict = Depends(get_current_session)):
     job = get_job(job_id)
     if job is not None:
+        if not _can_access(job.username, sess):
+            raise HTTPException(status_code=404, detail="job not found")
         return {
             "jobId": job.job_id,
             "status": job.status,
@@ -141,7 +148,7 @@ async def status(job_id: str):
     # In-memory job is gone (e.g. process restarted). Fall back to the persisted
     # record so the client sees the final status instead of a spurious 404.
     rec = _db.get_download_record(job_id)
-    if rec is None:
+    if rec is None or not _can_access(rec["username"], sess):
         raise HTTPException(status_code=404, detail="job not found")
     return {
         "jobId": rec["id"],
@@ -157,20 +164,26 @@ async def rescan(sess: dict = Depends(get_current_session)):
     return {"ok": True}
 
 
-@router.post("/api/jobs/{job_id}/cancel", dependencies=[Depends(get_current_session)])
-def cancel_job_endpoint(job_id: str):
+@router.post("/api/jobs/{job_id}/cancel")
+def cancel_job_endpoint(job_id: str, sess: dict = Depends(get_current_session)):
+    job = get_job(job_id)
+    if job is None or not _can_access(job.username, sess):
+        raise HTTPException(status_code=404, detail="job not found or already finished")
     if not cancel_job(job_id):
         raise HTTPException(status_code=404, detail="job not found or already finished")
     return {"ok": True}
 
 
-@router.get("/api/downloads", dependencies=[Depends(get_current_session)])
-def list_downloads():
-    return {"downloads": _db.list_downloads()}
+@router.get("/api/downloads")
+def list_downloads(sess: dict = Depends(get_current_session)):
+    return {"downloads": _db.list_downloads(sess["username"], bool(sess.get("is_admin")))}
 
 
-@router.delete("/api/downloads/{job_id}", dependencies=[Depends(get_current_session)])
-def delete_download(job_id: str):
+@router.delete("/api/downloads/{job_id}")
+def delete_download(job_id: str, sess: dict = Depends(get_current_session)):
+    rec = _db.get_download_record(job_id)
+    if rec is None or not _can_access(rec["username"], sess):
+        raise HTTPException(status_code=404, detail="download not found")
     _db.delete_download_record(job_id)
     return {"ok": True}
 
@@ -182,16 +195,17 @@ async def retry_download(
     sess: dict = Depends(get_current_session),
 ):
     rec = _db.get_download_record(job_id)
-    if rec is None:
+    if rec is None or not _can_access(rec["username"], sess):
         raise HTTPException(status_code=404, detail="download not found")
     if is_video_active(rec["video_id"]):
         raise HTTPException(status_code=409, detail="download already in progress for this video")
 
     source = rec.get("source") or "youtube_music"
     album = rec.get("album") or ""
-    # Re-run as a fresh job, then drop the old failed record so the list shows
-    # a single entry that's downloading again.
-    job = create_job(rec["video_id"], rec["artist"], rec["title"], album, source)
+    # Re-run as a fresh job owned by the caller (it uses their credentials and
+    # library), then drop the old record so the list shows a single entry
+    # that's downloading again.
+    job = create_job(rec["video_id"], rec["artist"], rec["title"], sess["username"], album, source)
     _db.delete_download_record(job_id)
     bg.add_task(
         _run_download,

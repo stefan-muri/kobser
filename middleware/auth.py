@@ -7,7 +7,7 @@ def get_current_session(
     x_session_id: str | None = Header(default=None),
     session: str | None = Query(default=None),
 ) -> dict:
-    """Returns the session dict {id, username, salt, token, library_path, expires_at}."""
+    """Returns the session dict {id, username, salt, token, library_path, is_admin, expires_at}."""
     sid = x_session_id or session
     if not sid:
         raise HTTPException(status_code=401, detail="not authenticated")
