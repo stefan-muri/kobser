@@ -6,6 +6,9 @@ on:
     paths:
       - "android/**"
       - ".github/workflows/android-build.yml"
+  release:
+    types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -38,12 +41,18 @@ jobs:
       - name: Rename APK
         run: mv android/app/build/outputs/apk/debug/app-debug.apk kobser.apk
 
-      - name: Publish to latest release
+      - name: Publish APK
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release delete latest --yes --cleanup-tag 2>/dev/null || true
-          gh release create latest kobser.apk \
-            --title "Latest Build" \
-            --notes "Debug APK built automatically from the latest commit on master. Enable **Install from unknown sources** on your device, then open the file to install." \
-            --prerelease
+          if [ "${{ github.event_name }}" = "release" ]; then
+            # Attach (or replace) the APK on the release that was just published.
+            gh release upload "${{ github.event.release.tag_name }}" kobser.apk --clobber
+          else
+            # Rolling prerelease holding the newest debug build from master.
+            gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+            gh release create latest kobser.apk \
+              --title "Latest Build" \
+              --notes "Debug APK built automatically from the latest commit on master. Enable **Install from unknown sources** on your device, then open the file to install." \
+              --prerelease
+          fi
