@@ -20,6 +20,31 @@ let _audio = null;
 let _shuffledQueue = [];
 let _shufflePos = -1;
 
+// Scrobbling (Navidrome play counts / recently played / Last.fm forwarding).
+// Same rule as the Android app: once per track, after half its length or four
+// minutes, whichever is first; never for tracks under 30 s or for previews.
+let _scrobbleId = null;
+let _scrobbled = false;
+
+function _scrobble(id, submission) {
+  libApi('scrobble', { id, submission: String(submission) }).catch(() => {});
+}
+
+function _onTrackStarted(track) {
+  _scrobbleId = track && !isPreview(track) ? track.id : null;
+  _scrobbled = false;
+  if (_scrobbleId) _scrobble(_scrobbleId, false);
+}
+
+function _maybeScrobble(currentTime, duration) {
+  if (!_scrobbleId || _scrobbled) return;
+  if (duration > 0 && duration < 30) return;
+  const threshold = duration > 0 ? Math.min(duration / 2, 240) : 240;
+  if (currentTime < threshold) return;
+  _scrobbled = true;
+  _scrobble(_scrobbleId, true);
+}
+
 export function isPreview(track) {
   return !!track?._previewUrl;
 }
@@ -51,6 +76,7 @@ export function initAudio(audioEl) {
       currentTime: _audio.currentTime,
       duration: _audio.duration || 0,
     });
+    _maybeScrobble(_audio.currentTime, _audio.duration || 0);
   });
 
   window.addEventListener('beforeunload', saveLastTrack);
@@ -64,6 +90,7 @@ function _load() {
   if (!track || !_audio) return;
   _audio.src = isPreview(track) ? track._previewUrl : streamUrl(track.id);
   _audio.play().catch(e => console.error('play failed:', e));
+  _onTrackStarted(track);
   saveLastTrack();
 }
 

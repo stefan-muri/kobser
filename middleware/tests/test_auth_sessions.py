@@ -82,3 +82,38 @@ class TestSessionStore:
             assert "password" not in cols
             # The old plaintext row is gone — users simply re-login.
             assert c.execute("SELECT COUNT(*) FROM sessions").fetchone()[0] == 0
+
+
+class TestSlidingExpiry:
+    def _db(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(db, "DB_PATH", tmp_path / "kobser.db")
+        db.init_db()
+
+    def _expires(self, sid):
+        with sqlite3.connect(db.DB_PATH) as conn:
+            return conn.execute("SELECT expires_at FROM sessions WHERE id = ?", (sid,)).fetchone()[0]
+
+    def test_use_renews_a_session_older_than_a_day(self, tmp_path, monkeypatch):
+        self._db(tmp_path, monkeypatch)
+        sid = db.create_session("alice", "s", "t")
+        soon = int(time.time()) + 5 * 86400  # 25 days into its life
+        with sqlite3.connect(db.DB_PATH) as conn:
+            conn.execute("UPDATE sessions SET expires_at = ? WHERE id = ?", (soon, sid))
+        s = db.get_session(sid)
+        full = int(time.time()) + db.SESSION_TTL_DAYS * 86400
+        assert abs(s["expires_at"] - full) < 5
+        assert abs(self._expires(sid) - full) < 5
+
+    def test_fresh_session_is_not_rewritten(self, tmp_path, monkeypatch):
+        self._db(tmp_path, monkeypatch)
+        sid = db.create_session("alice", "s", "t")
+        before = self._expires(sid)
+        db.get_session(sid)
+        assert self._expires(sid) == before
+
+    def test_expired_session_is_not_resurrected(self, tmp_path, monkeypatch):
+        self._db(tmp_path, monkeypatch)
+        sid = db.create_session("alice", "s", "t")
+        with sqlite3.connect(db.DB_PATH) as conn:
+            conn.execute("UPDATE sessions SET expires_at = ? WHERE id = ?", (int(time.time()) - 1, sid))
+        assert db.get_session(sid) is None

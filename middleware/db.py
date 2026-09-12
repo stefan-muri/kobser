@@ -98,9 +98,15 @@ def _conn():
         conn.close()
 
 
+SESSION_TTL_DAYS = 30
+# Sliding expiry: a session in active use is renewed to the full TTL, at most
+# once per day so the write doesn't happen on every request.
+_SESSION_RENEW_AFTER_S = 86400
+
+
 def create_session(
     username: str, salt: str, token: str, library_path: str | None = None,
-    is_admin: bool = False, ttl_days: int = 30,
+    is_admin: bool = False, ttl_days: int = SESSION_TTL_DAYS,
 ) -> str:
     sid = secrets.token_urlsafe(32)
     expires_at = int(time.time()) + ttl_days * 86400
@@ -121,12 +127,20 @@ def delete_expired_sessions() -> int:
 
 
 def get_session(sid: str) -> dict | None:
+    now = int(time.time())
     with _conn() as c:
         row = c.execute(
             "SELECT * FROM sessions WHERE id = ? AND expires_at > ?",
-            (sid, int(time.time())),
+            (sid, now),
         ).fetchone()
-    return dict(row) if row else None
+        if row is None:
+            return None
+        s = dict(row)
+        full = now + SESSION_TTL_DAYS * 86400
+        if s["expires_at"] <= full - _SESSION_RENEW_AFTER_S:
+            c.execute("UPDATE sessions SET expires_at = ? WHERE id = ?", (full, sid))
+            s["expires_at"] = full
+    return s
 
 
 def delete_session(sid: str) -> None:
