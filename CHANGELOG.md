@@ -4,6 +4,12 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [1.2.1] - 2026-09-12
+
+### Fixed
+- **Nothing would play in 1.2.0** — neither on the phone nor in the car. The Media3 upgrade changed what the session's default connection result contains (an empty command set), and the app built on it, so every controller was denied play/prepare/set-queue. Reproduced on an emulator and fixed; the phone's own controller and Android Auto get the full command set again.
+- Android APKs are now signed with one stable key (CI and local builds alike), so a new download installs over the previous version instead of demanding an uninstall. Builds before this one were signed with throwaway keys: uninstall one of those once, and updates work from then on.
+
 ## [1.2.0] - 2026-09-12
 
 ### Added

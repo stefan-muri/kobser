@@ -34,12 +34,21 @@ jobs:
       - name: Write local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 
-      - name: Build debug APK and run unit tests
+      - name: Restore signing key
+        # The same key for every build, so each APK installs over the previous one.
+        # Secrets: KOBSER_KEYSTORE_BASE64 (the .jks, base64), KOBSER_KEYSTORE_PASSWORD, KOBSER_KEY_ALIAS.
+        run: echo "${{ secrets.KOBSER_KEYSTORE_BASE64 }}" | base64 -d > android/kobser-release.jks
+
+      - name: Build signed release APK and run unit tests
         working-directory: android
-        run: gradle assembleDebug testDebugUnitTest --no-daemon
+        env:
+          KOBSER_KEYSTORE_FILE: kobser-release.jks
+          KOBSER_KEYSTORE_PASSWORD: ${{ secrets.KOBSER_KEYSTORE_PASSWORD }}
+          KOBSER_KEY_ALIAS: ${{ secrets.KOBSER_KEY_ALIAS }}
+        run: gradle assembleRelease testDebugUnitTest --no-daemon
 
       - name: Rename APK
-        run: mv android/app/build/outputs/apk/debug/app-debug.apk kobser.apk
+        run: mv android/app/build/outputs/apk/release/app-release.apk kobser.apk
 
       - name: Publish APK
         env:
@@ -53,6 +62,6 @@ jobs:
             gh release delete latest --yes --cleanup-tag 2>/dev/null || true
             gh release create latest kobser.apk \
               --title "Latest Build" \
-              --notes "Debug APK built automatically from the latest commit on master. Enable **Install from unknown sources** on your device, then open the file to install." \
+              --notes "APK built automatically from the latest commit on master. Enable **Install from unknown sources** on your device, then open the file to install." \
               --prerelease
           fi

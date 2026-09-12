@@ -140,6 +140,7 @@ User accounts are Navidrome accounts — kobser stores no separate user database
 
 Download the latest APK from the [Releases](https://github.com/stefan-muri/kobser/releases) page, enable **Install from unknown sources** on your device, and open the file to install.
 
+- **Updating:** every APK from the Releases page is signed with the same key, so a newer one installs straight over the old one. (Builds before v1.2.1 used throwaway keys; if you have one of those installed, uninstall it once, then updates work from then on.)
 - **Connect:** on first launch, enter your server URL (e.g. `http://192.168.1.50:8000`) and log in with your Navidrome credentials.
 - **Android Auto:** browse Recently played / Recently added / Favorites / Playlists / Albums / Artists / Songs (A–Z folders for big libraries), search (local + YouTube Music), shuffle/repeat, and resume playback from the car.
 - **Offline:** open an album or playlist and tap **Keep offline**; it downloads in the background (allow notifications to see progress) and shows up under More → Offline music.

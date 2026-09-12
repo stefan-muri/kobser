@@ -36,6 +36,10 @@ npm run dev               # Vite dev server, proxies /api to the running middlew
 **JDK 17** (Studio's bundled JBR works) and Gradle 9.6+. From a terminal:
 `cd android && JAVA_HOME=/path/to/jdk-17 gradle assembleDebug testDebugUnitTest`.
 Don't commit a machine-specific `org.gradle.java.home`.
+To have your local builds update the published APK (and vice versa), put the
+project signing key in `android/keystore.properties` (gitignored; keys
+`storeFile`, `storePassword`, `keyAlias`, `keyPassword`). Without it, builds
+fall back to your machine's debug key and won't install over a release build.
 
 **Backend tests & lint:**
 ```bash
