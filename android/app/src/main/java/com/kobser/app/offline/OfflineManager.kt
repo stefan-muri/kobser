@@ -59,9 +59,10 @@ class OfflineManager @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val catalogFile = File(context.filesDir, "offline_catalog.json")
 
-    // One database provider shared by the cache and the download index (they
-    // live in the same SQLite file), and only one SimpleCache per directory.
-    private val databaseProvider by lazy { StandaloneDatabaseProvider(context) }
+    // One database provider for everything Media3 stores in SQLite (both caches'
+    // indexes and the download index share the file). Separate SQLiteOpenHelper
+    // instances on the same file can fail with "database is locked".
+    val databaseProvider: StandaloneDatabaseProvider by lazy { StandaloneDatabaseProvider(context) }
 
     val cache: SimpleCache by lazy {
         SimpleCache(File(context.filesDir, "offline_media"), NoOpCacheEvictor(), databaseProvider)

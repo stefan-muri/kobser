@@ -81,14 +81,18 @@ class LibrarySessionCallback @Inject constructor(
         session: MediaSession,
         controller: MediaSession.ControllerInfo,
     ): MediaSession.ConnectionResult {
-        val base = super.onConnect(session, controller)
-        val sessionCommands = base.availableSessionCommands.buildUpon()
+        // Do NOT build on super.onConnect(): since Media3 1.9 it returns a placeholder
+        // with EMPTY command sets (a "callback not implemented" marker), so deriving
+        // from it silently strips every controller of play/prepare/set-queue.
+        // Grant the full default set to every controller, as the app always has —
+        // the phone UI, Android Auto, Bluetooth and system UI all need it.
+        val sessionCommands = MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS.buildUpon()
             .add(SessionCommand(CMD_SHUFFLE, Bundle.EMPTY))
             .add(SessionCommand(CMD_REPEAT, Bundle.EMPTY))
             .build()
         return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
             .setAvailableSessionCommands(sessionCommands)
-            .setAvailablePlayerCommands(base.availablePlayerCommands)
+            .setAvailablePlayerCommands(MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS)
             .setMediaButtonPreferences(buildMediaButtons(session.player))
             .build()
     }

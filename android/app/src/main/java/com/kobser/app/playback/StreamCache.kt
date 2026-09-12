@@ -2,7 +2,6 @@ package com.kobser.app.playback
 
 import android.content.Context
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
@@ -38,7 +37,7 @@ class StreamCache @Inject constructor(
     // picked in Settings applies the next time the app starts.
     private val cache: SimpleCache by lazy {
         val maxBytes = runBlocking { prefs.cacheMaxMb.first() } * 1024L * 1024L
-        SimpleCache(dir, LeastRecentlyUsedCacheEvictor(maxBytes), StandaloneDatabaseProvider(context))
+        SimpleCache(dir, LeastRecentlyUsedCacheEvictor(maxBytes), offline.databaseProvider)
     }
 
     fun dataSourceFactory(): DataSource.Factory {
