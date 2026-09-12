@@ -43,7 +43,9 @@ Built on [Navidrome](https://www.navidrome.org/) (music server + Subsonic API) w
 - **Multi-user** — each Navidrome user downloads into *their own* assigned library path.
 - **Preview before downloading** — stream a result without committing it to disk.
 - **Stream your library** — browse artists/albums/songs, liked songs, and playlists.
-- **Native Android app** — same backend, with a queue, drag-to-reorder, and **Android Auto** (browse, search, play in the car).
+- **Native Android app** — same backend, with a queue, drag-to-reorder, a sleep timer, and **Android Auto** (browse, search, play in the car).
+- **Offline music (Android)** — keep any album or playlist on the phone and play it without a connection; everything you stream is also cached to save data.
+- **Play counts** — plays are scrobbled to Navidrome, so Recently played / Most played and Last.fm forwarding work.
 - **Cookie support** — optional, for age-restricted/region-locked videos.
 
 ---
@@ -139,11 +141,12 @@ User accounts are Navidrome accounts — kobser stores no separate user database
 Download the latest APK from the [Releases](https://github.com/stefan-muri/kobser/releases) page, enable **Install from unknown sources** on your device, and open the file to install.
 
 - **Connect:** on first launch, enter your server URL (e.g. `http://192.168.1.50:8000`) and log in with your Navidrome credentials.
-- **Android Auto:** browse Songs / Artists / Playlists / Favorites, search (local + YouTube Music), shuffle/repeat, and queue from the car.
+- **Android Auto:** browse Recently played / Recently added / Favorites / Playlists / Albums / Artists / Songs (A–Z folders for big libraries), search (local + YouTube Music), shuffle/repeat, and resume playback from the car.
+- **Offline:** open an album or playlist and tap **Keep offline**; it downloads in the background (allow notifications to see progress) and shows up under More → Offline music.
 
 > The APK is a debug build signed with the standard Android debug key. It is built automatically from the latest commit by GitHub Actions.
 
-To build from source: open [`android/`](android/) in **Android Studio** with JDK 17 (the bundled JBR works; newer system JDKs may fail the build).
+To build from source: open [`android/`](android/) in a current **Android Studio** (the project uses AGP 9.4, so Studio must be recent enough to support it) with JDK 17 (the bundled JBR works; newer system JDKs may fail the build). From a terminal, point Gradle 9.6+ at a JDK 17 the same way CI does: `cd android && JAVA_HOME=/path/to/jdk-17 gradle assembleDebug`.
 
 ---
 

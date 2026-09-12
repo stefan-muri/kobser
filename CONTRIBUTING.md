@@ -32,8 +32,10 @@ npm install
 npm run dev               # Vite dev server, proxies /api to the running middleware
 ```
 
-**Android:** open `android/` in Android Studio. Requires **JDK 17** (Studio's
-bundled JBR works). Don't commit a machine-specific `org.gradle.java.home`.
+**Android:** open `android/` in a current Android Studio (AGP 9.4). Requires
+**JDK 17** (Studio's bundled JBR works) and Gradle 9.6+. From a terminal:
+`cd android && JAVA_HOME=/path/to/jdk-17 gradle assembleDebug testDebugUnitTest`.
+Don't commit a machine-specific `org.gradle.java.home`.
 
 **Backend tests & lint:**
 ```bash
