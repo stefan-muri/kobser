@@ -2,10 +2,13 @@ package com.kobser.app.playback
 
 import android.content.ComponentName
 import android.content.Context
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
@@ -34,14 +37,12 @@ import javax.inject.Singleton
 
 enum class RepeatMode { OFF, ONE, ALL }
 
-data class PlaybackProgress(val positionMs: Long, val durationMs: Long)
+/** Active sleep timer: pause at [endsAtMs] (epoch), or when the current track ends. */
+data class SleepTimer(val endsAtMs: Long? = null, val atTrackEnd: Boolean = false) {
+    val isActive: Boolean get() = endsAtMs != null || atTrackEnd
+}
 
-private data class LastTrackPayload(
-    val song: Song? = null,          // legacy single-track field
-    val songs: List<Song>? = null,   // full queue
-    val currentIndex: Int = 0,
-    val positionMs: Long = 0,
-)
+data class PlaybackProgress(val positionMs: Long, val durationMs: Long)
 
 @Singleton
 class MusicPlayer @Inject constructor(
@@ -83,6 +84,66 @@ class MusicPlayer @Inject constructor(
     private val _progress = MutableStateFlow(PlaybackProgress(0L, 0L))
     val progress: StateFlow<PlaybackProgress> = _progress.asStateFlow()
 
+    /**
+     * Queue indices in the order they will actually play — the linear queue, or the
+     * player's shuffle order when shuffle is on. The queue sheet renders this so
+     * "up next" is truthful.
+     */
+    private val _playOrder = MutableStateFlow<List<Int>>(emptyList())
+    val playOrder: StateFlow<List<Int>> = _playOrder.asStateFlow()
+
+    private fun updatePlayOrder() {
+        val c = controller ?: return
+        val timeline = c.currentTimeline
+        if (timeline.isEmpty) {
+            _playOrder.value = emptyList()
+            return
+        }
+        val shuffle = c.shuffleModeEnabled
+        val order = ArrayList<Int>(timeline.windowCount)
+        var i = timeline.getFirstWindowIndex(shuffle)
+        while (i != C.INDEX_UNSET && order.size <= timeline.windowCount) {
+            order.add(i)
+            i = timeline.getNextWindowIndex(i, Player.REPEAT_MODE_OFF, shuffle)
+        }
+        _playOrder.value = order
+    }
+
+    // ── Sleep timer ─────────────────────────────────────────────────────────
+
+    private val _sleepTimer = MutableStateFlow(SleepTimer())
+    val sleepTimer: StateFlow<SleepTimer> = _sleepTimer.asStateFlow()
+    private var sleepJob: Job? = null
+
+    fun setSleepTimer(minutes: Int) {
+        sleepJob?.cancel()
+        val endsAt = System.currentTimeMillis() + minutes * 60_000L
+        _sleepTimer.value = SleepTimer(endsAtMs = endsAt)
+        sleepJob = scope.launch {
+            delay(minutes * 60_000L)
+            controller?.pause()
+            _sleepTimer.value = SleepTimer()
+        }
+    }
+
+    fun setSleepAtTrackEnd() {
+        sleepJob?.cancel()
+        sleepJob = null
+        _sleepTimer.value = SleepTimer(atTrackEnd = true)
+    }
+
+    fun cancelSleepTimer() {
+        sleepJob?.cancel()
+        sleepJob = null
+        _sleepTimer.value = SleepTimer()
+    }
+
+    /** Human-readable reason the last playback attempt failed; null once dismissed. */
+    private val _playbackError = MutableStateFlow<String?>(null)
+    val playbackError: StateFlow<String?> = _playbackError.asStateFlow()
+
+    fun dismissPlaybackError() { _playbackError.value = null }
+
     // ── Init ─────────────────────────────────────────────────────────────────
 
     init {
@@ -110,15 +171,22 @@ class MusicPlayer @Inject constructor(
 
             override fun onTimelineChanged(timeline: Timeline, reason: Int) {
                 syncQueueFromController()
+                updatePlayOrder()
             }
 
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                if (_sleepTimer.value.atTrackEnd && reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO) {
+                    controller?.pause()
+                    _sleepTimer.value = SleepTimer()
+                }
                 syncQueueFromController()
+                updatePlayOrder()
                 saveLastTrack()
             }
 
             override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
                 _shuffleOn.value = shuffleModeEnabled
+                updatePlayOrder()
             }
 
             override fun onRepeatModeChanged(repeatMode: Int) {
@@ -128,7 +196,25 @@ class MusicPlayer @Inject constructor(
                     else -> RepeatMode.OFF
                 }
             }
+
+            override fun onPlayerError(error: PlaybackException) {
+                _playbackError.value = describePlaybackError(error)
+            }
         })
+    }
+
+    private fun describePlaybackError(error: PlaybackException): String {
+        val song = currentSong.value
+        val http = error.cause as? HttpDataSource.InvalidResponseCodeException
+        return when {
+            http != null && song?.isPreview() == true && http.responseCode == 502 ->
+                "The server couldn't fetch this preview from YouTube (check its logs)"
+            http != null && http.responseCode == 401 -> "Session expired — please sign in again"
+            http != null && http.responseCode == 404 -> "This track is no longer on the server"
+            http != null -> "Playback failed (HTTP ${http.responseCode})"
+            error.cause is HttpDataSource.HttpDataSourceException -> "Network error — check your connection"
+            else -> "Playback failed (${error.errorCodeName})"
+        }
     }
 
     /**
@@ -264,21 +350,32 @@ class MusicPlayer @Inject constructor(
         c.moveMediaItem(from, to)
     }
 
+    /** Removes everything that would still play after the current track, in play order. */
     fun clearUpcoming() {
         val c = controller ?: return
         val cur = _currentIndex.value
         if (cur < 0) return
-        val total = _queue.value.size
-        if (cur + 1 >= total) return
-        _queue.value = _queue.value.take(cur + 1)
-        for (i in (total - 1) downTo (cur + 1)) c.removeMediaItem(i)
+        val order = _playOrder.value.ifEmpty { _queue.value.indices.toList() }
+        val pos = order.indexOf(cur)
+        if (pos < 0) return
+        val upcoming = order.drop(pos + 1).sortedDescending()
+        if (upcoming.isEmpty()) return
+        val remaining = _queue.value.filterIndexed { i, _ -> i !in upcoming }
+        _queue.value = remaining
+        upcoming.forEach { c.removeMediaItem(it) }
     }
 
     // ── Transport controls ──────────────────────────────────────────────────
 
     fun togglePlayPause() {
         val c = controller ?: return
-        if (c.isPlaying) c.pause() else c.play()
+        if (c.isPlaying) {
+            c.pause()
+        } else {
+            // After a playback error the player sits idle; play() alone does nothing.
+            if (c.playbackState == Player.STATE_IDLE) c.prepare()
+            c.play()
+        }
     }
 
     fun next() {
@@ -393,38 +490,40 @@ class MusicPlayer @Inject constructor(
             scope.launch { prefs.clearLastTrack() }
             return
         }
-        val payload = LastTrackPayload(
+        val saved = SavedQueue(
             songs = songs,
             currentIndex = _currentIndex.value.coerceAtLeast(0),
             positionMs = c.currentPosition.coerceAtLeast(0L),
         )
-        scope.launch { prefs.saveLastTrack(gson.toJson(payload)) }
+        scope.launch { prefs.saveLastTrack(saved.toJson(gson)) }
     }
 
     private fun restoreLastTrack() {
         scope.launch {
-            val json = prefs.lastTrackJson.first() ?: return@launch
-            val payload = try {
-                gson.fromJson(json, LastTrackPayload::class.java)
-            } catch (_: Exception) {
+            val c = controller ?: return@launch
+            // The service may already hold a queue — e.g. Android Auto browsed and
+            // started playback before the phone UI was opened. Mirror it instead of
+            // replacing it with whatever we saved last time.
+            if (c.mediaItemCount > 0) {
+                syncQueueFromController()
+                return@launch
+            }
+            val saved = SavedQueue.parse(prefs.lastTrackJson.first(), gson)
+            if (saved == null) {
                 prefs.clearLastTrack()
                 return@launch
             }
-            val c = controller ?: return@launch
-            // Support old single-track saves and new full-queue saves
-            val songs = payload.songs ?: payload.song?.let { listOf(it) } ?: return@launch
-            val index = payload.currentIndex.coerceIn(0, (songs.size - 1).coerceAtLeast(0))
-            _queue.value = songs
-            _currentIndex.value = index
+            _queue.value = saved.songs
+            _currentIndex.value = saved.currentIndex
             c.setMediaItems(
-                songs.map { it.toMediaItem() },
-                index,
-                payload.positionMs.coerceAtLeast(0L),
+                saved.songs.map { it.toMediaItem() },
+                saved.currentIndex,
+                saved.positionMs,
             )
             c.prepare()
             _progress.value = PlaybackProgress(
-                positionMs = payload.positionMs,
-                durationMs = songs.getOrNull(index)?.duration?.times(1000L) ?: 0L,
+                positionMs = saved.positionMs,
+                durationMs = saved.songs.getOrNull(saved.currentIndex)?.duration?.times(1000L) ?: 0L,
             )
         }
     }

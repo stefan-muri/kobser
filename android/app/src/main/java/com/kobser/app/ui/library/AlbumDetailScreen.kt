@@ -20,7 +20,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kobser.app.data.api.Song
 import com.kobser.app.ui.components.AddToPlaylistSheet
@@ -86,6 +86,9 @@ fun AlbumDetailScreen(
                             getCoverUrl = { viewModel.getCoverUrl(it) },
                             onPlayAll = { viewModel.playAll() },
                             onShuffle = { viewModel.playShuffled() },
+                            isPinnedOffline = viewModel.isPinnedOffline,
+                            offlineProgress = viewModel.offlineProgress,
+                            onToggleOffline = { viewModel.toggleOffline() },
                         )
                     }
                     itemsIndexed(
@@ -152,6 +155,9 @@ private fun AlbumHeader(
     getCoverUrl: (String) -> String,
     onPlayAll: () -> Unit,
     onShuffle: () -> Unit,
+    isPinnedOffline: Boolean,
+    offlineProgress: com.kobser.app.offline.OfflineProgress?,
+    onToggleOffline: () -> Unit,
 ) {
     val coverArt = album.song.firstOrNull()?.coverArt
     val coverUrl = remember(coverArt) { coverArt?.let { getCoverUrl(it) } }
@@ -206,6 +212,7 @@ private fun AlbumHeader(
             }
         }
         Spacer(Modifier.height(8.dp))
+        com.kobser.app.ui.components.KeepOfflineRow(isPinnedOffline, offlineProgress, onToggleOffline)
         HorizontalDivider()
     }
 }

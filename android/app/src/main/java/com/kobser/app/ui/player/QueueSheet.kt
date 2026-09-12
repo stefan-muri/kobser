@@ -20,7 +20,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kobser.app.data.api.Song
 import com.kobser.app.ui.components.NowPlayingBars
@@ -37,9 +37,20 @@ fun QueueSheet(
     val queue by player.queue.collectAsState()
     val currentIndex by player.currentIndex.collectAsState()
     val isPlaying by player.isPlaying.collectAsState()
+    val shuffleOn by player.shuffleOn.collectAsState()
+    val playOrder by player.playOrder.collectAsState()
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val hasUpcoming = queue.size > (currentIndex + 1).coerceAtLeast(0)
+
+    // With shuffle on, show the order tracks will actually play in. Each row keeps
+    // its real queue index so tap/remove act on the right track; reordering by
+    // drag only makes sense for the linear queue.
+    val rows: List<Pair<Int, Song>> = remember(queue, playOrder, shuffleOn) {
+        val order = if (shuffleOn && playOrder.size == queue.size) playOrder else queue.indices.toList()
+        order.mapNotNull { i -> queue.getOrNull(i)?.let { i to it } }
+    }
+    val currentPos = rows.indexOfFirst { it.first == currentIndex }
+    val hasUpcoming = currentPos >= 0 && currentPos < rows.size - 1
 
     val lazyListState = rememberLazyListState()
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -70,7 +81,15 @@ fun QueueSheet(
                     enabled = hasUpcoming,
                 ) { Text("Clear upcoming") }
             }
-            Divider()
+            if (shuffleOn) {
+                Text(
+                    text = "Shuffle is on — showing play order",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
+            HorizontalDivider()
 
             if (queue.isEmpty()) {
                 Box(
@@ -91,10 +110,14 @@ fun QueueSheet(
                     contentPadding = PaddingValues(vertical = 8.dp),
                 ) {
                     itemsIndexed(
-                        items = queue,
-                        key = { _, song -> System.identityHashCode(song) },
-                    ) { index, song ->
-                        ReorderableItem(reorderableState, key = System.identityHashCode(song)) { _ ->
+                        items = rows,
+                        key = { _, (_, song) -> System.identityHashCode(song) },
+                    ) { _, (index, song) ->
+                        ReorderableItem(
+                            reorderableState,
+                            key = System.identityHashCode(song),
+                            enabled = !shuffleOn,
+                        ) { _ ->
                             // draggableHandle() resolves on the reorderable item scope here.
                             QueueRow(
                                 song = song,
@@ -103,7 +126,8 @@ fun QueueSheet(
                                 getCoverUrl = { viewModel.getCoverUrl(it) },
                                 onClick = { player.jumpTo(index) },
                                 onRemove = { player.removeFromQueue(index) },
-                                handleModifier = Modifier.draggableHandle(),
+                                handleModifier = if (shuffleOn) Modifier else Modifier.draggableHandle(),
+                                showHandle = !shuffleOn,
                             )
                         }
                     }
@@ -123,6 +147,7 @@ private fun QueueRow(
     onClick: () -> Unit,
     onRemove: () -> Unit,
     handleModifier: Modifier,
+    showHandle: Boolean = true,
 ) {
     val coverUrl = remember(song.coverArt) { song.coverArt?.let { getCoverUrl(it) } }
 
@@ -140,7 +165,7 @@ private fun QueueRow(
         state = dismissState,
         backgroundContent = {},
         content = {
-            QueueRowContent(song, coverUrl, isCurrent, isPlayingNow, onClick, handleModifier)
+            QueueRowContent(song, coverUrl, isCurrent, isPlayingNow, onClick, handleModifier, showHandle)
         },
     )
 }
@@ -153,6 +178,7 @@ private fun QueueRowContent(
     isPlayingNow: Boolean,
     onClick: () -> Unit,
     handleModifier: Modifier,
+    showHandle: Boolean,
 ) {
     // Opaque background so a swiped row slides cleanly over the sheet (and the
     // currently-playing row gets a subtle tint).
@@ -168,15 +194,19 @@ private fun QueueRowContent(
             .padding(end = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Left drag handle — grab and drag to reorder.
-        Icon(
-            Icons.Default.DragHandle,
-            contentDescription = "Drag to reorder",
-            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-            modifier = handleModifier
-                .padding(start = 8.dp, end = 4.dp)
-                .size(28.dp),
-        )
+        // Left drag handle — grab and drag to reorder (linear queue only).
+        if (showHandle) {
+            Icon(
+                Icons.Default.DragHandle,
+                contentDescription = "Drag to reorder",
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                modifier = handleModifier
+                    .padding(start = 8.dp, end = 4.dp)
+                    .size(28.dp),
+            )
+        } else {
+            Spacer(Modifier.width(16.dp))
+        }
         Box(modifier = Modifier.size(44.dp)) {
             AsyncImage(
                 model = coverUrl,

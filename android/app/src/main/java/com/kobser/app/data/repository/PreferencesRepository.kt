@@ -2,6 +2,7 @@ package com.kobser.app.data.repository
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -28,6 +29,7 @@ class PreferencesRepository @Inject constructor(
         val LAST_TRACK_JSON = stringPreferencesKey("last_track_json")
         val SEARCH_SOURCE = stringPreferencesKey("search_source")
         val LAST_USERNAME = stringPreferencesKey("last_username")
+        val CACHE_MAX_MB = longPreferencesKey("cache_max_mb")
     }
 
     val serverUrl: Flow<String?> = context.dataStore.data.map { it[Keys.SERVER_URL] }
@@ -35,6 +37,8 @@ class PreferencesRepository @Inject constructor(
     val lastTrackJson: Flow<String?> = context.dataStore.data.map { it[Keys.LAST_TRACK_JSON] }
     val searchSource: Flow<String> = context.dataStore.data.map { it[Keys.SEARCH_SOURCE] ?: "youtube_music" }
     val lastUsername: Flow<String?> = context.dataStore.data.map { it[Keys.LAST_USERNAME] }
+    /** Size limit of the on-device stream cache, in MB. */
+    val cacheMaxMb: Flow<Long> = context.dataStore.data.map { it[Keys.CACHE_MAX_MB] ?: DEFAULT_CACHE_MAX_MB }
 
     @Volatile var cachedServerUrl: String = ""
         private set
@@ -76,5 +80,13 @@ class PreferencesRepository @Inject constructor(
 
     suspend fun clearLastTrack() {
         context.dataStore.edit { it.remove(Keys.LAST_TRACK_JSON) }
+    }
+
+    suspend fun saveCacheMaxMb(mb: Long) {
+        context.dataStore.edit { it[Keys.CACHE_MAX_MB] = mb }
+    }
+
+    companion object {
+        const val DEFAULT_CACHE_MAX_MB = 1024L
     }
 }

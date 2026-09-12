@@ -64,10 +64,10 @@ class LoginViewModel @Inject constructor(
                         error = "Login failed: No session ID"
                     }
                 } else {
-                    error = "Login failed: ${response.code()}"
+                    error = loginErrorMessage(response.code())
                 }
             } catch (e: Exception) {
-                error = "Error: ${e.message}"
+                error = "Can't connect to $url (${e.message ?: e.javaClass.simpleName})"
             } finally {
                 isLoading = false
             }

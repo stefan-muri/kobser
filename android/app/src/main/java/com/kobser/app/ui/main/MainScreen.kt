@@ -12,6 +12,7 @@ import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,7 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.kobser.app.ui.library.AlbumDetailScreen
 import com.kobser.app.ui.library.ArtistDetailScreen
 import com.kobser.app.ui.library.ArtistsScreen
@@ -35,6 +36,7 @@ import com.kobser.app.ui.player.QueueSheet
 import com.kobser.app.ui.playlists.PlaylistDetailScreen
 import com.kobser.app.ui.playlists.PlaylistsScreen
 import com.kobser.app.ui.downloads.DownloadsScreen
+import com.kobser.app.ui.offline.OfflineScreen
 import com.kobser.app.ui.settings.SettingsScreen
 import com.kobser.app.ui.ytmusic.YtAlbumScreen
 import com.kobser.app.ui.ytmusic.YtArtistScreen
@@ -54,6 +56,7 @@ sealed class Screen(val route: String, val label: String, val icon: ImageVector)
     object Favorites : Screen("favorites", "Favorites", Icons.Default.Favorite)
     object Artists : Screen("artists", "Artists", Icons.Default.Person)
     object Settings : Screen("settings", "Settings", Icons.Default.Settings)
+    object Offline : Screen("offline", "Offline music", Icons.Default.CloudOff)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,9 +83,20 @@ fun MainScreen(
         expandedPlayerOpen = false
     }
 
+    // Playback failures (a preview the server couldn't fetch, a dropped
+    // connection, ...) used to fail silently; surface them.
+    val snackbarHostState = remember { SnackbarHostState() }
+    val playbackError by viewModel.musicPlayer.playbackError.collectAsState()
+    LaunchedEffect(playbackError) {
+        val message = playbackError ?: return@LaunchedEffect
+        snackbarHostState.showSnackbar(message)
+        viewModel.musicPlayer.dismissPlaybackError()
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             contentWindowInsets = WindowInsets(0),
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             bottomBar = {
                 Column {
                     MiniPlayer(onExpand = { expandedPlayerOpen = true })
@@ -120,6 +134,7 @@ fun MainScreen(
                             label = { Text("More", fontSize = 10.sp) },
                             selected = currentDestination?.hierarchy?.any {
                                 it.route == Screen.Downloads.route ||
+                                it.route == Screen.Offline.route ||
                                 it.route == Screen.Settings.route
                             } == true,
                             onClick = { moreSheetOpen = true },
@@ -146,6 +161,7 @@ fun MainScreen(
                         // expanded player — the user can tap the mini player to expand.
                         onSongClick = {},
                         onOpenSettings = { navController.navigate(Screen.Settings.route) },
+                        onOpenOffline = { navController.navigate(Screen.Offline.route) },
                         onArtistClick = { channelId -> navController.navigate("ytartist/$channelId") },
                     )
                 }
@@ -159,6 +175,9 @@ fun MainScreen(
                 }
                 composable(Screen.Downloads.route) {
                     DownloadsScreen()
+                }
+                composable(Screen.Offline.route) {
+                    OfflineScreen()
                 }
                 composable(Screen.Settings.route) {
                     SettingsScreen(onLogout = { viewModel.logout {} })
@@ -269,6 +288,7 @@ private fun MoreSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val items = listOf(
         Triple(Screen.Downloads.route, "Downloads", Icons.Default.Download),
+        Triple(Screen.Offline.route, "Offline music", Icons.Default.CloudOff),
         Triple(Screen.Settings.route, "Settings", Icons.Default.Settings),
     )
 

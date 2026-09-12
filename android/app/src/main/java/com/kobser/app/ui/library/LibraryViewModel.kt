@@ -237,6 +237,16 @@ class LibraryViewModel @Inject constructor(
         musicPlayer.playOrJumpTo(list, index)
     }
 
+    /**
+     * Always replaces the queue. Going through playOrJumpTo would find the first
+     * shuffled song in the existing queue and just jump to it, silently keeping the
+     * old order.
+     */
+    fun playShuffled(list: List<Song>) {
+        if (list.isEmpty()) return
+        musicPlayer.playQueue(list.shuffled(), 0)
+    }
+
     fun addToQueue(song: Song) {
         musicPlayer.addToQueue(song)
     }

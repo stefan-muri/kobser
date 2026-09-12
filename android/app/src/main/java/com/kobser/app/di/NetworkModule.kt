@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.kobser.app.BuildConfig
 import com.kobser.app.data.api.KobserApi
+import com.kobser.app.data.api.isSessionInvalidResponse
 import com.kobser.app.data.api.SearchResponse
 import com.kobser.app.data.api.SearchResponseDeserializer
 import com.kobser.app.data.repository.PreferencesRepository
@@ -52,7 +53,17 @@ object NetworkModule {
             if (sessionId.isNotEmpty()) {
                 request.addHeader("X-Session-Id", sessionId)
             }
-            chain.proceed(request.build())
+            val response = chain.proceed(request.build())
+            // The server no longer knows our session (expired, or dropped by a backend
+            // upgrade/restart). Forget it so MainActivity falls back to the login
+            // screen instead of every screen — and Android Auto — silently showing
+            // nothing.
+            if (sessionId.isNotEmpty() &&
+                isSessionInvalidResponse(response.request.url.encodedPath, response.code)
+            ) {
+                runBlocking { prefs.clearSession() }
+            }
+            response
         }
     }
 

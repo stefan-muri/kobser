@@ -23,7 +23,7 @@ import com.kobser.app.ui.components.YtDownloadDialog
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kobser.app.playback.RepeatMode
 import com.kobser.app.playback.isPreview
@@ -60,6 +60,8 @@ fun ExpandedPlayerScreen(
     val coverUrl = remember(currentSong.coverArt) { currentSong.coverArt?.let { viewModel.getCoverUrl(it, 1024) } }
 
     var menuOpen by remember { mutableStateOf(false) }
+    var sleepDialogOpen by remember { mutableStateOf(false) }
+    val sleepTimer by viewModel.musicPlayer.sleepTimer.collectAsState()
     var deleteConfirmOpen by remember { mutableStateOf(false) }
     var queueSheetOpen by remember { mutableStateOf(false) }
     var downloadDialogOpen by remember { mutableStateOf(false) }
@@ -159,6 +161,14 @@ fun ExpandedPlayerScreen(
                                 },
                             )
                         }
+                        DropdownMenuItem(
+                            text = { Text(if (sleepTimer.isActive) "Sleep timer (on)" else "Sleep timer") },
+                            leadingIcon = { Icon(Icons.Default.Bedtime, null) },
+                            onClick = {
+                                menuOpen = false
+                                sleepDialogOpen = true
+                            },
+                        )
                         if (!isPreview) {
                             DropdownMenuItem(
                                 text = { Text("Delete from library") },
@@ -334,6 +344,46 @@ fun ExpandedPlayerScreen(
                 downloadDialogOpen = false
             },
             onDismiss = { downloadDialogOpen = false },
+        )
+    }
+
+    // ── Sleep timer ───────────────────────────────────────────────────────
+    if (sleepDialogOpen) {
+        val remainingMin = sleepTimer.endsAtMs?.let { ((it - System.currentTimeMillis()) / 60_000L).coerceAtLeast(0) }
+        AlertDialog(
+            onDismissRequest = { sleepDialogOpen = false },
+            title = { Text("Sleep timer") },
+            text = {
+                Column {
+                    when {
+                        sleepTimer.atTrackEnd -> Text("Playback will stop when this track ends.")
+                        remainingMin != null -> Text("Playback will stop in about $remainingMin min.")
+                        else -> Text("Stop playback after:")
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    listOf(15, 30, 45, 60).forEach { minutes ->
+                        TextButton(onClick = {
+                            viewModel.musicPlayer.setSleepTimer(minutes)
+                            sleepDialogOpen = false
+                        }) { Text("$minutes minutes") }
+                    }
+                    TextButton(onClick = {
+                        viewModel.musicPlayer.setSleepAtTrackEnd()
+                        sleepDialogOpen = false
+                    }) { Text("End of current track") }
+                }
+            },
+            confirmButton = {
+                if (sleepTimer.isActive) {
+                    TextButton(onClick = {
+                        viewModel.musicPlayer.cancelSleepTimer()
+                        sleepDialogOpen = false
+                    }) { Text("Turn off", color = MaterialTheme.colorScheme.error) }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { sleepDialogOpen = false }) { Text("Cancel") }
+            },
         )
     }
 

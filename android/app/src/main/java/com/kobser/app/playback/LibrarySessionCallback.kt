@@ -1,6 +1,8 @@
 package com.kobser.app.playback
 
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
@@ -9,16 +11,20 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.CommandButton
 import androidx.media3.session.LibraryResult
+import androidx.media3.session.MediaConstants
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
 import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import com.kobser.app.R
+import com.google.gson.Gson
+import com.kobser.app.MainActivity
 import com.kobser.app.data.api.KobserApi
 import com.kobser.app.data.api.SearchRequest
 import com.kobser.app.data.api.SearchResult
@@ -44,12 +50,14 @@ import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@UnstableApi
 @Singleton
 class LibrarySessionCallback @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: LibraryRepository,
     private val api: KobserApi,
     private val prefs: PreferencesRepository,
+    private val gson: Gson,
 ) : MediaLibraryService.MediaLibrarySession.Callback {
 
     private val imageLoader = ImageLoader(context)
@@ -59,11 +67,15 @@ class LibrarySessionCallback @Inject constructor(
     companion object {
         private const val CMD_SHUFFLE = "com.kobser.app.SHUFFLE"
         private const val CMD_REPEAT = "com.kobser.app.REPEAT"
+        /** Above this many songs the "Songs" folder splits into A–Z sub-folders. */
+        private const val FLAT_SONG_LIST_MAX = 150
     }
 
     // ── Shuffle / repeat as custom Android Auto buttons ──────────────────────
     // Android Auto's now-playing screen doesn't surface these reliably from the
-    // player commands, so we publish them as custom session commands.
+    // player commands, so we publish them as custom session commands, using
+    // Media3's built-in icon constants so every surface (Auto, notification,
+    // Wear) renders them consistently.
 
     override fun onConnect(
         session: MediaSession,
@@ -74,10 +86,10 @@ class LibrarySessionCallback @Inject constructor(
             .add(SessionCommand(CMD_SHUFFLE, Bundle.EMPTY))
             .add(SessionCommand(CMD_REPEAT, Bundle.EMPTY))
             .build()
-        return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+        return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
             .setAvailableSessionCommands(sessionCommands)
             .setAvailablePlayerCommands(base.availablePlayerCommands)
-            .setCustomLayout(buildCustomLayout(session.player))
+            .setMediaButtonPreferences(buildMediaButtons(session.player))
             .build()
     }
 
@@ -97,28 +109,75 @@ class LibrarySessionCallback @Inject constructor(
             }
             else -> return Futures.immediateFuture(SessionResult(SessionResult.RESULT_ERROR_NOT_SUPPORTED))
         }
-        session.setCustomLayout(buildCustomLayout(player))
+        session.setMediaButtonPreferences(buildMediaButtons(player))
         return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
     }
 
     /** Builds the shuffle + repeat command buttons reflecting the player's current state. */
-    fun buildCustomLayout(player: Player): ImmutableList<CommandButton> {
-        val shuffle = CommandButton.Builder()
+    fun buildMediaButtons(player: Player): ImmutableList<CommandButton> {
+        val shuffleOn = player.shuffleModeEnabled
+        val shuffle = CommandButton.Builder(
+            if (shuffleOn) CommandButton.ICON_SHUFFLE_ON else CommandButton.ICON_SHUFFLE_OFF
+        )
             .setSessionCommand(SessionCommand(CMD_SHUFFLE, Bundle.EMPTY))
-            .setDisplayName(if (player.shuffleModeEnabled) "Shuffle on" else "Shuffle")
-            .setIconResId(R.drawable.ic_shuffle)
+            .setDisplayName(if (shuffleOn) "Shuffle on" else "Shuffle off")
             .build()
-        val repeat = CommandButton.Builder()
+        val (repeatIcon, repeatName) = when (player.repeatMode) {
+            Player.REPEAT_MODE_ONE -> CommandButton.ICON_REPEAT_ONE to "Repeat one"
+            Player.REPEAT_MODE_ALL -> CommandButton.ICON_REPEAT_ALL to "Repeat all"
+            else -> CommandButton.ICON_REPEAT_OFF to "Repeat off"
+        }
+        val repeat = CommandButton.Builder(repeatIcon)
             .setSessionCommand(SessionCommand(CMD_REPEAT, Bundle.EMPTY))
-            .setDisplayName("Repeat")
-            .setIconResId(
-                when (player.repeatMode) {
-                    Player.REPEAT_MODE_ONE -> R.drawable.ic_repeat_one
-                    else -> R.drawable.ic_repeat
-                }
-            )
+            .setDisplayName(repeatName)
             .build()
         return ImmutableList.of(shuffle, repeat)
+    }
+
+    // ── Signed-out handling ──────────────────────────────────────────────────
+    // Without a session every library call 401s and the browse tree would just be
+    // empty. A root-level error would make Android Auto refuse the connection
+    // outright, so instead we keep the tree and show a placeholder entry, and send
+    // the session an authentication error carrying a "Sign in" action that opens
+    // the phone app (which shows the login screen).
+
+    private fun isSignedIn(): Boolean =
+        prefs.cachedSessionId.isNotBlank() && prefs.cachedServerUrl.isNotBlank()
+
+    private fun signInRequiredError(): SessionError {
+        val signIn = PendingIntent.getActivity(
+            context,
+            0,
+            Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val extras = Bundle().apply {
+            putString(MediaConstants.EXTRAS_KEY_ERROR_RESOLUTION_ACTION_LABEL_COMPAT, "Sign in")
+            putParcelable(MediaConstants.EXTRAS_KEY_ERROR_RESOLUTION_ACTION_INTENT_COMPAT, signIn)
+        }
+        return SessionError(
+            SessionError.ERROR_SESSION_AUTHENTICATION_EXPIRED,
+            "Sign in to Kobser on your phone",
+            extras,
+        )
+    }
+
+    /** Resumes the queue saved by the phone UI when Auto/Bluetooth/system UI asks us to play. */
+    override fun onPlaybackResumption(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        isForPlayback: Boolean,
+    ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+        return scope.future {
+            val saved = SavedQueue.parse(prefs.lastTrackJson.first(), gson)
+                ?: throw IllegalStateException("nothing to resume")
+            val items = resolveUris(saved.songs.map { createPlayableItem(it, contextType = null, contextId = "") })
+            MediaSession.MediaItemsWithStartPosition(
+                ImmutableList.copyOf(items),
+                saved.currentIndex,
+                saved.positionMs,
+            )
+        }
     }
 
     override fun onGetLibraryRoot(
@@ -148,20 +207,38 @@ class LibrarySessionCallback @Inject constructor(
         params: MediaLibraryService.LibraryParams?
     ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> {
         return scope.future {
+            if (!isSignedIn()) {
+                session.sendError(browser, signInRequiredError())
+                val placeholder = if (parentId == "root") listOf(signInPlaceholderItem()) else emptyList()
+                return@future LibraryResult.ofItemList(ImmutableList.copyOf(placeholder), params)
+            }
             val items = when (parentId) {
                 "root" -> {
                     listOf(
-                        createBrowsableItem("songs", "Songs"),
-                        createBrowsableItem("artists", "Artists"),
+                        createBrowsableItem("recent_played", "Recently played"),
+                        createBrowsableItem("recent_added", "Recently added"),
+                        createBrowsableItem("favorites", "Favorites"),
                         createBrowsableItem("playlists", "Playlists"),
-                        createBrowsableItem("favorites", "Favorites")
+                        createBrowsableItem("albums", "Albums"),
+                        createBrowsableItem("artists", "Artists"),
+                        createBrowsableItem("songs", "Songs"),
                     )
                 }
                 "songs" -> {
-                    repository.getSongs().getOrNull()?.map { song ->
-                        createPlayableItem(song, contextType = "songs", contextId = "")
-                    } ?: emptyList()
+                    val songs = repository.getSongs().getOrNull() ?: emptyList()
+                    if (songs.size <= FLAT_SONG_LIST_MAX) {
+                        songs.map { createPlayableItem(it, contextType = "songs", contextId = "") }
+                    } else {
+                        // Big library: A–Z folders instead of one enormous list (which the
+                        // car UI truncates and takes ages to render).
+                        groupByLetter(songs) { it.title }.map { (letter, group) ->
+                            createBrowsableItem("songs_letter_$letter", letter, "${group.size} songs")
+                        }
+                    }
                 }
+                "albums" -> albumItems(repository.getAlbumList("alphabeticalByName", size = 500).getOrNull())
+                "recent_added" -> albumItems(repository.getAlbumList("newest", size = 100).getOrNull())
+                "recent_played" -> albumItems(repository.getAlbumList("recent", size = 100).getOrNull())
                 "artists" -> {
                     repository.getArtists().getOrNull()?.artists?.index?.flatMap { it.artist }?.map { artist ->
                         MediaItem.Builder()
@@ -200,7 +277,12 @@ class LibrarySessionCallback @Inject constructor(
                     } ?: emptyList()
                 }
                 else -> {
-                    if (parentId.startsWith("artist_id_")) {
+                    if (parentId.startsWith("songs_letter_")) {
+                        val letter = parentId.removePrefix("songs_letter_")
+                        loadContextSongs("songs_letter", letter).map { song ->
+                            createPlayableItem(song, contextType = "songs_letter", contextId = letter)
+                        }
+                    } else if (parentId.startsWith("artist_id_")) {
                         val artistId = parentId.removePrefix("artist_id_")
                         repository.getArtist(artistId).getOrNull()?.artist?.album?.map { album ->
                             MediaItem.Builder()
@@ -232,11 +314,31 @@ class LibrarySessionCallback @Inject constructor(
                     }
                 }
             }
+            // A 401 mid-browse makes the auth interceptor drop the session; say so
+            // rather than returning an empty folder.
+            if (!isSignedIn()) {
+                session.sendError(browser, signInRequiredError())
+                val placeholder = if (parentId == "root") listOf(signInPlaceholderItem()) else emptyList()
+                return@future LibraryResult.ofItemList(ImmutableList.copyOf(placeholder), params)
+            }
             LibraryResult.ofItemList(ImmutableList.copyOf(attachArtwork(items)), params)
         }
     }
 
-    private fun createBrowsableItem(id: String, title: String): MediaItem {
+    private fun signInPlaceholderItem(): MediaItem =
+        MediaItem.Builder()
+            .setMediaId("signin")
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setIsBrowsable(true)
+                    .setIsPlayable(false)
+                    .setTitle("Sign in on your phone")
+                    .setSubtitle("Open Kobser to log in, then come back")
+                    .build()
+            )
+            .build()
+
+    private fun createBrowsableItem(id: String, title: String, subtitle: String? = null): MediaItem {
         return MediaItem.Builder()
             .setMediaId(id)
             .setMediaMetadata(
@@ -244,10 +346,29 @@ class LibrarySessionCallback @Inject constructor(
                     .setIsBrowsable(true)
                     .setIsPlayable(false)
                     .setTitle(title)
+                    .setSubtitle(subtitle)
                     .build()
             )
             .build()
     }
+
+    /** Browsable album entries (getAlbumList2 results) that open into the album's tracks. */
+    private fun albumItems(response: com.kobser.app.data.api.SubsonicResponse?): List<MediaItem> =
+        response?.albumList2?.album?.map { album ->
+            MediaItem.Builder()
+                .setMediaId("album_id_${album.id}")
+                .setMediaMetadata(
+                    MediaMetadata.Builder()
+                        .setIsBrowsable(true)
+                        .setIsPlayable(false)
+                        .setTitle(album.name)
+                        .setSubtitle(album.artist)
+                        .setArtworkUri(Uri.parse(repository.getCoverArtUrl(album.coverArt ?: "")))
+                        .setExtras(Bundle().apply { putString("coverArt", album.coverArt) })
+                        .build()
+                )
+                .build()
+        } ?: emptyList()
 
     /**
      * Builds a playable item. When [contextType] is non-null the mediaId encodes the
@@ -286,14 +407,13 @@ class LibrarySessionCallback @Inject constructor(
             .build()
     }
 
-    /** Extracts the real Subsonic track id from a (possibly context-encoded) mediaId. */
-    private fun realTrackId(mediaId: String): String =
-        if (mediaId.startsWith("track|")) mediaId.substringAfterLast("|") else mediaId
-
     /** Loads the full song list backing a context, for queue expansion. */
     private suspend fun loadContextSongs(contextType: String, contextId: String): List<Song> =
         when (contextType) {
             "songs" -> repository.getSongs().getOrNull() ?: emptyList()
+            "songs_letter" -> (repository.getSongs().getOrNull() ?: emptyList())
+                .filter { letterBucket(it.title) == contextId }
+                .sortedBy { it.title.lowercase() }
             "favorites" -> repository.getFavorites().getOrNull()?.starred?.song ?: emptyList()
             "album" -> repository.getAlbum(contextId).getOrNull()?.album?.song ?: emptyList()
             "playlist" -> repository.getPlaylist(contextId).getOrNull()?.playlist?.entry ?: emptyList()

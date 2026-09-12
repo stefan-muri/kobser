@@ -37,7 +37,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kobser.app.R
 import com.kobser.app.data.api.ArtistResult
@@ -55,6 +55,7 @@ fun LibraryScreen(
     isFavorites: Boolean = false,
     onSongClick: (Song) -> Unit,
     onOpenSettings: () -> Unit = {},
+    onOpenOffline: () -> Unit = {},
     onArtistClick: (String) -> Unit = {},
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
@@ -175,7 +176,14 @@ fun LibraryScreen(
                 // when the list (e.g. empty Favorites) has nothing to scroll.
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     if (viewModel.error != null && items.isEmpty() && !searching) {
-                        item { CenteredMessage(viewModel.error!!, MaterialTheme.colorScheme.error) }
+                        item {
+                            CenteredMessage(viewModel.error!!, MaterialTheme.colorScheme.error)
+                            // Most likely no connection to the server — the music kept on
+                            // the phone still plays.
+                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                OutlinedButton(onClick = onOpenOffline) { Text("Open offline music") }
+                            }
+                        }
                     } else if (!searching && items.isEmpty()) {
                         item {
                             CenteredMessage(
@@ -189,7 +197,7 @@ fun LibraryScreen(
                             item {
                                 PlayAllHeader(
                                     onPlayAll = { viewModel.playFromList(items, 0) },
-                                    onShuffle = { viewModel.playFromList(items.shuffled(), 0) },
+                                    onShuffle = { viewModel.playShuffled(items) },
                                 )
                             }
                         }

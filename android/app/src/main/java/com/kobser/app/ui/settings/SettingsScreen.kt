@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.kobser.app.R
 import com.kobser.app.data.api.StatsResponse
 
@@ -136,6 +136,62 @@ fun SettingsScreen(
                 }
             }
 
+            // ── Streaming cache ───────────────────────────────────────────────
+            SectionCard(title = "Streaming cache") {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Songs you play are kept on this phone, so playing them again doesn't use data.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        text = "Using ${formatBytes(viewModel.cacheUsedBytes)} of ${formatMb(viewModel.cacheMaxMb)}",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    val limits = listOf(256L, 512L, 1024L, 2048L, 4096L)
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        limits.forEachIndexed { index, mb ->
+                            SegmentedButton(
+                                selected = viewModel.cacheMaxMb == mb,
+                                onClick = { viewModel.updateCacheMaxMb(mb) },
+                                shape = SegmentedButtonDefaults.itemShape(index, limits.size),
+                                label = { Text(formatMb(mb), fontSize = 11.sp) },
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "A new limit takes effect the next time the app starts.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedButton(
+                        onClick = { viewModel.clearCache() },
+                        enabled = !viewModel.cacheClearing,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(if (viewModel.cacheClearing) "Clearing…" else "Clear cache")
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        text = "Offline music (albums and playlists you chose to keep): " +
+                            "${viewModel.offlineCollections} kept, ${formatBytes(viewModel.offlineUsedBytes)}. " +
+                            "This is never evicted automatically.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { viewModel.removeAllOffline() },
+                        enabled = viewModel.offlineCollections > 0,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Remove all offline music") }
+                }
+            }
+
             // ── Account ──────────────────────────────────────────────────────
             SectionCard(title = "Account") {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -239,6 +295,9 @@ private fun StatRow(label: String, used: Long, total: Long) {
         )
     }
 }
+
+private fun formatMb(mb: Long): String =
+    if (mb >= 1024) "${mb / 1024} GB" else "$mb MB"
 
 @Composable
 private fun SectionCard(title: String, content: @Composable () -> Unit) {

@@ -25,7 +25,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.kobser.app.data.api.Song
 import com.kobser.app.ui.components.AddToPlaylistSheet
@@ -118,6 +118,9 @@ fun PlaylistDetailScreen(
                             songCount = playlist.entry.orEmpty().size,
                             onPlayAll = { viewModel.playAll() },
                             onShuffle = { viewModel.playShuffled() },
+                            isPinnedOffline = viewModel.isPinnedOffline,
+                            offlineProgress = viewModel.offlineProgress,
+                            onToggleOffline = { viewModel.toggleOffline() },
                         )
                     }
                     itemsIndexed(
@@ -204,6 +207,9 @@ private fun PlaylistHeader(
     songCount: Int,
     onPlayAll: () -> Unit,
     onShuffle: () -> Unit,
+    isPinnedOffline: Boolean,
+    offlineProgress: com.kobser.app.offline.OfflineProgress?,
+    onToggleOffline: () -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
         Text(
@@ -228,6 +234,7 @@ private fun PlaylistHeader(
             }
         }
         Spacer(Modifier.height(8.dp))
+        com.kobser.app.ui.components.KeepOfflineRow(isPinnedOffline, offlineProgress, onToggleOffline)
         HorizontalDivider()
     }
 }

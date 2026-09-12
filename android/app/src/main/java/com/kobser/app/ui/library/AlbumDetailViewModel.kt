@@ -9,6 +9,9 @@ import androidx.lifecycle.viewModelScope
 import com.kobser.app.data.api.AlbumDetail
 import com.kobser.app.data.api.Song
 import com.kobser.app.data.repository.LibraryRepository
+import com.kobser.app.offline.OfflineCollection
+import com.kobser.app.offline.OfflineManager
+import com.kobser.app.offline.OfflineProgress
 import com.kobser.app.playback.MusicPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -18,6 +21,7 @@ import javax.inject.Inject
 class AlbumDetailViewModel @Inject constructor(
     private val repository: LibraryRepository,
     private val musicPlayer: MusicPlayer,
+    private val offline: OfflineManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -26,6 +30,35 @@ class AlbumDetailViewModel @Inject constructor(
     var album by mutableStateOf<AlbumDetail?>(null)
     var isLoading by mutableStateOf(true)
     var error by mutableStateOf<String?>(null)
+
+    // ── Keep offline ────────────────────────────────────────────────────────
+    var isPinnedOffline by mutableStateOf(false)
+        private set
+    var offlineProgress by mutableStateOf<OfflineProgress?>(null)
+        private set
+
+    private val offlineKey get() = OfflineCollection.albumKey(albumId)
+
+    init {
+        viewModelScope.launch { offline.catalog.collect { isPinnedOffline = it.find(offlineKey) != null } }
+        viewModelScope.launch { offline.progress.collect { offlineProgress = it[offlineKey] } }
+    }
+
+    fun toggleOffline() {
+        if (isPinnedOffline) {
+            offline.unpin(offlineKey)
+            return
+        }
+        val a = album ?: return
+        offline.pin(OfflineCollection(
+            key = OfflineCollection.albumKey(albumId),
+            title = a.name,
+            subtitle = a.artist,
+            coverArt = a.song.firstOrNull()?.coverArt,
+            songs = a.song,
+            pinnedAt = System.currentTimeMillis(),
+        ))
+    }
 
     var starredOverrides by mutableStateOf<Map<String, Boolean>>(emptyMap())
         private set

@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,12 +27,23 @@ class LibraryRepository @Inject constructor(
     private val _libraryChanged = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val libraryChanged: SharedFlow<Unit> = _libraryChanged.asSharedFlow()
 
-    fun notifyLibraryChanged() { _libraryChanged.tryEmit(Unit) }
+    fun notifyLibraryChanged() {
+        invalidateCaches()
+        _libraryChanged.tryEmit(Unit)
+    }
+
+    // The full song list is what Android Auto browses and searches against and
+    // what the Library tab shows. Fetching it is one paginated pass over the whole
+    // library, so keep the result briefly instead of repeating that per request.
+    private val songsMutex = Mutex()
+    @Volatile private var songsCache: Pair<Long, List<Song>>? = null
+
+    fun invalidateCaches() { songsCache = null }
 
     init {
         val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-        scope.launch { prefs.serverUrl.collect { cachedServerUrl = it ?: "" } }
-        scope.launch { prefs.sessionId.collect { cachedSessionId = it ?: "" } }
+        scope.launch { prefs.serverUrl.collect { cachedServerUrl = it ?: ""; invalidateCaches() } }
+        scope.launch { prefs.sessionId.collect { cachedSessionId = it ?: ""; invalidateCaches() } }
     }
 
     private suspend fun <T> handleResponse(call: suspend () -> retrofit2.Response<com.kobser.app.data.api.SubsonicResponseWrapper>): Result<SubsonicResponse> {
@@ -65,7 +78,18 @@ class LibraryRepository @Inject constructor(
      * Loads the entire song library by paginating Subsonic's `search3` endpoint.
      * Mirrors the web app's Library.svelte fetchAll() implementation.
      */
-    suspend fun getSongs(pageSize: Int = 500): Result<List<Song>> {
+    suspend fun getSongs(pageSize: Int = 500, forceRefresh: Boolean = false): Result<List<Song>> {
+        if (!forceRefresh) cachedSongs()?.let { return Result.success(it) }
+        return songsMutex.withLock {
+            if (!forceRefresh) cachedSongs()?.let { return Result.success(it) }
+            fetchAllSongs(pageSize).onSuccess { songsCache = System.currentTimeMillis() to it }
+        }
+    }
+
+    private fun cachedSongs(): List<Song>? =
+        songsCache?.let { (at, list) -> list.takeIf { System.currentTimeMillis() - at < SONGS_CACHE_TTL_MS } }
+
+    private suspend fun fetchAllSongs(pageSize: Int): Result<List<Song>> {
         return try {
             val all = mutableListOf<Song>()
             var offset = 0
@@ -104,12 +128,29 @@ class LibraryRepository @Inject constructor(
         api.getLibrary("getStarred")
     }
 
+    /**
+     * Subsonic getAlbumList2. [type] is e.g. "newest", "recent", "frequent",
+     * "alphabeticalByName"; the server caps [size] at 500 per call.
+     */
+    suspend fun getAlbumList(type: String, size: Int = 100, offset: Int = 0): Result<SubsonicResponse> =
+        handleResponse<SubsonicResponse> {
+            api.getLibrary(
+                "getAlbumList2",
+                mapOf("type" to type, "size" to size.toString(), "offset" to offset.toString()),
+            )
+        }
+
     suspend fun star(id: String): Result<SubsonicResponse> = handleResponse<SubsonicResponse> {
         api.getLibrary("star", mapOf("id" to id))
     }
 
     suspend fun unstar(id: String): Result<SubsonicResponse> = handleResponse<SubsonicResponse> {
         api.getLibrary("unstar", mapOf("id" to id))
+    }
+
+    /** Subsonic scrobble: submission=false is "now playing", true records the play. */
+    suspend fun scrobble(id: String, submission: Boolean): Result<SubsonicResponse> = handleResponse<SubsonicResponse> {
+        api.getLibrary("scrobble", mapOf("id" to id, "submission" to submission.toString()))
     }
 
     suspend fun deleteTrack(id: String): Result<Unit> {
@@ -180,6 +221,10 @@ class LibraryRepository @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    companion object {
+        private const val SONGS_CACHE_TTL_MS = 3 * 60_000L
     }
 
     fun getCoverArtUrl(id: String, size: Int = 300): String =

@@ -9,6 +9,9 @@ import androidx.lifecycle.viewModelScope
 import com.kobser.app.data.api.PlaylistDetail
 import com.kobser.app.data.api.Song
 import com.kobser.app.data.repository.LibraryRepository
+import com.kobser.app.offline.OfflineCollection
+import com.kobser.app.offline.OfflineManager
+import com.kobser.app.offline.OfflineProgress
 import com.kobser.app.playback.MusicPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -18,6 +21,7 @@ import javax.inject.Inject
 class PlaylistDetailViewModel @Inject constructor(
     private val repository: LibraryRepository,
     private val musicPlayer: MusicPlayer,
+    private val offline: OfflineManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -26,6 +30,35 @@ class PlaylistDetailViewModel @Inject constructor(
     var playlist by mutableStateOf<PlaylistDetail?>(null)
     var isLoading by mutableStateOf(true)
     var error by mutableStateOf<String?>(null)
+
+    // ── Keep offline ────────────────────────────────────────────────────────
+    var isPinnedOffline by mutableStateOf(false)
+        private set
+    var offlineProgress by mutableStateOf<OfflineProgress?>(null)
+        private set
+
+    private val offlineKey get() = OfflineCollection.playlistKey(playlistId)
+
+    init {
+        viewModelScope.launch { offline.catalog.collect { isPinnedOffline = it.find(offlineKey) != null } }
+        viewModelScope.launch { offline.progress.collect { offlineProgress = it[offlineKey] } }
+    }
+
+    fun toggleOffline() {
+        if (isPinnedOffline) {
+            offline.unpin(offlineKey)
+            return
+        }
+        val a = playlist ?: return
+        offline.pin(OfflineCollection(
+            key = OfflineCollection.playlistKey(playlistId),
+            title = a.name,
+            subtitle = "Playlist · ${a.entry.orEmpty().size} tracks",
+            coverArt = a.coverArt ?: a.entry.orEmpty().firstOrNull()?.coverArt,
+            songs = a.entry.orEmpty(),
+            pinnedAt = System.currentTimeMillis(),
+        ))
+    }
     var allLibrarySongs by mutableStateOf<List<Song>>(emptyList())
     var pickerLoading by mutableStateOf(false)
 
