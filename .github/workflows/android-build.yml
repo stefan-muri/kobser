@@ -29,14 +29,14 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.4.1'
+          gradle-version: '9.7.1'
 
       - name: Write local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > android/local.properties
 
-      - name: Build debug APK
+      - name: Build debug APK and run unit tests
         working-directory: android
-        run: gradle assembleDebug --no-daemon
+        run: gradle assembleDebug testDebugUnitTest --no-daemon
 
       - name: Rename APK
         run: mv android/app/build/outputs/apk/debug/app-debug.apk kobser.apk

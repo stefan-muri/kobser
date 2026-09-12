@@ -28,12 +28,14 @@ class CoilBitmapLoader(private val context: Context) : BitmapLoader {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val imageLoader = ImageLoader(context)
 
+    override fun supportsMimeType(mimeType: String): Boolean = mimeType.startsWith("image/")
+
     override fun decodeBitmap(data: ByteArray): ListenableFuture<Bitmap> = scope.future {
         BitmapFactory.decodeByteArray(data, 0, data.size)
             ?: throw IllegalArgumentException("Could not decode bitmap")
     }
 
-    override fun loadBitmap(uri: Uri, options: BitmapFactory.Options?): ListenableFuture<Bitmap> = scope.future {
+    override fun loadBitmap(uri: Uri): ListenableFuture<Bitmap> = scope.future {
         val request = ImageRequest.Builder(context)
             .data(uri.toString())
             .allowHardware(false)
