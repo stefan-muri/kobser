@@ -36,15 +36,16 @@ Built on [Navidrome](https://www.navidrome.org/) (music server + Subsonic API) w
 ## Features
 
 - **Search YouTube & YouTube Music** — songs, artists, and full albums (via `yt-dlp` + `ytmusicapi`).
-- **Download to your library** — tracked with artist/title/album, embedded cover art, auto-rescanned into Navidrome.
+- **Download to your library** — tagged with artist/title/album and cover art; the song shows up in your library within seconds (only the changed folder is rescanned).
 - **Import Spotify playlists** — paste a playlist link and kobser fetches and downloads each track (web and Android).
 - **Duplicate detection** — warns before re-downloading a song already in your library, with confirm-to-proceed.
 - **Retry downloads** — failed or cancelled downloads can be retried without starting over.
 - **Multi-user** — each Navidrome user downloads into *their own* assigned library path.
 - **Preview before downloading** — stream a result without committing it to disk.
+- **Saved searches (Android)** — your last 20 YouTube / YouTube Music searches, one tap to run again.
 - **Stream your library** — browse artists/albums/songs, liked songs, and playlists.
 - **Native Android app** — same backend, with a queue, drag-to-reorder, a sleep timer, and **Android Auto** (browse, search, play in the car).
-- **Offline music (Android)** — keep any album or playlist on the phone and play it without a connection; everything you stream is also cached to save data.
+- **Offline music (Android)** — keep any song, album or playlist on the phone and play it without a connection; everything you stream is also cached to save data.
 - **Play counts** — plays are scrobbled to Navidrome, so Recently played / Most played and Last.fm forwarding work.
 - **Cookie support** — optional, for age-restricted/region-locked videos.
 
@@ -95,6 +96,8 @@ mv .env.example .env
 
 # Set NAVIDROME_URL to your existing Navidrome, e.g.:
 #   NAVIDROME_URL=http://192.168.1.50:4533
+#   (Navidrome 0.59+ recommended: older versions work, but every download
+#   or delete triggers a full library rescan, so changes show up slower)
 # Set MUSIC_DIR to the same music path your Navidrome uses
 
 docker compose up -d
@@ -147,7 +150,7 @@ Download the latest APK from the [Releases](https://github.com/stefan-muri/kobse
 - **Single songs offline:** any song's menu (or the player's) has **Download to phone**.
 - **If Android Auto doesn't list Kobser:** keep "Unknown sources" on in Android Auto's developer settings, set Kobser's battery to Unrestricted, and check Settings → Android Auto → Recent connections after the drive. No Android Auto entry at that time means Android Auto never asked Kobser.
 
-> The APK is a debug build signed with the standard Android debug key. It is built automatically from the latest commit by GitHub Actions.
+> Each release has its own APK; the **Latest Build** pre-release is rebuilt automatically from the newest commit on `master` by GitHub Actions. Both are release builds signed with the project key, so either installs over the other.
 
 To build from source: open [`android/`](android/) in a current **Android Studio** (the project uses AGP 9.4, so Studio must be recent enough to support it) with JDK 17 (the bundled JBR works; newer system JDKs may fail the build). From a terminal, point Gradle 9.6+ at a JDK 17 the same way CI does: `cd android && JAVA_HOME=/path/to/jdk-17 gradle assembleDebug`.
 
@@ -212,7 +215,7 @@ docker compose up -d        # or: docker compose --profile full up -d
 
 ## Development
 
-- **Web frontend** (`middleware/frontend/`): `npm install && npm run dev` (Vite dev server, proxies `/api` to the running middleware).
+- **Web frontend** (`middleware/frontend/`, Node 20.19+ or 22.12+): `npm install && npm run dev` (Vite dev server, proxies `/api` to the running middleware).
 - **Middleware** (`middleware/`): FastAPI app; `docker compose restart middleware` picks up Python changes without a rebuild (source dirs are mounted via `docker-compose.override.yml`).
 - **Android** (`android/`): Android Studio + JDK 17.
 

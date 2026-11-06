@@ -25,7 +25,7 @@ cp .env.example .env      # set MUSIC_DIR
 docker compose up -d --build
 ```
 
-**Web frontend (live reload):**
+**Web frontend (live reload, Node 20.19+ or 22.12+):**
 ```bash
 cd middleware/frontend
 npm install
