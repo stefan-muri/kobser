@@ -20,7 +20,32 @@ class SettingsViewModel @Inject constructor(
     private val prefs: PreferencesRepository,
     private val streamCache: StreamCache,
     private val offline: OfflineManager,
+    connectionLog: com.kobser.app.auto.AutoConnectionLog,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
 ) : ViewModel() {
+
+    // ── Android Auto ──────────────────────────────────────────────────────────
+    val autoConnections = connectionLog.entries
+
+    /** True when Android may stop Kobser in the background (battery optimisation on). */
+    var batteryOptimized by mutableStateOf(false)
+        private set
+    /** True when the user has restricted Kobser's background activity entirely. */
+    var backgroundRestricted by mutableStateOf(false)
+        private set
+
+    fun refreshBatteryState() {
+        val pm = context.getSystemService(android.os.PowerManager::class.java)
+        batteryOptimized = pm?.isIgnoringBatteryOptimizations(context.packageName) == false
+        backgroundRestricted = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P &&
+            context.getSystemService(android.app.ActivityManager::class.java)?.isBackgroundRestricted == true
+    }
+
+    fun appSettingsIntent(): android.content.Intent =
+        android.content.Intent(
+            android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            android.net.Uri.fromParts("package", context.packageName, null),
+        )
 
     var stats by mutableStateOf<StatsResponse?>(null)
     var statsLoading by mutableStateOf(true)

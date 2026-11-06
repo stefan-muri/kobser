@@ -14,11 +14,13 @@ import com.kobser.app.data.api.KobserApi
 import com.kobser.app.data.api.SearchRequest
 import com.kobser.app.data.api.SearchResult
 import com.kobser.app.data.api.Song
+import com.kobser.app.data.repository.DownloadTracker
 import com.kobser.app.data.repository.LibraryRepository
 import com.kobser.app.data.repository.PreferencesRepository
 import com.kobser.app.playback.MusicPlayer
 import com.kobser.app.ui.ytmusic.DuplicateWarning
 import com.kobser.app.ui.ytmusic.YtDownloadState
+import com.kobser.app.ui.ytmusic.toRowState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -33,6 +35,7 @@ class LibraryViewModel @Inject constructor(
     private val musicPlayer: MusicPlayer,
     private val api: KobserApi,
     private val prefs: PreferencesRepository,
+    private val downloadTracker: DownloadTracker,
 ) : ViewModel() {
 
     var artists by mutableStateOf<List<Artist>>(emptyList())
@@ -101,6 +104,11 @@ class LibraryViewModel @Inject constructor(
     var starredOverrides = mutableStateMapOf<String, Boolean>()
         private set
 
+    // Declared before `init`: its collector can deliver the stored list
+    // immediately, while the class is still being constructed.
+    var searchHistory by mutableStateOf<List<String>>(emptyList())
+        private set
+
     init {
         if (songs.isEmpty() && artists.isEmpty()) {
             loadAll()
@@ -113,12 +121,22 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             prefs.searchSource.collect { searchSource = it }
         }
+        viewModelScope.launch {
+            prefs.searchHistory.collect { searchHistory = it }
+        }
+        // Rows reflect the real server job, not just "the server accepted it".
+        viewModelScope.launch {
+            downloadTracker.downloads.collect { tracked ->
+                if (tracked.isNotEmpty()) downloadStates = downloadStates + tracked.mapValues { (_, d) -> d.toRowState() }
+            }
+        }
     }
 
     /** Runs the online search for the current [filterQuery] (called on submit). */
     fun runOnlineSearch() {
         val q = filterQuery.trim()
         if (q.isBlank()) return
+        viewModelScope.launch { prefs.recordSearch(q) }
         onlineLoading = true
         onlineError = null
         onlineSearched = true
@@ -139,6 +157,20 @@ class LibraryViewModel @Inject constructor(
                 onlineLoading = false
             }
         }
+    }
+
+    /** Re-runs a saved search. */
+    fun searchFromHistory(query: String) {
+        filterQuery = query
+        runOnlineSearch()
+    }
+
+    fun removeFromHistory(query: String) {
+        viewModelScope.launch { prefs.removeSearch(query) }
+    }
+
+    fun clearHistory() {
+        viewModelScope.launch { prefs.clearSearchHistory() }
     }
 
     /** Clears online results — used when the query changes or search is dismissed. */
@@ -176,7 +208,7 @@ class LibraryViewModel @Inject constructor(
                     )
                 )
                 when {
-                    resp.isSuccessful -> downloadStates = downloadStates + (result.videoId to YtDownloadState.DONE)
+                    resp.isSuccessful -> downloadTracker.track(result.videoId, resp.body()?.jobId ?: "", title)
                     resp.code() == 409 -> {
                         downloadStates = downloadStates + (result.videoId to YtDownloadState.DUPLICATE)
                         duplicateWarning = DuplicateWarning(result.videoId, artist, title, album)
@@ -277,15 +309,15 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
-    fun deleteSong(song: Song, onComplete: (Result<Unit>) -> Unit = {}) {
-        viewModelScope.launch {
-            val result = repository.deleteTrack(song.id)
-            if (result.isSuccess) {
-                songs = songs.filter { it.id != song.id }
-                favorites = favorites.filter { it.id != song.id }
-                repository.notifyLibraryChanged()
-            }
-            onComplete(result)
+    /** Removes the song from the lists immediately; the server delete follows in the background. */
+    fun deleteSong(song: Song) {
+        val songsBefore = songs
+        val favoritesBefore = favorites
+        songs = songs.filter { it.id != song.id }
+        favorites = favorites.filter { it.id != song.id }
+        repository.deleteInBackground(song) {
+            songs = songsBefore
+            favorites = favoritesBefore
         }
     }
 

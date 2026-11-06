@@ -18,7 +18,22 @@ class ExpandedPlayerViewModel @Inject constructor(
     private val libraryRepo: LibraryRepository,
     private val api: KobserApi,
     private val prefs: PreferencesRepository,
+    private val downloadTracker: com.kobser.app.data.repository.DownloadTracker,
+    private val offline: com.kobser.app.offline.OfflineManager,
 ) : ViewModel() {
+
+    val offlineSongStates = offline.songStates
+
+    /** Keeps the current song on the phone, or removes it if it's already kept on its own. */
+    fun toggleCurrentOnPhone() {
+        val song = musicPlayer.currentSong.value ?: return
+        when (offline.songStates.value[song.id]) {
+            null, com.kobser.app.offline.OfflineSongState.NONE -> offline.pinSong(song)
+            com.kobser.app.offline.OfflineSongState.DOWNLOADING,
+            com.kobser.app.offline.OfflineSongState.DOWNLOADED -> offline.unpinSong(song.id)
+            com.kobser.app.offline.OfflineSongState.IN_COLLECTION -> Unit
+        }
+    }
 
     fun getCoverUrl(coverArt: String, size: Int = 1024): String =
         libraryRepo.getCoverArtUrl(coverArt, size)
@@ -27,27 +42,26 @@ class ExpandedPlayerViewModel @Inject constructor(
         val song = musicPlayer.currentSong.value ?: return
         val videoId = song.id.substringAfterLast("|")
         viewModelScope.launch {
-            api.download(
-                DownloadRequest(
-                    videoId = videoId,
-                    title = title,
-                    artist = artist,
-                    source = prefs.searchSource.first(),
-                    album = album?.takeIf { it.isNotBlank() },
+            runCatching {
+                api.download(
+                    DownloadRequest(
+                        videoId = videoId,
+                        title = title,
+                        artist = artist,
+                        source = prefs.searchSource.first(),
+                        album = album?.takeIf { it.isNotBlank() },
+                    )
                 )
-            )
+            }.getOrNull()?.takeIf { it.isSuccessful }?.body()?.jobId?.let { jobId ->
+                downloadTracker.track(videoId, jobId, title)
+            }
         }
     }
 
-    fun deleteCurrentTrack(onResult: (Result<Unit>) -> Unit) {
+    /** Closes the player right away; the server delete follows in the background. */
+    fun deleteCurrentTrack() {
         val song = musicPlayer.currentSong.value ?: return
-        viewModelScope.launch {
-            val result = libraryRepo.deleteTrack(song.id)
-            if (result.isSuccess) {
-                musicPlayer.closePlayer()
-                libraryRepo.notifyLibraryChanged()
-            }
-            onResult(result)
-        }
+        musicPlayer.closePlayer()
+        libraryRepo.deleteInBackground(song)
     }
 }

@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kobser.app.data.api.YtArtist
 import com.kobser.app.data.api.YtSong
+import com.kobser.app.data.repository.DownloadTracker
 import com.kobser.app.data.repository.YtMusicRepository
 import com.kobser.app.playback.MusicPlayer
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,6 +16,13 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 enum class YtDownloadState { LOADING, DONE, DUPLICATE, ERROR }
+
+/** Row icon for a download the app is following on the server. */
+fun com.kobser.app.data.repository.TrackedDownload.toRowState(): YtDownloadState = when (status) {
+    "done" -> YtDownloadState.DONE
+    "error", "cancelled", "timeout" -> YtDownloadState.ERROR
+    else -> YtDownloadState.LOADING
+}
 
 class DuplicateException : Exception("already in library")
 
@@ -24,6 +32,7 @@ data class DuplicateWarning(val videoId: String, val artist: String, val title: 
 class YtArtistViewModel @Inject constructor(
     private val repo: YtMusicRepository,
     private val musicPlayer: MusicPlayer,
+    private val downloadTracker: DownloadTracker,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -43,6 +52,10 @@ class YtArtistViewModel @Inject constructor(
         private set
     var duplicateWarning by mutableStateOf<DuplicateWarning?>(null)
         private set
+
+    init {
+        observeTrackedDownloads()
+    }
 
     init { load() }
 
@@ -88,7 +101,7 @@ class YtArtistViewModel @Inject constructor(
         viewModelScope.launch {
             val result = repo.download(videoId, artist, title, album, force)
             when {
-                result.isSuccess -> downloadStates = downloadStates + (videoId to YtDownloadState.DONE)
+                result.isSuccess -> downloadTracker.track(videoId, result.getOrThrow(), title)
                 result.exceptionOrNull() is DuplicateException -> {
                     downloadStates = downloadStates + (videoId to YtDownloadState.DUPLICATE)
                     duplicateWarning = DuplicateWarning(videoId, artist, title, album)
@@ -105,4 +118,15 @@ class YtArtistViewModel @Inject constructor(
     }
 
     fun dismissDuplicateWarning() { duplicateWarning = null }
+
+    // Rows reflect the real server job (via the app-wide tracker), not just
+    // "the server accepted the request".
+    private fun observeTrackedDownloads() {
+        viewModelScope.launch {
+            downloadTracker.downloads.collect { tracked ->
+                if (tracked.isEmpty()) return@collect
+                downloadStates = downloadStates + tracked.mapValues { (_, d) -> d.toRowState() }
+            }
+        }
+    }
 }

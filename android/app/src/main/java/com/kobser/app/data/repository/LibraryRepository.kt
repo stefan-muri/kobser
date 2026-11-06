@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
@@ -40,10 +41,41 @@ class LibraryRepository @Inject constructor(
 
     fun invalidateCaches() { songsCache = null }
 
+    // App-lifetime scope: work started here (e.g. a delete) survives the screen
+    // that started it being closed.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 8)
+    /** Errors from background library work, for the app-wide snackbar. */
+    val messages: SharedFlow<String> = _messages.asSharedFlow()
+
     init {
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
         scope.launch { prefs.serverUrl.collect { cachedServerUrl = it ?: ""; invalidateCaches() } }
         scope.launch { prefs.sessionId.collect { cachedSessionId = it ?: ""; invalidateCaches() } }
+    }
+
+    /**
+     * Deletes a track without making the caller wait: callers remove it from their
+     * list first, the server delete runs in the app scope, and on failure [restore]
+     * puts it back (on the main thread) and the reason goes to the snackbar.
+     */
+    fun deleteInBackground(song: Song, restore: () -> Unit = {}) {
+        songsCache = songsCache?.let { (at, list) -> at to list.filter { it.id != song.id } }
+        scope.launch {
+            val result = deleteTrack(song.id)
+            if (result.isSuccess) {
+                // Keep it hidden for a while even if Navidrome is slow to drop it, so
+                // the refresh below can't bring a deleted song back.
+                recentlyDeleted[song.id] = System.currentTimeMillis()
+                // The server only answers once Navidrome has dropped the track, so
+                // this refresh comes back without it.
+                notifyLibraryChanged()
+            } else {
+                invalidateCaches()
+                withContext(Dispatchers.Main) { restore() }
+                _messages.tryEmit("Couldn't delete “${song.title}”: ${result.exceptionOrNull()?.message ?: "unknown error"}")
+            }
+        }
     }
 
     private suspend fun <T> handleResponse(call: suspend () -> retrofit2.Response<com.kobser.app.data.api.SubsonicResponseWrapper>): Result<SubsonicResponse> {
@@ -79,10 +111,12 @@ class LibraryRepository @Inject constructor(
      * Mirrors the web app's Library.svelte fetchAll() implementation.
      */
     suspend fun getSongs(pageSize: Int = 500, forceRefresh: Boolean = false): Result<List<Song>> {
-        if (!forceRefresh) cachedSongs()?.let { return Result.success(it) }
+        if (!forceRefresh) cachedSongs()?.let { return Result.success(it.withoutRecentlyDeleted { s -> s.id }) }
         return songsMutex.withLock {
-            if (!forceRefresh) cachedSongs()?.let { return Result.success(it) }
-            fetchAllSongs(pageSize).onSuccess { songsCache = System.currentTimeMillis() to it }
+            if (!forceRefresh) cachedSongs()?.let { return Result.success(it.withoutRecentlyDeleted { s -> s.id }) }
+            fetchAllSongs(pageSize)
+                .map { all -> all.withoutRecentlyDeleted { s -> s.id } }
+                .onSuccess { songsCache = System.currentTimeMillis() to it }
         }
     }
 
@@ -126,6 +160,8 @@ class LibraryRepository @Inject constructor(
 
     suspend fun getFavorites(): Result<SubsonicResponse> = handleResponse<SubsonicResponse> {
         api.getLibrary("getStarred")
+    }.map { r ->
+        r.starred?.let { st -> r.copy(starred = st.copy(song = st.song.withoutRecentlyDeleted { it.id })) } ?: r
     }
 
     /**
@@ -157,10 +193,27 @@ class LibraryRepository @Inject constructor(
         return try {
             val response = api.deleteTrack(id)
             if (response.isSuccessful) Result.success(Unit)
-            else Result.failure(Exception("HTTP error: ${response.code()}"))
+            else Result.failure(Exception(serverMessage(response) ?: "HTTP error: ${response.code()}"))
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    /** The middleware's `{"detail": "..."}` error text, when there is one. */
+    private fun serverMessage(response: retrofit2.Response<*>): String? =
+        runCatching {
+            com.google.gson.JsonParser.parseString(response.errorBody()?.string().orEmpty())
+                .asJsonObject.get("detail")?.asString
+        }.getOrNull()
+
+    // songId -> when it was deleted. Hidden from listings for RECENTLY_DELETED_MS.
+    private val recentlyDeleted = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
+    private fun <T> List<T>.withoutRecentlyDeleted(id: (T) -> String): List<T> {
+        if (recentlyDeleted.isEmpty()) return this
+        val now = System.currentTimeMillis()
+        recentlyDeleted.entries.removeIf { now - it.value > RECENTLY_DELETED_MS }
+        return filterNot { recentlyDeleted.containsKey(id(it)) }
     }
 
     // ── Playlists ────────────────────────────────────────────────────────────
@@ -225,6 +278,7 @@ class LibraryRepository @Inject constructor(
 
     companion object {
         private const val SONGS_CACHE_TTL_MS = 3 * 60_000L
+        private const val RECENTLY_DELETED_MS = 2 * 60_000L
     }
 
     fun getCoverArtUrl(id: String, size: Int = 300): String =

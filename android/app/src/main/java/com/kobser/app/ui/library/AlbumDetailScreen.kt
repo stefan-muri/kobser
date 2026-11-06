@@ -32,6 +32,9 @@ fun AlbumDetailScreen(
     onBack: () -> Unit,
     viewModel: AlbumDetailViewModel = hiltViewModel(),
 ) {
+    // "Download to phone" state for each song row.
+    val offlineSongs: com.kobser.app.ui.offline.OfflineSongsViewModel = hiltViewModel()
+    val offlineStates by offlineSongs.states.collectAsState()
     val album = viewModel.album
     var deleteTarget by remember { mutableStateOf<Song?>(null) }
     var playlistTarget by remember { mutableStateOf<Song?>(null) }
@@ -114,6 +117,7 @@ fun AlbumDetailScreen(
                             onPlay = onClick,
                             onDelete = onDelete,
                             onAddToPlaylist = onAddToPlaylist,
+                            offline = offlineSongs.actionFor(song, offlineStates),
                         )
                     }
                 }

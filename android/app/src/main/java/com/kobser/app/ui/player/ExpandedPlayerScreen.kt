@@ -61,6 +61,7 @@ fun ExpandedPlayerScreen(
 
     var menuOpen by remember { mutableStateOf(false) }
     var sleepDialogOpen by remember { mutableStateOf(false) }
+    val offlineStates by viewModel.offlineSongStates.collectAsState()
     val sleepTimer by viewModel.musicPlayer.sleepTimer.collectAsState()
     var deleteConfirmOpen by remember { mutableStateOf(false) }
     var queueSheetOpen by remember { mutableStateOf(false) }
@@ -158,6 +159,33 @@ fun ExpandedPlayerScreen(
                                 onClick = {
                                     menuOpen = false
                                     downloadDialogOpen = true
+                                },
+                            )
+                        }
+                        if (!isPreview) {
+                            val onPhone = offlineStates[currentSong.id] ?: com.kobser.app.offline.OfflineSongState.NONE
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        when (onPhone) {
+                                            com.kobser.app.offline.OfflineSongState.NONE -> "Download to phone"
+                                            com.kobser.app.offline.OfflineSongState.DOWNLOADING -> "Downloading to phone… (tap to cancel)"
+                                            com.kobser.app.offline.OfflineSongState.DOWNLOADED -> "Remove from phone"
+                                            com.kobser.app.offline.OfflineSongState.IN_COLLECTION -> "On phone (in a kept album or playlist)"
+                                        }
+                                    )
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        if (onPhone == com.kobser.app.offline.OfflineSongState.NONE) Icons.Default.DownloadForOffline
+                                        else Icons.Default.DownloadDone,
+                                        null,
+                                    )
+                                },
+                                enabled = onPhone != com.kobser.app.offline.OfflineSongState.IN_COLLECTION,
+                                onClick = {
+                                    menuOpen = false
+                                    viewModel.toggleCurrentOnPhone()
                                 },
                             )
                         }
@@ -396,12 +424,7 @@ fun ExpandedPlayerScreen(
             confirmButton = {
                 TextButton(onClick = {
                     deleteConfirmOpen = false
-                    viewModel.deleteCurrentTrack { result ->
-                        if (result.isFailure) {
-                            // Will be replaced by app-wide snackbar in Phase 5.
-                            // For now the inline SnackbarHost is fine.
-                        }
-                    }
+                    viewModel.deleteCurrentTrack()
                 }) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }

@@ -49,7 +49,7 @@ class YtMusicRepository @Inject constructor(
         title: String,
         album: String?,
         force: Boolean = false,
-    ): Result<Unit> = try {
+    ): Result<String> = try {
         val resp = api.download(
             DownloadRequest(
                 videoId = videoId,
@@ -61,7 +61,7 @@ class YtMusicRepository @Inject constructor(
             )
         )
         when {
-            resp.isSuccessful -> Result.success(Unit)
+            resp.isSuccessful -> Result.success(resp.body()?.jobId ?: "")
             resp.code() == 409 -> Result.failure(DuplicateException())
             else -> Result.failure(Exception("Download failed (${resp.code()})"))
         }

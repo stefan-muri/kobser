@@ -8,6 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DownloadDone
+import androidx.compose.material.icons.filled.DownloadForOffline
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.HeartBroken
@@ -48,6 +50,7 @@ fun SongRow(
     extraMenuItems: List<MenuAction> = emptyList(),
     isCurrent: Boolean = false,
     isPlayingNow: Boolean = false,
+    offline: OfflineSongAction? = null,
 ) {
     val coverUrl = remember(song.coverArt) { song.coverArt?.let { getCoverUrl(it) } }
 
@@ -105,11 +108,25 @@ fun SongRow(
                 style = MaterialTheme.typography.titleSmall,
             )
             Spacer(Modifier.height(2.dp))
-            MarqueeText(
-                text = song.artist,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Small "on this phone" marker, so it's clear what plays without a connection.
+                if (offline != null && offline.state != com.kobser.app.offline.OfflineSongState.NONE) {
+                    Icon(
+                        Icons.Default.DownloadDone,
+                        contentDescription = "On this phone",
+                        tint = if (offline.state == com.kobser.app.offline.OfflineSongState.DOWNLOADING)
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                        else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                }
+                MarqueeText(
+                    text = song.artist,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+                )
+            }
         }
         IconButton(
             onClick = onToggleStar,
@@ -165,6 +182,26 @@ fun SongRow(
                     },
                     onClick = { menuOpen = false; onToggleStar() },
                 )
+                if (offline != null) {
+                    val (label, enabled) = when (offline.state) {
+                        com.kobser.app.offline.OfflineSongState.NONE -> "Download to phone" to true
+                        com.kobser.app.offline.OfflineSongState.DOWNLOADING -> "Downloading to phone… (tap to cancel)" to true
+                        com.kobser.app.offline.OfflineSongState.DOWNLOADED -> "Remove from phone" to true
+                        com.kobser.app.offline.OfflineSongState.IN_COLLECTION -> "On phone (in a kept album or playlist)" to false
+                    }
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        leadingIcon = {
+                            Icon(
+                                if (offline.state == com.kobser.app.offline.OfflineSongState.NONE) Icons.Default.DownloadForOffline
+                                else Icons.Default.DownloadDone,
+                                null,
+                            )
+                        },
+                        enabled = enabled,
+                        onClick = { menuOpen = false; offline.onToggle() },
+                    )
+                }
                 extraMenuItems.fastForEach { extra ->
                     DropdownMenuItem(
                         text = { Text(extra.label) },
@@ -193,6 +230,12 @@ fun SongRow(
         }
     }
 }
+
+/** "Download to phone" / "Remove from phone" for a song row. */
+data class OfflineSongAction(
+    val state: com.kobser.app.offline.OfflineSongState,
+    val onToggle: () -> Unit,
+)
 
 data class MenuAction(
     val label: String,

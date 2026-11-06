@@ -10,7 +10,8 @@ from fastapi.responses import Response, StreamingResponse
 
 from auth import get_current_session
 from config import MUSIC_DIR, NAVIDROME_URL
-from services.navidrome_client import auth_params, trigger_scan_and_wait
+from services import navidrome_client, tagger_service
+from services.navidrome_client import auth_params
 from services.preview_stream import (
     StreamInfoCache,
     parse_range,
@@ -178,11 +179,38 @@ async def delete_track(track_id: str, sess: dict = Depends(get_current_session))
                 if file_path:
                     break
 
+    username, salt, token = sess["username"], sess["salt"], sess["token"]
+
+    async def gone() -> bool:
+        return await navidrome_client.song_is_unlisted(track_id, song.get("title") or "", username, salt, token)
+
+    # ── 3. Files not named the kobser way (added by hand, imported): look in the
+    #       artist's folders for a file whose tags match ────────────────────────
     if file_path is None:
-        # File is already gone from disk — Navidrome has a stale entry.
-        # Rescan so Navidrome removes it from its DB, then report success.
-        await trigger_scan_and_wait(sess["username"], sess["salt"], sess["token"])
-        return {"ok": True}
+        folders = [
+            root / name
+            for root in search_roots
+            for name in {_sanitize(song.get("artist") or ""), _sanitize(song.get("albumArtist") or "")}
+            if name and name != "Unknown"
+        ]
+        file_path = await asyncio.get_event_loop().run_in_executor(
+            None,
+            lambda: tagger_service.find_file_by_tags(
+                folders, song.get("title") or "", song.get("artist") or "", navidrome_client.normalize,
+            ),
+        )
+
+    if file_path is None:
+        # Either the file is already gone (Navidrome has a stale entry — a rescan
+        # drops it) or it exists somewhere we couldn't locate. Only the first is a
+        # successful delete; reporting success for the second left the song in the
+        # library while the app showed it as deleted.
+        if await navidrome_client.scan_until(username, salt, token, done=gone, timeout_s=8):
+            return {"ok": True}
+        raise HTTPException(
+            status_code=404,
+            detail="Couldn't find this song's file on the server, so it wasn't deleted",
+        )
 
     file_path.unlink()
 
@@ -193,5 +221,12 @@ async def delete_track(track_id: str, sess: dict = Depends(get_current_session))
             break
         parent.rmdir()
 
-    await trigger_scan_and_wait(sess["username"], sess["salt"], sess["token"])
+    # Rescan just the folder the file was in (Navidrome handles a folder that no
+    # longer exists by dropping its tracks) and only return once the track is gone,
+    # so the client's refresh no longer lists it.
+    library_id = await navidrome_client.resolve_library_id(sess)
+    target = navidrome_client.scan_target(library_id, sess.get("library_path"), file_path.parent)
+    await navidrome_client.scan_until(
+        username, salt, token, done=gone, targets=[target] if target else None,
+    )
     return {"ok": True}

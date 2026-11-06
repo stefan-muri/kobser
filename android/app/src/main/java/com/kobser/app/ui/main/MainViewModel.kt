@@ -14,6 +14,8 @@ class MainViewModel @Inject constructor(
     val musicPlayer: MusicPlayer,
     private val prefs: PreferencesRepository,
     private val api: KobserApi,
+    val downloadTracker: com.kobser.app.data.repository.DownloadTracker,
+    val libraryRepository: com.kobser.app.data.repository.LibraryRepository,
 ) : ViewModel() {
 
     init {

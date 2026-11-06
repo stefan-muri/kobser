@@ -89,8 +89,24 @@ fun MainScreen(
     val playbackError by viewModel.musicPlayer.playbackError.collectAsState()
     LaunchedEffect(playbackError) {
         val message = playbackError ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(message)
+        snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Long)
         viewModel.musicPlayer.dismissPlaybackError()
+    }
+    // Background library work that failed (e.g. a delete the server refused).
+    LaunchedEffect(Unit) {
+        // Failures stay up long enough to read; successes below stay short.
+        viewModel.libraryRepository.messages.collect { snackbarHostState.showSnackbar(it, duration = SnackbarDuration.Long) }
+    }
+    // Server downloads finishing, wherever they were started.
+    LaunchedEffect(Unit) {
+        viewModel.downloadTracker.events.collect { event ->
+            when (event) {
+                is com.kobser.app.data.repository.DownloadEvent.Added ->
+                    snackbarHostState.showSnackbar("“${event.title}” is in your library")
+                is com.kobser.app.data.repository.DownloadEvent.Failed ->
+                    snackbarHostState.showSnackbar("Couldn't download “${event.title}”: ${event.reason}", duration = SnackbarDuration.Long)
+            }
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {

@@ -96,7 +96,13 @@ class OfflineManager @Inject constructor(
 
     private var progressJob: Job? = null
 
+    private val _songStates = MutableStateFlow<Map<String, OfflineSongState>>(emptyMap())
+    /** songId -> how it's kept on the phone (absent = not on the phone). */
+    val songStates: StateFlow<Map<String, OfflineSongState>> = _songStates.asStateFlow()
+
     init {
+        scope.launch { _catalog.collect { refreshSongStates() } }
+        scope.launch { _progress.collect { refreshSongStates() } }
         scope.launch {
             _catalog.value = OfflineCatalog.fromJson(runCatching { catalogFile.readText() }.getOrNull(), gson)
             if (_catalog.value.collections.isNotEmpty()) {
@@ -140,6 +146,14 @@ class OfflineManager @Inject constructor(
     }
 
     suspend fun sizeBytes(): Long = withContext(Dispatchers.IO) { cache.cacheSpace }
+
+    private fun refreshSongStates() {
+        _songStates.value = offlineSongStates(_catalog.value, _progress.value)
+    }
+
+    fun pinSong(song: Song) = pin(OfflineCollection.forSong(song))
+
+    fun unpinSong(songId: String) = unpin(OfflineCollection.songKey(songId))
 
     fun pin(collection: OfflineCollection) {
         _catalog.update { it.upsert(collection) }

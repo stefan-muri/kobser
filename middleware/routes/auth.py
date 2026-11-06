@@ -95,11 +95,12 @@ async def login(body: LoginRequest, request: Request):
     # persist that instead of the password, so downloads can route to it later.
     libs = await get_user_libraries(body.username, body.password)
     library_path = libs[0]["path"] if libs else None
+    library_id = libs[0].get("id") if libs else None
 
     # Persist the admin role too — admins can see all users' downloads.
     admin = await get_is_admin(body.username, salt, token)
 
-    sid = create_session(body.username, salt, token, library_path, is_admin=admin)
+    sid = create_session(body.username, salt, token, library_path, is_admin=admin, library_id=library_id)
     return {"sessionId": sid, "username": body.username}
 
 

@@ -58,6 +58,7 @@ class LibrarySessionCallback @Inject constructor(
     private val api: KobserApi,
     private val prefs: PreferencesRepository,
     private val gson: Gson,
+    private val connectionLog: com.kobser.app.auto.AutoConnectionLog,
 ) : MediaLibraryService.MediaLibrarySession.Callback {
 
     private val imageLoader = ImageLoader(context)
@@ -81,6 +82,10 @@ class LibrarySessionCallback @Inject constructor(
         session: MediaSession,
         controller: MediaSession.ControllerInfo,
     ): MediaSession.ConnectionResult {
+        // Diagnostics for "Android Auto sometimes doesn't show Kobser" (see Settings).
+        if (controller.packageName != context.packageName) {
+            connectionLog.record(controller.packageName, "connected")
+        }
         // Do NOT build on super.onConnect(): since Media3 1.9 it returns a placeholder
         // with EMPTY command sets (a "callback not implemented" marker), so deriving
         // from it silently strips every controller of play/prepare/set-queue.
@@ -189,6 +194,9 @@ class LibrarySessionCallback @Inject constructor(
         browser: MediaSession.ControllerInfo,
         params: MediaLibraryService.LibraryParams?
     ): ListenableFuture<LibraryResult<MediaItem>> {
+        if (browser.packageName != context.packageName) {
+            connectionLog.record(browser.packageName, if (isSignedIn()) "opened the library" else "opened the library (signed out)")
+        }
         val rootItem = MediaItem.Builder()
             .setMediaId("root")
             .setMediaMetadata(

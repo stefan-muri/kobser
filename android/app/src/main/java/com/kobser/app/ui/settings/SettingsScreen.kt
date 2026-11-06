@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -192,6 +194,11 @@ fun SettingsScreen(
                 }
             }
 
+            // ── Android Auto ─────────────────────────────────────────────────
+            SectionCard(title = "Android Auto") {
+                AndroidAutoSection(viewModel)
+            }
+
             // ── Account ──────────────────────────────────────────────────────
             SectionCard(title = "Account") {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -293,6 +300,70 @@ private fun StatRow(label: String, used: Long, total: Long) {
             color = MaterialTheme.colorScheme.primary,
             trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
         )
+    }
+}
+
+@Composable
+private fun AndroidAutoSection(viewModel: SettingsViewModel) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val connections by viewModel.autoConnections.collectAsState()
+    // Re-check whenever the user comes back, e.g. from the battery settings.
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        viewModel.refreshBatteryState()
+        onPauseOrDispose { }
+    }
+    val muted = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+    Column(modifier = Modifier.padding(16.dp)) {
+        Text(
+            "Android Auto only lists Kobser while “Unknown sources” is on in Android Auto's developer " +
+                "settings, and it re-checks Kobser after every update.",
+            style = MaterialTheme.typography.bodySmall,
+            color = muted,
+        )
+        Spacer(Modifier.height(12.dp))
+        val (ok, label) = when {
+            viewModel.backgroundRestricted -> false to "Background use is restricted for Kobser, so Android Auto may not be able to start it."
+            viewModel.batteryOptimized -> false to "Battery optimisation is on, so Android can stop Kobser in the background. Set Battery to “Unrestricted”."
+            else -> true to "Battery: unrestricted"
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                if (ok) Icons.Default.CheckCircle else Icons.Default.Warning,
+                contentDescription = null,
+                tint = if (ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(label, style = MaterialTheme.typography.bodyMedium)
+        }
+        if (!ok) {
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = { runCatching { context.startActivity(viewModel.appSettingsIntent()) } },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Open Kobser's app settings") }
+        }
+        Spacer(Modifier.height(16.dp))
+        Text("Recent connections", style = MaterialTheme.typography.titleSmall)
+        Spacer(Modifier.height(4.dp))
+        if (connections.isEmpty()) {
+            Text(
+                "None yet. After a drive where Kobser was missing, check here: if Android Auto isn't listed " +
+                    "around that time, Android Auto never asked Kobser.",
+                style = MaterialTheme.typography.bodySmall,
+                color = muted,
+            )
+        } else {
+            val fmt = remember { java.text.SimpleDateFormat("EEE d MMM, HH:mm", java.util.Locale.getDefault()) }
+            connections.take(8).forEach { e ->
+                Text(
+                    "${fmt.format(java.util.Date(e.timeMillis))} · ${com.kobser.app.auto.controllerLabel(e.packageName)} ${e.event}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = muted,
+                    modifier = Modifier.padding(vertical = 2.dp),
+                )
+            }
+        }
     }
 }
 

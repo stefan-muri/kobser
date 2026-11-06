@@ -147,7 +147,10 @@ private fun CollectionList(viewModel: OfflineViewModel) {
             HorizontalDivider()
         }
         itemsIndexed(collections, key = { _, c -> c.key }) { _, c ->
-            CollectionRow(c, viewModel.progress[c.key], viewModel::getCoverUrl) { viewModel.select(c) }
+            CollectionRow(c, viewModel.progress[c.key], viewModel::getCoverUrl) {
+                // A song kept on its own just plays; albums and playlists open.
+                if (c.isSong) viewModel.play(c.songs, 0) else viewModel.select(c)
+            }
         }
     }
 }
@@ -175,8 +178,9 @@ private fun CollectionRow(
             Text(c.title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(c.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), maxLines = 1, overflow = TextOverflow.Ellipsis)
             val status = when {
-                progress?.running == true -> "Downloading ${progress.done}/${progress.total}"
-                (progress?.failed ?: 0) > 0 -> "${c.songs.size} tracks · ${progress!!.failed} failed"
+                progress?.running == true -> if (c.isSong) "Downloading…" else "Downloading ${progress.done}/${progress.total}"
+                (progress?.failed ?: 0) > 0 -> if (c.isSong) "Download failed" else "${c.songs.size} tracks · ${progress!!.failed} failed"
+                c.isSong -> "Song"
                 else -> "${c.songs.size} tracks"
             }
             Text(status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f))

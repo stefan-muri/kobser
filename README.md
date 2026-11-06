@@ -144,6 +144,8 @@ Download the latest APK from the [Releases](https://github.com/stefan-muri/kobse
 - **Connect:** on first launch, enter your server URL (e.g. `http://192.168.1.50:8000`) and log in with your Navidrome credentials.
 - **Android Auto:** browse Recently played / Recently added / Favorites / Playlists / Albums / Artists / Songs (A–Z folders for big libraries), search (local + YouTube Music), shuffle/repeat, and resume playback from the car.
 - **Offline:** open an album or playlist and tap **Keep offline**; it downloads in the background (allow notifications to see progress) and shows up under More → Offline music.
+- **Single songs offline:** any song's menu (or the player's) has **Download to phone**.
+- **If Android Auto doesn't list Kobser:** keep "Unknown sources" on in Android Auto's developer settings, set Kobser's battery to Unrestricted, and check Settings → Android Auto → Recent connections after the drive. No Android Auto entry at that time means Android Auto never asked Kobser.
 
 > The APK is a debug build signed with the standard Android debug key. It is built automatically from the latest commit by GitHub Actions.
 

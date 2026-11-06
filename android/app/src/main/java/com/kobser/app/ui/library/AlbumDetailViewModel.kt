@@ -114,14 +114,11 @@ class AlbumDetailViewModel @Inject constructor(
         }
     }
 
+    /** Removes the song from the album immediately; the server delete follows in the background. */
     fun deleteSong(song: Song) {
-        viewModelScope.launch {
-            val result = repository.deleteTrack(song.id)
-            if (result.isSuccess) {
-                album = album?.copy(song = album!!.song.filter { it.id != song.id })
-                repository.notifyLibraryChanged()
-            }
-        }
+        val before = album
+        album = album?.copy(song = album!!.song.filter { it.id != song.id })
+        repository.deleteInBackground(song) { album = before }
     }
 
     fun getCoverUrl(id: String, size: Int = 512): String =

@@ -15,6 +15,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Shuffle
@@ -59,6 +61,9 @@ fun LibraryScreen(
     onArtistClick: (String) -> Unit = {},
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
+    // "Download to phone" state for each song row.
+    val offlineSongs: com.kobser.app.ui.offline.OfflineSongsViewModel = hiltViewModel()
+    val offlineStates by offlineSongs.states.collectAsState()
     val items by remember(isFavorites) {
         derivedStateOf { if (isFavorites) viewModel.sortedFavorites else viewModel.sortedSongs }
     }
@@ -192,6 +197,17 @@ fun LibraryScreen(
                             )
                         }
                     } else if (!searching) {
+                        // ── Saved searches, shown while the search box is open and empty ──
+                        if (inSearch && onlineEnabled && viewModel.searchHistory.isNotEmpty()) {
+                            item {
+                                RecentSearches(
+                                    history = viewModel.searchHistory,
+                                    onSearch = { keyboard?.hide(); viewModel.searchFromHistory(it) },
+                                    onRemove = { viewModel.removeFromHistory(it) },
+                                    onClear = { viewModel.clearHistory() },
+                                )
+                            }
+                        }
                         // ── Normal library browse ──────────────────────────
                         if (!isFavorites) {
                             item {
@@ -208,13 +224,15 @@ fun LibraryScreen(
                             )
                         }
                         librarySongs(items, viewModel, isFavorites, playingSong?.id, isPlaying, onSongClick,
-                            onDelete = { deleteTarget = it }, onAddToPlaylist = { playlistTarget = it })
+                            onDelete = { deleteTarget = it }, onAddToPlaylist = { playlistTarget = it },
+                            offlineAction = { offlineSongs.actionFor(it, offlineStates) })
                     } else {
                         // ── Search mode: local matches first ────────────────
                         if (items.isNotEmpty()) {
                             item { SectionHeader("In your library") }
                             librarySongs(items, viewModel, isFavorites, playingSong?.id, isPlaying, onSongClick,
-                                onDelete = { deleteTarget = it }, onAddToPlaylist = { playlistTarget = it })
+                                onDelete = { deleteTarget = it }, onAddToPlaylist = { playlistTarget = it },
+                                offlineAction = { offlineSongs.actionFor(it, offlineStates) })
                         }
 
                         // ── Then online results ─────────────────────────────
@@ -353,6 +371,62 @@ fun LibraryScreen(
     }
 }
 
+/** Recent YouTube / YouTube Music searches: tap to re-run, X to forget one. */
+@Composable
+private fun RecentSearches(
+    history: List<String>,
+    onSearch: (String) -> Unit,
+    onRemove: (String) -> Unit,
+    onClear: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp, top = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "Recent searches",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onClear) { Text("Clear") }
+        }
+        history.forEach { q ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSearch(q) }
+                    .padding(start = 16.dp, end = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Default.History,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    q,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f).padding(vertical = 12.dp),
+                )
+                IconButton(onClick = { onRemove(q) }) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = "Remove “$q” from recent searches",
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    )
+                }
+            }
+        }
+        HorizontalDivider(modifier = Modifier.padding(top = 4.dp))
+    }
+}
+
 /** Emits the local song rows shared by browse and search modes. */
 private fun androidx.compose.foundation.lazy.LazyListScope.librarySongs(
     items: List<Song>,
@@ -363,6 +437,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.librarySongs(
     onSongClick: (Song) -> Unit,
     onDelete: (Song) -> Unit,
     onAddToPlaylist: (Song) -> Unit,
+    offlineAction: (Song) -> com.kobser.app.ui.components.OfflineSongAction,
 ) {
     itemsIndexed(items, key = { _, song -> song.id }) { index, song ->
         val isStarred = viewModel.isStarred(song, defaultStarred = isFavorites)
@@ -385,6 +460,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.librarySongs(
             onAddToPlaylist = { onAddToPlaylist(song) },
             isCurrent = isCurrent,
             isPlayingNow = isCurrent && isPlaying,
+            offline = offlineAction(song),
         )
     }
 }

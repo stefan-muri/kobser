@@ -39,6 +39,10 @@ def init_db() -> None:
         scols = {r[1] for r in conn.execute("PRAGMA table_info(sessions)").fetchall()}
         if "is_admin" not in scols:
             conn.execute("ALTER TABLE sessions ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0")
+        # Navidrome library id, for targeted (single-folder) scans. Older sessions
+        # leave it NULL and resolve it on demand (see navidrome_client).
+        if "library_id" not in scols:
+            conn.execute("ALTER TABLE sessions ADD COLUMN library_id INTEGER")
         # Hygiene: drop sessions that have already expired (they're filtered on
         # read anyway, this just stops the table accumulating dead rows).
         conn.execute("DELETE FROM sessions WHERE expires_at <= ?", (int(time.time()),))
@@ -107,14 +111,15 @@ _SESSION_RENEW_AFTER_S = 86400
 def create_session(
     username: str, salt: str, token: str, library_path: str | None = None,
     is_admin: bool = False, ttl_days: int = SESSION_TTL_DAYS,
+    library_id: int | None = None,
 ) -> str:
     sid = secrets.token_urlsafe(32)
     expires_at = int(time.time()) + ttl_days * 86400
     with _conn() as c:
         c.execute(
-            "INSERT INTO sessions (id, username, salt, token, library_path, is_admin, expires_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (sid, username, salt, token, library_path, int(is_admin), expires_at),
+            "INSERT INTO sessions (id, username, salt, token, library_path, is_admin, expires_at, library_id) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (sid, username, salt, token, library_path, int(is_admin), expires_at, library_id),
         )
     return sid
 

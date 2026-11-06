@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kobser.app.data.api.YtAlbum
 import com.kobser.app.data.api.YtAlbumTrack
+import com.kobser.app.data.repository.DownloadTracker
 import com.kobser.app.data.repository.YtMusicRepository
 import com.kobser.app.ui.ytmusic.DuplicateException
 import com.kobser.app.ui.ytmusic.DuplicateWarning
@@ -21,6 +22,7 @@ import javax.inject.Inject
 class YtAlbumViewModel @Inject constructor(
     private val repo: YtMusicRepository,
     private val musicPlayer: MusicPlayer,
+    private val downloadTracker: DownloadTracker,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -36,6 +38,10 @@ class YtAlbumViewModel @Inject constructor(
         private set
     var duplicateWarning by mutableStateOf<DuplicateWarning?>(null)
         private set
+
+    init {
+        observeTrackedDownloads()
+    }
 
     init { load() }
 
@@ -70,7 +76,7 @@ class YtAlbumViewModel @Inject constructor(
         viewModelScope.launch {
             val result = repo.download(videoId, artist, title, album, force)
             when {
-                result.isSuccess -> downloadStates = downloadStates + (videoId to YtDownloadState.DONE)
+                result.isSuccess -> downloadTracker.track(videoId, result.getOrThrow(), title)
                 result.exceptionOrNull() is DuplicateException -> {
                     downloadStates = downloadStates + (videoId to YtDownloadState.DUPLICATE)
                     duplicateWarning = DuplicateWarning(videoId, artist, title, album)
@@ -98,13 +104,25 @@ class YtAlbumViewModel @Inject constructor(
                 if (state == YtDownloadState.DONE || state == YtDownloadState.DUPLICATE) continue
                 downloadStates = downloadStates + (track.videoId to YtDownloadState.LOADING)
                 val result = repo.download(track.videoId, track.artist, track.title, a.title)
-                downloadStates = downloadStates + (track.videoId to when {
-                    result.isSuccess -> YtDownloadState.DONE
-                    result.exceptionOrNull() is DuplicateException -> YtDownloadState.DUPLICATE
-                    else -> YtDownloadState.ERROR
-                })
+                when {
+                    result.isSuccess -> downloadTracker.track(track.videoId, result.getOrThrow(), track.title)
+                    result.exceptionOrNull() is DuplicateException ->
+                        downloadStates = downloadStates + (track.videoId to YtDownloadState.DUPLICATE)
+                    else -> downloadStates = downloadStates + (track.videoId to YtDownloadState.ERROR)
+                }
             }
             downloadingAll = false
+        }
+    }
+
+    // Rows reflect the real server job (via the app-wide tracker), not just
+    // "the server accepted the request".
+    private fun observeTrackedDownloads() {
+        viewModelScope.launch {
+            downloadTracker.downloads.collect { tracked ->
+                if (tracked.isEmpty()) return@collect
+                downloadStates = downloadStates + tracked.mapValues { (_, d) -> d.toRowState() }
+            }
         }
     }
 }

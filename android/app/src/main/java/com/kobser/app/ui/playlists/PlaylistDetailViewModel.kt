@@ -115,14 +115,11 @@ class PlaylistDetailViewModel @Inject constructor(
         }
     }
 
+    /** Removes the song from the list immediately; the server delete follows in the background. */
     fun deleteSong(song: Song) {
-        viewModelScope.launch {
-            val result = repository.deleteTrack(song.id)
-            if (result.isSuccess) {
-                load()
-                repository.notifyLibraryChanged()
-            }
-        }
+        val before = playlist
+        playlist = playlist?.let { p -> p.copy(entry = p.entry?.filter { it.id != song.id }) }
+        repository.deleteInBackground(song) { playlist = before }
     }
 
     fun removeFromPlaylist(index: Int) {

@@ -24,11 +24,20 @@ def fill(i, value):
 
 adb("shell", "pm", "uninstall", "com.kobser.app", check=False)
 print("install:", adb("install", "-r", apk).strip().splitlines()[-1])
-adb("logcat", "-c")
+adb("logcat", "-c"); adb("logcat", "-c", "-b", "crash")
 adb("shell", "am", "start", "-n", "com.kobser.app/.MainActivity"); time.sleep(4)
+
+
+def assert_no_crash(step):
+    """Fail with the actual stack trace instead of a confusing UI assertion."""
+    crash = [l for l in adb("logcat", "-d", "-b", "crash").splitlines() if "AndroidRuntime" in l]
+    assert not crash, f"app crashed during {step}:\n" + "\n".join(crash[:12])
+
+
 assert len(edit_fields()) == 3, "login screen not shown"
 fill(0, server); fill(1, user); fill(2, password)
 tap([n for n in dump().iter("node") if n.get("class") == "android.widget.Button"][0]); time.sleep(7)
+assert_no_crash("login")
 root = dump()
 assert find(root, text="Play all") is not None, f"login failed: {screen_texts(root)[:8]}"
 
@@ -38,6 +47,7 @@ song = find(root, text=texts[texts.index("Sort: Recently added") + 1]) if "Sort:
 assert song is not None, f"no song row found: {texts[:10]}"
 print("playing:", song.get("text")); tap(song); time.sleep(10)
 
+assert_no_crash("playback")
 state = [l for l in adb("shell", "dumpsys", "media_session").splitlines() if "state=PlaybackState" in l]
 denied = [l for l in adb("logcat", "-d").splitlines() if "isn't allowed to call command" in l]
 print("playback:", state[0].strip()[:80] if state else "no session")

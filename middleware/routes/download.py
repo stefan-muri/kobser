@@ -70,6 +70,7 @@ async def download(
         sess.get("library_path"),
         body.source,
         body.album,
+        await navidrome_client.resolve_library_id(sess),
     )
     return {"jobId": job.job_id, "status": job.status}
 
@@ -85,6 +86,7 @@ async def _run_download(
     library_path: str | None = None,
     source: str = "youtube_music",
     album: str = "",
+    library_id: int | None = None,
 ) -> None:
     try:
         # Library path was resolved at login; fall back to MUSIC_DIR if unset.
@@ -113,12 +115,28 @@ async def _run_download(
         final_album = album.strip() or "Singles"
         update_job(job_id, status="tagging", file=file_path)
         await to_thread.run_sync(tagger_service.tag, file_path, artist, title, final_album)
+        # Songs already matching these tags (a forced re-download), so the wait
+        # below only succeeds once the *new* file is indexed.
+        try:
+            known_ids = await navidrome_client.matching_song_ids(artist, title, username, salt, token)
+        except Exception:
+            known_ids = set()
 
         if is_cancelled(job_id):
             return
 
         update_job(job_id, status="scanning")
-        await navidrome_client.trigger_scan_and_wait(username, salt, token)
+        # Rescan just the folder we wrote to, and only report "done" once the
+        # song is actually searchable — so the client's refresh finds it.
+        targets = None
+        if music_dir and library_id is not None:
+            t = navidrome_client.scan_target(library_id, music_dir, Path(file_path).parent)
+            targets = [t] if t else None
+        await navidrome_client.scan_until(
+            username, salt, token,
+            done=lambda: navidrome_client.new_song_visible(artist, title, known_ids, username, salt, token),
+            targets=targets,
+        )
 
         update_job(job_id, status="done")
     except DownloadCancelled:
@@ -219,5 +237,6 @@ async def retry_download(
         sess.get("library_path"),
         source,
         album,
+        await navidrome_client.resolve_library_id(sess),
     )
     return {"jobId": job.job_id, "status": job.status}

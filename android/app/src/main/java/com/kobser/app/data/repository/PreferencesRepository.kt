@@ -30,6 +30,7 @@ class PreferencesRepository @Inject constructor(
         val SEARCH_SOURCE = stringPreferencesKey("search_source")
         val LAST_USERNAME = stringPreferencesKey("last_username")
         val CACHE_MAX_MB = longPreferencesKey("cache_max_mb")
+        val SEARCH_HISTORY = stringPreferencesKey("search_history")
     }
 
     val serverUrl: Flow<String?> = context.dataStore.data.map { it[Keys.SERVER_URL] }
@@ -37,6 +38,9 @@ class PreferencesRepository @Inject constructor(
     val lastTrackJson: Flow<String?> = context.dataStore.data.map { it[Keys.LAST_TRACK_JSON] }
     val searchSource: Flow<String> = context.dataStore.data.map { it[Keys.SEARCH_SOURCE] ?: "youtube_music" }
     val lastUsername: Flow<String?> = context.dataStore.data.map { it[Keys.LAST_USERNAME] }
+    /** Recent YouTube / YouTube Music searches, newest first. */
+    val searchHistory: Flow<List<String>> = context.dataStore.data.map { decodeSearchHistory(it[Keys.SEARCH_HISTORY]) }
+
     /** Size limit of the on-device stream cache, in MB. */
     val cacheMaxMb: Flow<Long> = context.dataStore.data.map { it[Keys.CACHE_MAX_MB] ?: DEFAULT_CACHE_MAX_MB }
 
@@ -80,6 +84,20 @@ class PreferencesRepository @Inject constructor(
 
     suspend fun clearLastTrack() {
         context.dataStore.edit { it.remove(Keys.LAST_TRACK_JSON) }
+    }
+
+    suspend fun recordSearch(query: String) {
+        context.dataStore.edit { it[Keys.SEARCH_HISTORY] = encodeSearchHistory(addToSearchHistory(decodeSearchHistory(it[Keys.SEARCH_HISTORY]), query)) }
+    }
+
+    suspend fun removeSearch(query: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.SEARCH_HISTORY] = encodeSearchHistory(decodeSearchHistory(prefs[Keys.SEARCH_HISTORY]).filterNot { it == query })
+        }
+    }
+
+    suspend fun clearSearchHistory() {
+        context.dataStore.edit { it.remove(Keys.SEARCH_HISTORY) }
     }
 
     suspend fun saveCacheMaxMb(mb: Long) {
