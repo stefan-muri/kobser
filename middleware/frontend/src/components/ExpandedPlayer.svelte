@@ -45,7 +45,7 @@
 </script>
 
 <div
-  class="fixed inset-0 z-[150] flex flex-col pointer-events-none transition-transform duration-300 ease-in-out overflow-hidden"
+  class="fixed inset-0 z-150 flex flex-col pointer-events-none transition-transform duration-300 ease-in-out overflow-hidden"
   style:transform={$expandedPlayerOpen ? 'translateY(0)' : 'translateY(100%)'}
   style:pointer-events={$expandedPlayerOpen ? 'auto' : 'none'}
   style:isolation="isolate"
@@ -59,7 +59,7 @@
   <!-- Content -->
   <div class="relative z-10 flex flex-col h-full w-full max-w-lg mx-auto px-8" style="padding-top: env(safe-area-inset-top, 0px); transform: translateZ(0);">
     <!-- Top bar -->
-    <div class="flex items-center justify-between py-5 flex-shrink-0">
+    <div class="flex items-center justify-between py-5 shrink-0">
       <button
         on:click={() => expandedPlayerOpen.set(false)}
         class="w-10 h-10 flex items-center justify-center text-kobser-muted hover:text-white transition-colors rounded-full hover:bg-white/10"
@@ -85,7 +85,7 @@
     </div>
 
     <!-- Track info + like -->
-    <div class="flex items-center gap-4 mt-6 mb-5 flex-shrink-0">
+    <div class="flex items-center gap-4 mt-6 mb-5 shrink-0">
       <div class="flex-1 min-w-0">
         <Marquee text={track?.title ?? '—'} cls="text-2xl font-bold" />
         <div class="mt-1">
@@ -95,7 +95,7 @@
       {#if !preview}
         <button
           on:click={toggleLike}
-          class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors flex-shrink-0 {liked ? 'text-kobser-accent' : 'text-kobser-muted'}"
+          class="w-11 h-11 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors shrink-0 {liked ? 'text-kobser-accent' : 'text-kobser-muted'}"
         >
           <i class="{liked ? 'ph-fill' : 'ph'} ph-heart text-2xl"></i>
         </button>
@@ -103,7 +103,7 @@
     </div>
 
     <!-- Progress -->
-    <div class="flex-shrink-0 mb-1">
+    <div class="shrink-0 mb-1">
       <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
       <div
         class="w-full h-1.5 bg-white/15 rounded-full cursor-pointer group mb-2"
@@ -113,7 +113,7 @@
           class="h-full bg-kobser-accent rounded-full relative group-hover:bg-kobser-accentHover transition-colors"
           style:width="{progress}%"
         >
-          <div class="absolute right-0 top-1/2 -translate-y-1/2 -mr-2 w-4 h-4 bg-white rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <div class="absolute right-0 top-1/2 -translate-y-1/2 -mr-2 w-4 h-4 bg-white rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"></div>
         </div>
       </div>
       <div class="flex justify-between text-xs text-kobser-muted">
@@ -123,7 +123,7 @@
     </div>
 
     <!-- Controls -->
-    <div class="flex items-center justify-between flex-shrink-0 mt-6 mb-10">
+    <div class="flex items-center justify-between shrink-0 mt-6 mb-10">
       <button
         on:click={toggleShuffle}
         class="w-11 h-11 flex items-center justify-center transition-colors rounded-full hover:bg-white/10 {$shuffleOn ? 'text-kobser-accent' : 'text-kobser-muted hover:text-white'}"

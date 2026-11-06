@@ -36,7 +36,7 @@
 
   <!-- Vinyl record + tonearm -->
   <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-  <div class="vinyl-wrap flex-shrink-0 relative cursor-pointer" on:click={() => expandedPlayerOpen.set(true)}>
+  <div class="vinyl-wrap shrink-0 relative cursor-pointer" on:click={() => expandedPlayerOpen.set(true)}>
     <!-- Disc -->
     <div class="vinyl-disc" class:spinning={$playing}>
       <!-- Album art label -->
@@ -61,7 +61,7 @@
   </div>
 
   <!-- Controls -->
-  <div class="flex items-center gap-3 flex-shrink-0">
+  <div class="flex items-center gap-3 shrink-0">
     <button on:click={prev} class="text-kobser-muted hover:text-white transition-colors">
       <i class="ph-fill ph-skip-back text-xl"></i>
     </button>
@@ -92,7 +92,7 @@
     <span class="hidden md:inline text-sm text-kobser-muted tabular-nums">
       {fmtTime($playbackProgress.currentTime)} / {fmtTime($playbackProgress.duration)}
     </span>
-    <button on:click={closePlayer} class="text-kobser-muted hover:text-white transition-colors flex-shrink-0">
+    <button on:click={closePlayer} class="text-kobser-muted hover:text-white transition-colors shrink-0">
       <i class="ph ph-x text-xl"></i>
     </button>
   </div>

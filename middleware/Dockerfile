@@ -1,9 +1,11 @@
 # Stage 1: build frontend (Vite + Svelte + Tailwind)
-FROM node:20-alpine AS assets
+FROM node:24-alpine AS assets
 WORKDIR /assets
 
-COPY frontend/package.json ./
-RUN npm install
+# Install exactly what the lockfile pins (the versions Dependabot audits),
+# rather than re-resolving the semver ranges at image build time.
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-fund --no-audit
 
 COPY frontend/ ./frontend/
 RUN cd frontend && npm run build

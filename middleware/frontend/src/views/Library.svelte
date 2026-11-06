@@ -80,14 +80,14 @@
         type="text"
         bind:value={filterQuery}
         placeholder="Search library…"
-        class="w-full bg-kobser-surface text-kobser-text placeholder-kobser-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 border border-white/10 text-sm"
+        class="w-full bg-kobser-surface text-kobser-text placeholder-kobser-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-hidden focus:ring-2 focus:ring-kobser-accent/50 border border-white/10 text-sm"
       >
     </div>
     {#if sorted.length}
-      <button on:click={() => playQueue(sorted, 0)} class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg text-sm font-semibold rounded-xl transition-colors">
+      <button on:click={() => playQueue(sorted, 0)} class="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg text-sm font-semibold rounded-xl transition-colors">
         <i class="ph-fill ph-play text-sm"></i> Play all
       </button>
-      <button on:click={() => playShuffled(sorted)} class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 text-sm font-medium rounded-xl transition-colors">
+      <button on:click={() => playShuffled(sorted)} class="shrink-0 flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 text-sm font-medium rounded-xl transition-colors">
         <i class="ph ph-shuffle text-sm"></i> Shuffle
       </button>
     {/if}
@@ -97,7 +97,7 @@
     {#each SORT_OPTIONS as opt}
       <button
         on:click={() => setSortKey(opt.key)}
-        class="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {sortKey === opt.key ? 'bg-kobser-accent text-kobser-bg' : 'bg-white/5 text-kobser-muted hover:bg-white/10 hover:text-kobser-text'}"
+        class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {sortKey === opt.key ? 'bg-kobser-accent text-kobser-bg' : 'bg-white/5 text-kobser-muted hover:bg-white/10 hover:text-kobser-text'}"
       >{opt.label}</button>
     {/each}
     {#each SORT_TOGGLES as tog}
@@ -105,7 +105,7 @@
       {@const isActive = activeIdx !== -1}
       <button
         on:click={() => toggleSort(tog.keys)}
-        class="flex-shrink-0 flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {isActive ? 'bg-kobser-accent text-kobser-bg' : 'bg-white/5 text-kobser-muted hover:bg-white/10 hover:text-kobser-text'}"
+        class="shrink-0 flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {isActive ? 'bg-kobser-accent text-kobser-bg' : 'bg-white/5 text-kobser-muted hover:bg-white/10 hover:text-kobser-text'}"
       >
         {isActive ? tog.labels[activeIdx] : tog.labels[0]}
         {#if isActive}

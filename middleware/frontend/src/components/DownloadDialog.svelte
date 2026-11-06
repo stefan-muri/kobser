@@ -56,7 +56,7 @@
 <dialog
   bind:this={dialogEl}
   on:close={close}
-  class="bg-kobser-surface text-kobser-text border border-white/10 rounded-2xl p-6 w-[90vw] max-w-md shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm"
+  class="bg-kobser-surface text-kobser-text border border-white/10 rounded-2xl p-6 w-[90vw] max-w-md shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-xs"
 >
   <h3 class="text-xl font-semibold mb-5 flex items-center gap-2">
     <i class="ph ph-download-simple text-kobser-accent"></i>
@@ -69,7 +69,7 @@
       bind:value={localArtist}
       required
       placeholder="e.g. M83"
-      class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 transition-all border border-white/10"
+      class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 focus:outline-hidden focus:ring-2 focus:ring-kobser-accent/50 transition-all border border-white/10"
     >
   </label>
   <label class="block mb-4">
@@ -79,7 +79,7 @@
       bind:value={localTitle}
       required
       placeholder="e.g. Midnight City"
-      class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 transition-all border border-white/10"
+      class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 focus:outline-hidden focus:ring-2 focus:ring-kobser-accent/50 transition-all border border-white/10"
     >
   </label>
   <label class="block mb-4">
@@ -88,7 +88,7 @@
       type="text"
       bind:value={localAlbum}
       placeholder="e.g. Hurry Up, We're Dreaming"
-      class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 transition-all border border-white/10"
+      class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 focus:outline-hidden focus:ring-2 focus:ring-kobser-accent/50 transition-all border border-white/10"
     >
   </label>
   {#if showDuplicateWarning}

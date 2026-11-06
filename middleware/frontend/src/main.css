@@ -1,6 +1,89 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+  Tailwind v4 only applies `hover:` on devices that can hover. Several controls
+  (e.g. track-row actions) are revealed on hover, and on touch screens the v3
+  behaviour (a tap triggers hover) is what makes them reachable — keep it.
+*/
+@custom-variant hover (&:hover);
+
+@theme {
+  --font-sans: Inter, system-ui, -apple-system, sans-serif;
+  --font-london: Manufacturing Consent, serif;
+
+  --color-kobser-bg: #121212;
+  --color-kobser-surface: #1e1e1e;
+  --color-kobser-accent: #ff9f1c;
+  --color-kobser-accentHover: #ffbf69;
+  --color-kobser-success: #2ec4b6;
+  --color-kobser-text: #ffffff;
+  --color-kobser-muted: #b3b3b3;
+
+  --animate-spin-slow: spin 1.5s linear infinite;
+  --animate-slide-up: slideUp 0.3s ease-out forwards;
+  --animate-bar1: musicBar 1s ease-in-out infinite;
+  --animate-bar2: musicBar 1s ease-in-out infinite 0.2s;
+  --animate-bar3: musicBar 1s ease-in-out infinite 0.4s;
+
+  @keyframes slideUp {
+    0% {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  @keyframes musicBar {
+    0%,
+    100% {
+      transform: scaleY(0.25);
+    }
+    50% {
+      transform: scaleY(1);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /* v4 compatibility: keep the v3 defaults this UI was designed against. */
+
+  /* v4 no longer gives buttons a pointer cursor. */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* v4 resets dialog margins, which un-centres every <dialog>. */
+  dialog {
+    margin: auto;
+  }
+
+  /* v4 placeholders default to 50% of the text colour; v3 used gray-400. */
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+}
 
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 8px; }

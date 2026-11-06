@@ -48,7 +48,7 @@
             placeholder="Username"
             autofocus
             on:keydown={e => { if (e.key === 'Enter') passEl?.focus(); }}
-            class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 transition-all border border-white/10"
+            class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 focus:outline-hidden focus:ring-2 focus:ring-kobser-accent/50 transition-all border border-white/10"
           >
         </label>
         <label class="block mb-6">
@@ -58,7 +58,7 @@
             bind:value={password}
             bind:this={passEl}
             autocomplete="current-password"
-            class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 transition-all border border-white/10"
+            class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 focus:outline-hidden focus:ring-2 focus:ring-kobser-accent/50 transition-all border border-white/10"
           >
         </label>
         <button

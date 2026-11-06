@@ -46,7 +46,7 @@
 <dialog
   bind:this={dialogEl}
   on:close={handleClose}
-  class="bg-kobser-surface text-kobser-text border border-white/10 rounded-2xl p-6 min-w-[320px] max-w-[90vw] shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm"
+  class="bg-kobser-surface text-kobser-text border border-white/10 rounded-2xl p-6 min-w-[320px] max-w-[90vw] shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-xs"
 >
   <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
     <i class="ph-fill ph-music-notes-plus text-kobser-accent"></i>
@@ -64,7 +64,7 @@
             on:click={() => pick(pl)}
             class="flex items-center gap-3 px-4 py-2.5 rounded-xl hover:bg-white/10 text-sm text-left transition-colors"
           >
-            <i class="ph-fill ph-playlist text-kobser-muted text-base flex-shrink-0"></i>
+            <i class="ph-fill ph-playlist text-kobser-muted text-base shrink-0"></i>
             <span class="truncate">{pl.name}</span>
             <span class="ml-auto text-kobser-muted text-xs">{pl.songCount || 0}</span>
           </button>

@@ -123,7 +123,7 @@
         </div>
       {:else if serverStatus === 'ok'}
         <div class="flex items-center gap-3 py-1 mb-5">
-          <div class="w-2.5 h-2.5 rounded-full bg-kobser-success shadow-[0_0_8px_rgba(46,196,182,0.6)] flex-shrink-0"></div>
+          <div class="w-2.5 h-2.5 rounded-full bg-kobser-success shadow-[0_0_8px_rgba(46,196,182,0.6)] shrink-0"></div>
           <div>
             <p class="font-medium text-kobser-text text-sm">Navidrome</p>
             <p class="text-xs text-kobser-muted">Connected · v{serverVersion}</p>
@@ -131,7 +131,7 @@
         </div>
       {:else}
         <div class="flex items-center gap-3 py-1 mb-5">
-          <div class="w-2.5 h-2.5 rounded-full bg-red-500 flex-shrink-0"></div>
+          <div class="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0"></div>
           <div>
             <p class="font-medium text-kobser-text text-sm">Navidrome</p>
             <p class="text-xs text-red-400">Unreachable</p>

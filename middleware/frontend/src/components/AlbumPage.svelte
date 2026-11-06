@@ -99,7 +99,7 @@
         <img
           src={album.thumbnail}
           alt={album.title}
-          class="w-40 h-40 rounded-xl object-cover shadow-2xl shadow-black/40 flex-shrink-0"
+          class="w-40 h-40 rounded-xl object-cover shadow-2xl shadow-black/40 shrink-0"
           referrerpolicy="no-referrer"
         />
       {/if}
@@ -132,8 +132,8 @@
           on:click={() => playPreview(track)}
           role="row"
         >
-          <span class="w-6 text-right text-sm text-kobser-muted flex-shrink-0 tabular-nums group-hover:hidden">{track.trackNumber || i + 1}</span>
-          <span class="w-6 flex-shrink-0 hidden group-hover:flex items-center justify-center text-kobser-text">
+          <span class="w-6 text-right text-sm text-kobser-muted shrink-0 tabular-nums group-hover:hidden">{track.trackNumber || i + 1}</span>
+          <span class="w-6 shrink-0 hidden group-hover:flex items-center justify-center text-kobser-text">
             <i class="ph-fill ph-play text-sm"></i>
           </span>
           <div class="flex-1 min-w-0">
@@ -143,10 +143,10 @@
             {/if}
           </div>
           {#if track.duration}
-            <span class="text-xs text-kobser-muted tabular-nums flex-shrink-0">{fmtDuration(track.duration)}</span>
+            <span class="text-xs text-kobser-muted tabular-nums shrink-0">{fmtDuration(track.duration)}</span>
           {/if}
           <button
-            class="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-kobser-muted hover:text-white flex-shrink-0"
+            class="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-kobser-muted hover:text-white shrink-0"
             title="Download"
             on:click|stopPropagation={() => openDownload(track)}
           >

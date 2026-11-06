@@ -95,11 +95,11 @@
         <img
           src={artist.thumbnail}
           alt={artist.name}
-          class="w-24 h-24 rounded-full object-cover shadow-xl shadow-black/40 flex-shrink-0"
+          class="w-24 h-24 rounded-full object-cover shadow-xl shadow-black/40 shrink-0"
           referrerpolicy="no-referrer"
         />
       {:else}
-        <div class="w-24 h-24 rounded-full bg-kobser-surface flex items-center justify-center flex-shrink-0">
+        <div class="w-24 h-24 rounded-full bg-kobser-surface flex items-center justify-center shrink-0">
           <i class="ph ph-user text-3xl text-kobser-muted"></i>
         </div>
       {/if}
@@ -124,7 +124,7 @@
               on:click={() => playPreview(song)}
               role="row"
             >
-              <div class="relative w-10 h-10 rounded-md overflow-hidden flex-shrink-0">
+              <div class="relative w-10 h-10 rounded-md overflow-hidden shrink-0">
                 {#if song.thumbnail}
                   <img src={song.thumbnail} alt="" class="w-full h-full object-cover" referrerpolicy="no-referrer">
                 {/if}
@@ -139,10 +139,10 @@
                 {/if}
               </div>
               {#if song.duration}
-                <span class="text-xs text-kobser-muted tabular-nums flex-shrink-0">{fmtDuration(song.duration)}</span>
+                <span class="text-xs text-kobser-muted tabular-nums shrink-0">{fmtDuration(song.duration)}</span>
               {/if}
               <button
-                class="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-kobser-muted hover:text-white flex-shrink-0"
+                class="w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all text-kobser-muted hover:text-white shrink-0"
                 title="Download"
                 on:click|stopPropagation={() => openDownload(song)}
               >

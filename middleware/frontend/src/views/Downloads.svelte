@@ -113,22 +113,22 @@
               <p class="text-xs text-red-400 mt-1 truncate"><i class="ph ph-warning mr-1"></i>{job.error}</p>
             {/if}
           </div>
-          <span class="text-xs font-semibold px-3 py-1.5 rounded-full capitalize whitespace-nowrap flex-shrink-0 {statusClasses(job.status)}">{job.status}</span>
+          <span class="text-xs font-semibold px-3 py-1.5 rounded-full capitalize whitespace-nowrap shrink-0 {statusClasses(job.status)}">{job.status}</span>
           {#if isActive}
             <button
               on:click={() => cancel(job.id)}
-              class="px-3 py-1 rounded-lg text-xs font-medium text-kobser-muted hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+              class="px-3 py-1 rounded-lg text-xs font-medium text-kobser-muted hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
             >Cancel</button>
           {:else}
             {#if job.status === 'error' || job.status === 'cancelled'}
               <button
                 on:click={() => retry(job)}
-                class="px-3 py-1 rounded-lg text-xs font-medium text-kobser-muted hover:text-kobser-accent hover:bg-kobser-accent/10 transition-colors flex-shrink-0"
+                class="px-3 py-1 rounded-lg text-xs font-medium text-kobser-muted hover:text-kobser-accent hover:bg-kobser-accent/10 transition-colors shrink-0"
               >Retry</button>
             {/if}
             <button
               on:click={() => remove(job.id)}
-              class="w-8 h-8 rounded-full flex items-center justify-center text-kobser-muted hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-kobser-muted hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
               title="Remove"
             >
               <i class="ph ph-trash text-sm pointer-events-none"></i>

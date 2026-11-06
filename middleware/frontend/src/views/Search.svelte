@@ -146,7 +146,7 @@
           bind:value={query}
           type="text"
           placeholder={source === 'youtube_music' ? 'Search YouTube Music…' : 'Search YouTube…'}
-          class="w-full bg-kobser-surface text-kobser-text placeholder-kobser-muted rounded-2xl py-5 pl-14 pr-6 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 transition-all text-lg font-medium"
+          class="w-full bg-kobser-surface text-kobser-text placeholder-kobser-muted rounded-2xl py-5 pl-14 pr-6 focus:outline-hidden focus:ring-2 focus:ring-kobser-accent/50 transition-all text-lg font-medium"
           on:focus={showHistory}
           on:input={() => query.trim() ? hideHistory() : showHistory()}
           on:keydown={e => { if (e.key === 'Enter') go(); if (e.key === 'Escape') hideHistory(); }}
@@ -170,10 +170,10 @@
                   role="option"
                   aria-selected="false"
                 >
-                  <i class="ph ph-clock-counter-clockwise text-kobser-muted text-base flex-shrink-0"></i>
+                  <i class="ph ph-clock-counter-clockwise text-kobser-muted text-base shrink-0"></i>
                   <span class="flex-1 text-sm truncate">{h}</span>
                   <button
-                    class="w-6 h-6 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all flex-shrink-0"
+                    class="w-6 h-6 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all shrink-0"
                     on:click|stopPropagation={() => removeQuery(h)}
                   >
                     <i class="ph ph-x text-xs"></i>
@@ -245,7 +245,7 @@
                   class="group flex flex-col items-center gap-2 p-3 rounded-xl hover:bg-white/5 transition-all w-24"
                   on:click={() => openArtist(artist)}
                 >
-                  <div class="relative w-16 h-16 rounded-full overflow-hidden flex-shrink-0">
+                  <div class="relative w-16 h-16 rounded-full overflow-hidden shrink-0">
                     {#if artist.thumbnail}
                       <img src={artist.thumbnail} alt={artist.name} class="w-full h-full object-cover" referrerpolicy="no-referrer" loading="lazy">
                     {:else}
@@ -273,7 +273,7 @@
             on:click={() => playPreview(result)}
             role="row"
           >
-            <div class="relative w-14 h-14 rounded-md overflow-hidden flex-shrink-0">
+            <div class="relative w-14 h-14 rounded-md overflow-hidden shrink-0">
               <img src={result.thumbnail || ''} alt="" class="w-full h-full object-cover" referrerpolicy="no-referrer" loading="lazy">
               <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
                 <i class="ph-fill ph-play text-white text-xl pointer-events-none"></i>

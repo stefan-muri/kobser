@@ -234,14 +234,14 @@
       <div class="relative flex-1 min-w-48">
         <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-kobser-muted"></i>
         <input type="text" bind:value={playlistFilter} placeholder="Search playlists…"
-          class="w-full bg-kobser-surface text-kobser-text placeholder-kobser-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 border border-white/10 text-sm">
+          class="w-full bg-kobser-surface text-kobser-text placeholder-kobser-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-hidden focus:ring-2 focus:ring-kobser-accent/50 border border-white/10 text-sm">
       </div>
       <button on:click={openImport}
-        class="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-sm font-semibold rounded-xl transition-colors flex-shrink-0">
+        class="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 text-sm font-semibold rounded-xl transition-colors shrink-0">
         <i class="ph ph-download-simple"></i> Import
       </button>
       <button on:click={() => { createName = ''; createOpen = true; createDialogEl?.showModal(); }}
-        class="flex items-center gap-2 px-4 py-2 bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg text-sm font-semibold rounded-xl transition-colors flex-shrink-0">
+        class="flex items-center gap-2 px-4 py-2 bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg text-sm font-semibold rounded-xl transition-colors shrink-0">
         <i class="ph-bold ph-plus"></i> New playlist
       </button>
     </div>
@@ -256,14 +256,14 @@
           <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
           <div class="group flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-all cursor-pointer"
                on:click={() => push({ type: 'playlist', id: p.id, label: p.name })} role="row">
-            <div class="w-12 h-12 rounded-xl bg-kobser-surface flex items-center justify-center flex-shrink-0">
+            <div class="w-12 h-12 rounded-xl bg-kobser-surface flex items-center justify-center shrink-0">
               <i class="ph-fill ph-playlist text-kobser-muted text-2xl"></i>
             </div>
             <div class="flex-1 min-w-0">
               <p class="font-medium truncate">{p.name}</p>
               <p class="text-sm text-kobser-muted">{p.songCount || 0} track{p.songCount === 1 ? '' : 's'}</p>
             </div>
-            <button class="dots-btn w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10 text-kobser-muted opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+            <button class="dots-btn w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10 text-kobser-muted opacity-0 group-hover:opacity-100 transition-all shrink-0"
                     on:click={e => openDots(e, p)} title="More options">
               <i class="ph ph-dots-three-vertical text-lg pointer-events-none"></i>
             </button>
@@ -289,13 +289,13 @@
 
 <!-- Create playlist dialog -->
 <dialog bind:this={createDialogEl} on:close={() => { createOpen = false; }}
-  class="bg-kobser-surface text-kobser-text border border-white/10 rounded-2xl p-6 min-w-[320px] max-w-[90vw] shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm">
+  class="bg-kobser-surface text-kobser-text border border-white/10 rounded-2xl p-6 min-w-[320px] max-w-[90vw] shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-xs">
   <h3 class="text-lg font-semibold mb-4 flex items-center gap-2">
     <i class="ph-fill ph-playlist text-kobser-accent"></i> New playlist
   </h3>
   <input type="text" bind:value={createName} placeholder="Playlist name" autofocus
     on:keydown={e => { if (e.key === 'Enter') createPlaylist(); }}
-    class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 mb-5 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 border border-white/10">
+    class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 mb-5 focus:outline-hidden focus:ring-2 focus:ring-kobser-accent/50 border border-white/10">
   <div class="flex gap-3 justify-end">
     <button on:click={() => createDialogEl?.close()} class="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors">Cancel</button>
     <button on:click={createPlaylist} class="px-5 py-2.5 bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg rounded-xl text-sm font-semibold transition-colors">Create</button>
@@ -304,11 +304,11 @@
 
 <!-- Rename dialog -->
 <dialog bind:this={renameDialogEl} on:close={() => { renameOpen = false; }}
-  class="bg-kobser-surface text-kobser-text border border-white/10 rounded-2xl p-6 min-w-[320px] max-w-[90vw] shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm">
+  class="bg-kobser-surface text-kobser-text border border-white/10 rounded-2xl p-6 min-w-[320px] max-w-[90vw] shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-xs">
   <h3 class="text-lg font-semibold mb-4">Rename playlist</h3>
   <input type="text" bind:value={renameName}
     on:keydown={e => { if (e.key === 'Enter') renamePlaylist(); }}
-    class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 mb-5 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 border border-white/10">
+    class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 mb-5 focus:outline-hidden focus:ring-2 focus:ring-kobser-accent/50 border border-white/10">
   <div class="flex gap-3 justify-end">
     <button on:click={() => renameDialogEl?.close()} class="px-5 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors">Cancel</button>
     <button on:click={renamePlaylist} class="px-5 py-2.5 bg-kobser-accent hover:bg-kobser-accentHover text-kobser-bg rounded-xl text-sm font-semibold transition-colors">Save</button>
@@ -317,15 +317,15 @@
 
 <!-- Song picker dialog -->
 <dialog bind:this={spDialogEl} on:close={() => { songPickerOpen = false; }}
-  class="bg-kobser-surface text-kobser-text border border-white/10 rounded-2xl p-0 w-[90vw] max-w-lg shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm overflow-hidden">
+  class="bg-kobser-surface text-kobser-text border border-white/10 rounded-2xl p-0 w-[90vw] max-w-lg shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-xs overflow-hidden">
   <div class="flex flex-col max-h-[80vh]">
-  <div class="p-5 border-b border-white/10 flex-shrink-0">
+  <div class="p-5 border-b border-white/10 shrink-0">
     <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
       <i class="ph-fill ph-music-notes-plus text-kobser-accent"></i>
       Add songs to "{songPickerPlaylistName}"
     </h3>
     <input type="text" bind:value={spFilter} placeholder="Search by title or artist…"
-      class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-2.5 px-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 border border-white/10 text-sm">
+      class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-2.5 px-4 focus:outline-hidden focus:ring-2 focus:ring-kobser-accent/50 border border-white/10 text-sm">
   </div>
   <div class="overflow-y-auto flex-1">
     {#if spLoading}
@@ -337,7 +337,7 @@
         <label class="flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 cursor-pointer transition-colors">
           <input type="checkbox" checked={spSelected.has(s.id)}
             on:change={e => { const sel = new Set(spSelected); e.target.checked ? sel.add(s.id) : sel.delete(s.id); spSelected = sel; }}
-            class="w-4 h-4 rounded accent-kobser-accent flex-shrink-0 cursor-pointer">
+            class="w-4 h-4 rounded-sm accent-kobser-accent shrink-0 cursor-pointer">
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium truncate">{s.title || '—'}</p>
             <p class="text-xs text-kobser-muted truncate">{s.artist || '—'}</p>
@@ -346,7 +346,7 @@
       {/each}
     {/if}
   </div>
-  <div class="p-4 border-t border-white/10 flex items-center justify-between gap-3 flex-shrink-0">
+  <div class="p-4 border-t border-white/10 flex items-center justify-between gap-3 shrink-0">
     <span class="text-sm text-kobser-muted">{spSelected.size} selected</span>
     <div class="flex gap-2">
       <button on:click={() => spDialogEl?.close()} class="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm font-medium transition-colors">Cancel</button>
@@ -361,7 +361,7 @@
 
 <!-- Import playlist dialog -->
 <dialog bind:this={importDialogEl} on:close={() => { importOpen = false; }}
-  class="bg-kobser-surface text-kobser-text border border-white/10 rounded-2xl p-6 w-[90vw] max-w-md shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm">
+  class="bg-kobser-surface text-kobser-text border border-white/10 rounded-2xl p-6 w-[90vw] max-w-md shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-xs">
   <h3 class="text-lg font-semibold mb-5 flex items-center gap-2">
     <i class="ph ph-download-simple text-kobser-accent"></i> Import playlist
   </h3>
@@ -381,7 +381,7 @@
     <p class="text-sm text-kobser-muted mb-2">Paste a public Spotify playlist link</p>
     <input type="text" bind:value={importUrl} placeholder="https://open.spotify.com/playlist/…" autofocus
       on:keydown={e => { if (e.key === 'Enter') startImport(); }}
-      class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 mb-2 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 border border-white/10">
+      class="w-full bg-kobser-bg text-kobser-text placeholder-kobser-muted rounded-xl py-3 px-4 mb-2 focus:outline-hidden focus:ring-2 focus:ring-kobser-accent/50 border border-white/10">
     {#if importError}
       <p class="text-sm text-red-400 mb-2"><i class="ph ph-warning mr-1"></i>{importError}</p>
     {/if}

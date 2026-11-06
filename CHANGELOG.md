@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Security
+- Web app: cleared all 23 open Dependabot alerts (5 high) by moving to Svelte 5.57, Vite 8.3.6 and Tailwind CSS 4.3, which also removes the unpatchable `braces` advisory that came in through Tailwind 3. None were reachable in production (Svelte's were server-side-rendering bugs; Vite's, esbuild's and launch-editor's affect only the dev server). The one advisory left, a low-severity `deepmerge` issue with no fix released, is only used to merge the build's own config and was auto-dismissed by GitHub.
+- The Docker image now builds the web app with `npm ci` from the lockfile (Node 24), so production ships exactly the audited dependency versions instead of re-resolving them at build time.
+
+### Changed
+- Tailwind 4 defaults that would have changed the UI are pinned to the v3 behaviour: pointer cursor on buttons, centred dialogs, gray placeholders, and tap-to-hover on touch screens.
+
 ## [1.2.1] - 2026-09-12
 
 ### Fixed

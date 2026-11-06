@@ -87,7 +87,7 @@
       <div class="relative mb-4">
         <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-kobser-muted"></i>
         <input type="text" bind:value={artistFilter} placeholder="Search artists…"
-          class="w-full bg-kobser-surface text-kobser-text placeholder-kobser-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-none focus:ring-2 focus:ring-kobser-accent/50 border border-white/10 text-sm">
+          class="w-full bg-kobser-surface text-kobser-text placeholder-kobser-muted rounded-xl py-2.5 pl-11 pr-4 focus:outline-hidden focus:ring-2 focus:ring-kobser-accent/50 border border-white/10 text-sm">
       </div>
       {#if !filteredArtists.length}
         <p class="text-center py-10 text-kobser-muted text-sm">No artists match "{artistFilter}"</p>
@@ -100,7 +100,7 @@
               on:click={() => push({ type: 'artist', id: artist.id, label: artist.name })}
               role="row"
             >
-              <img class="w-12 h-12 rounded-full object-cover flex-shrink-0 bg-kobser-surface"
+              <img class="w-12 h-12 rounded-full object-cover shrink-0 bg-kobser-surface"
                    src={coverArtUrl(artist.coverArt, 96)} alt="" loading="lazy">
               <div class="flex-1 min-w-0">
                 <p class="font-medium truncate">{artist.name}</p>

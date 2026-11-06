@@ -38,15 +38,15 @@
 <!-- Backdrop -->
 {#if $queuePanelOpen}
   <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-  <div class="fixed inset-0 z-[155] bg-black/40" on:click={() => queuePanelOpen.set(false)}></div>
+  <div class="fixed inset-0 z-155 bg-black/40" on:click={() => queuePanelOpen.set(false)}></div>
 {/if}
 
 <!-- Panel -->
 <div
-  class="fixed inset-y-0 right-0 w-full sm:w-96 z-[160] flex flex-col bg-kobser-surface border-l border-white/10 shadow-2xl transition-transform duration-300 ease-in-out"
+  class="fixed inset-y-0 right-0 w-full sm:w-96 z-160 flex flex-col bg-kobser-surface border-l border-white/10 shadow-2xl transition-transform duration-300 ease-in-out"
   style:transform={$queuePanelOpen ? 'translateX(0)' : 'translateX(100%)'}
 >
-  <div class="flex items-center justify-between px-5 py-4 border-b border-white/10 flex-shrink-0">
+  <div class="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
     <h2 class="text-base font-semibold">Queue</h2>
     <button
       on:click={() => queuePanelOpen.set(false)}
@@ -61,7 +61,7 @@
       <div class="px-4 pt-5 pb-3">
         <p class="text-[10px] font-semibold text-kobser-muted uppercase tracking-widest mb-3">Now Playing</p>
         <div class="flex items-center gap-3 p-2 rounded-xl bg-white/5">
-          <img src={trackArtUrl(current, 64)} alt="" class="w-10 h-10 rounded-md object-cover flex-shrink-0 bg-kobser-bg">
+          <img src={trackArtUrl(current, 64)} alt="" class="w-10 h-10 rounded-md object-cover shrink-0 bg-kobser-bg">
           <div class="flex-1 min-w-0">
             <p class="text-sm font-medium truncate text-kobser-accent">{current.title ?? '—'}</p>
             <p class="text-xs text-kobser-muted truncate">{current.artist ?? '—'}</p>
@@ -91,14 +91,14 @@
               on:drop={e => onDrop(e, qIdx)}
               role="listitem"
             >
-              <i class="ph ph-dots-six-vertical text-kobser-muted text-lg flex-shrink-0 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></i>
-              <img src={trackArtUrl(track, 64)} alt="" class="w-10 h-10 rounded-md object-cover flex-shrink-0 bg-kobser-bg pointer-events-none">
+              <i class="ph ph-dots-six-vertical text-kobser-muted text-lg shrink-0 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></i>
+              <img src={trackArtUrl(track, 64)} alt="" class="w-10 h-10 rounded-md object-cover shrink-0 bg-kobser-bg pointer-events-none">
               <div class="flex-1 min-w-0 pointer-events-none">
                 <p class="text-sm font-medium truncate">{track.title ?? '—'}</p>
                 <p class="text-xs text-kobser-muted truncate">{track.artist ?? '—'}</p>
               </div>
               <button
-                class="w-8 h-8 flex items-center justify-center text-kobser-muted hover:text-white rounded-full hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100 flex-shrink-0"
+                class="w-8 h-8 flex items-center justify-center text-kobser-muted hover:text-white rounded-full hover:bg-white/10 transition-all opacity-0 group-hover:opacity-100 shrink-0"
                 on:click|stopPropagation={() => removeFromQueue(qIdx)}
               >
                 <i class="ph ph-x text-sm pointer-events-none"></i>

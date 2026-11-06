@@ -157,19 +157,19 @@
     >
       <!-- Checkbox (select mode) -->
       {#if selectMode}
-        <div class="flex-shrink-0 w-5 flex items-center justify-center">
+        <div class="shrink-0 w-5 flex items-center justify-center">
           <input
             type="checkbox"
             checked={selected.has(i)}
             on:change={() => toggleSelect(i)}
             on:click|stopPropagation
-            class="w-4 h-4 rounded accent-kobser-accent cursor-pointer"
+            class="w-4 h-4 rounded-sm accent-kobser-accent cursor-pointer"
           >
         </div>
       {/if}
 
       <!-- Art / now-playing indicator -->
-      <div class="relative w-12 h-12 rounded-md overflow-hidden flex-shrink-0 bg-kobser-surface">
+      <div class="relative w-12 h-12 rounded-md overflow-hidden shrink-0 bg-kobser-surface">
         <img src={coverArtUrl(song.coverArt, 64)} alt="" loading="lazy" class="w-full h-full object-cover">
         <!-- Hover play/pause overlay -->
         <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity {isActive ? 'opacity-100' : ''}">
@@ -178,9 +178,9 @@
         <!-- Now-playing animated bars -->
         {#if isActive}
           <div class="absolute inset-0 bg-black/60 flex items-end justify-center gap-[3px] pb-[9px] {$playing ? '' : 'opacity-60'}">
-            <span class="block w-[3px] bg-kobser-accent rounded-sm origin-bottom {$playing ? 'animate-bar1' : ''}" style="height:12px"></span>
-            <span class="block w-[3px] bg-kobser-accent rounded-sm origin-bottom {$playing ? 'animate-bar2' : ''}" style="height:12px"></span>
-            <span class="block w-[3px] bg-kobser-accent rounded-sm origin-bottom {$playing ? 'animate-bar3' : ''}" style="height:12px"></span>
+            <span class="block w-[3px] bg-kobser-accent rounded-xs origin-bottom {$playing ? 'animate-bar1' : ''}" style="height:12px"></span>
+            <span class="block w-[3px] bg-kobser-accent rounded-xs origin-bottom {$playing ? 'animate-bar2' : ''}" style="height:12px"></span>
+            <span class="block w-[3px] bg-kobser-accent rounded-xs origin-bottom {$playing ? 'animate-bar3' : ''}" style="height:12px"></span>
           </div>
         {/if}
       </div>
@@ -193,7 +193,7 @@
 
       <!-- Star button -->
       <button
-        class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10 transition-all opacity-100 md:opacity-0 group-hover:opacity-100 flex-shrink-0"
+        class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10 transition-all opacity-100 md:opacity-0 group-hover:opacity-100 shrink-0"
         title={starred ? 'Unlike' : 'Like'}
         on:click={e => toggleStar(song, e)}
       >
@@ -202,7 +202,7 @@
 
       <!-- Dots menu button -->
       <button
-        class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10 transition-all opacity-100 md:opacity-0 group-hover:opacity-100 flex-shrink-0"
+        class="w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10 transition-all opacity-100 md:opacity-0 group-hover:opacity-100 shrink-0"
         title="More options"
         on:click={e => openDots(e, song, i)}
       >
