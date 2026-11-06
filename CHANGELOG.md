@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format is based on
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-06
+
 ### Added
 - Android: **Download to phone** for single songs, from any song's menu or the player. Songs on the phone get a small marker, and they're listed in Offline music next to kept albums and playlists.
 - Android: **saved searches**. Your last 20 YouTube / YouTube Music searches appear when you open search; tap one to run it again.
@@ -17,16 +19,14 @@ All notable changes to this project are documented here. The format is based on
 - **Deletes are instant.** The song disappears from the list immediately and the delete finishes in the background, even if you leave the screen; if the server can't delete it, the song comes back with the reason.
 - The server now rescans only the folder that changed (Navidrome 0.59+ targeted scans) and reports a download or delete as finished only once Navidrome actually shows the change, instead of rescanning the whole library and waiting a fixed 1.5 s.
 - Error messages stay on screen longer than success messages.
+- Web app: Tailwind 4 defaults that would have changed the UI are pinned to the v3 behaviour: pointer cursor on buttons, centred dialogs, gray placeholders, and tap-to-hover on touch screens.
 
 ### Fixed
 - Deleting a song whose file isn't named the way Kobser names downloads (music added by hand, imports) silently did nothing while reporting success. The server now finds the file by its tags, and refuses honestly if it can't find it.
 
 ### Security
-- Web app: cleared all 23 open Dependabot alerts (5 high) by moving to Svelte 5.57, Vite 8.3.6 and Tailwind CSS 4.3, which also removes the unpatchable `braces` advisory that came in through Tailwind 3. None were reachable in production (Svelte's were server-side-rendering bugs; Vite's, esbuild's and launch-editor's affect only the dev server). The one advisory left, a low-severity `deepmerge` issue with no fix released, is only used to merge the build's own config and was auto-dismissed by GitHub.
+- Web app: cleared all 23 open Dependabot alerts (5 high) by moving to Svelte 5.57, Vite 8.3.6 and Tailwind CSS 4.3, which also removes the unpatchable `braces` advisory that came in through Tailwind 3. None were reachable in production (Svelte's were server-side-rendering bugs; Vite's, esbuild's and launch-editor's affect only the dev server). The one advisory left, a low-severity `deepmerge` issue with no fix released, is only used to merge the build's own config and never runs in the app.
 - The Docker image now builds the web app with `npm ci` from the lockfile (Node 24), so production ships exactly the audited dependency versions instead of re-resolving them at build time.
-
-### Changed
-- Tailwind 4 defaults that would have changed the UI are pinned to the v3 behaviour: pointer cursor on buttons, centred dialogs, gray placeholders, and tap-to-hover on touch screens.
 
 ## [1.2.1] - 2026-09-12
 
